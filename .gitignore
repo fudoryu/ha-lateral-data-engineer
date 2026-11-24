@@ -31,3 +31,7 @@ CLAUDE.local.md
 *.swp
 .DS_Store
 Thumbs.db
+
+# --- Local data (directory kept, contents never committed) -------------------
+data/*
+!data/.gitkeep
