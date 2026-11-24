@@ -1,0 +1,60 @@
+# Install: `pre-commit install` (installs pre-commit and commit-msg hooks; see default_install_hook_types)
+# Run all: `pre-commit run --all-files`   |   Update pins: `pre-commit autoupdate`
+# `prek` (drop-in replacement) reads this same file.
+
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+  # --- Generic hygiene --------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # --- Secrets ---------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # --- Python ----------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Keep uv.lock in sync with pyproject.toml (runs only when either changes).
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.8
+    hooks:
+      - id: uv-lock
+
+  # --- Commit messages (Conventional Commits) --------------------------------
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --strict
+          - feat
+          - fix
+          - docs
+          - test
+          - refactor
+          - chore
+          - ci
+          - build
+          - perf

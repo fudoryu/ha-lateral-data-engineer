@@ -1,0 +1,33 @@
+# --- Python / uv -------------------------------------------------------------
+# uv.lock and .python-version are committed for reproducible installs.
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- Secrets & local config --------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Agents (personal overrides only; shared config is committed) ------------
+.claude/settings.local.json
+CLAUDE.local.md
+
+# --- Editors & OS ------------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db
