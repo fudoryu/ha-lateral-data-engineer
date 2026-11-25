@@ -9,6 +9,7 @@ from urllib.parse import parse_qsl, urlsplit
 import pytest
 import responses
 from responses import matchers
+from scenarios import RecordedApi
 
 from worldbank.config import Config
 
@@ -45,3 +46,9 @@ def recorded_api(recorded_index: dict[str, Any]) -> Iterator[responses.RequestsM
                 match=[matchers.query_param_matcher(dict(parse_qsl(parts.query)))],
             )
         yield mock
+
+
+@pytest.fixture
+def api(recorded_dir: Path, recorded_index: dict[str, Any]) -> RecordedApi:
+    """A fresh, editable copy of the recorded API for crafted scenarios."""
+    return RecordedApi(recorded_dir, recorded_index)

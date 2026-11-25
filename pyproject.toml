@@ -42,8 +42,10 @@ known-first-party = ["worldbank"]
 [tool.mypy]
 strict = true
 files = ["pipelines/worldbank/src", "pipelines/worldbank/tests"]
+mypy_path = "pipelines/worldbank/tests"
 
 [tool.pytest.ini_options]
 testpaths = ["pipelines/worldbank/tests"]
+pythonpath = ["pipelines/worldbank/tests"]  # test helpers such as scenarios.py
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 filterwarnings = ["error"]
