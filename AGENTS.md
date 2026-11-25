@@ -18,6 +18,8 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 - Missing is never zero (NFR-3).
 - Every output value is traceable to the API response it came from (NFR-1).
 - Scope changes (countries, indicators, years) go in configuration, never in code (NFR-4).
+- Only `extract` calls the API; every other step reads from the landing zone `data/raw/` (ADR-0003).
+- The landing zone is the system of record; the warehouse is a rebuildable cache (ADR-0003).
 
 **Stack** (ADR-0001)
 - Python 3.14 managed by uv; run everything through `uv run`.

@@ -8,6 +8,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 |---|---|---|---|
 | [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted |
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
+| [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
 
 ---
 
@@ -76,3 +77,29 @@ Observations can be requested per country × indicator (36 requests for the curr
 - A failed request affects every country for that indicator; a retry repeats just that one request.
 - Paging matters only above 1000 rows per indicator (roughly 140 countries over 7 years), so tests must force paging with a small `per_page`.
 - Pinning `source=2` means a change in the API's default dataset can't silently change results.
+
+---
+
+## ADR-0003: Separate ingestion from transformation; replay from landed files
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-1, FR-DQ-3, NFR-1, NFR-2
+
+### Context
+Transformations must be re-runnable, debuggable and testable without the live API (FR-DQ-3). The raw source representation must stay separate from cleaned and analytics-ready data (FR-MOD-1). Values must trace back to the API response they came from (NFR-1).
+
+### Decision
+- **`extract` is the only step that calls the API.** It writes each response body, byte for byte, to a local landing zone under `data/raw/`.
+- **Everything after extract reads only from the landing zone:** loading into the warehouse, transforming, exporting.
+- A **`replay`** command runs load → transform → export from landed files with no network access.
+- The landing zone is the **system of record**. The warehouse is a **rebuildable cache** derived from it.
+
+### Alternatives considered
+- **Fetch and transform in one pass (in memory):** fewer moving parts, but every transformation change or debugging session hits the API again, tests need the network or heavy mocking, and there's no stored response to trace values back to.
+- **Load the API response straight into warehouse tables, with no files:** traceable, but the warehouse becomes the source of truth and can't be rebuilt from scratch, and the local design no longer mirrors an object-storage landing zone (S3) in production.
+
+### Consequences
+- Transformations can be changed and replayed freely, and the warehouse file can be deleted and rebuilt at any time.
+- Tests exercise load and transform from landed files without the API.
+- Locally, the landing zone maps directly to an S3 landing bucket in production.
+- Needs a rule for when a landing run counts as complete; see the next decision.
