@@ -204,3 +204,48 @@ def test_cli_extract_fails_with_exit_code_and_no_commit(tmp_path: Path) -> None:
     assert result.exit_code == 1
     assert "extract failed, nothing committed" in result.output
     assert committed_runs(tmp_path / "data" / "raw" / "worldbank") == []
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        (None, "No such file"),
+        ("scope: [", "invalid configuration"),
+        ("api: {}\nscope: {}\n", "validation error"),
+    ],
+)
+def test_cli_reports_configuration_problems(
+    tmp_path: Path, content: str | None, message: str
+) -> None:
+    config_path = tmp_path / "config.yml"
+    if content is not None:
+        config_path.write_text(content)
+
+    result = CliRunner().invoke(
+        app, ["extract", "--config", str(config_path), "--data-dir", str(tmp_path)]
+    )
+
+    assert result.exit_code == 2
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert message in result.output
+
+
+@responses.activate
+def test_cli_reports_a_run_id_collision(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two extracts in the same second would share a run folder; the second must fail cleanly."""
+    mock_api()
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(yaml.safe_dump(RAW))
+    (tmp_path / "data" / "raw" / "worldbank" / "run_id=2026-11-24T18-30-00Z").mkdir(parents=True)
+
+    def extract_at_now(*args: Any, **kwargs: Any) -> Any:
+        return extract(*args, **{**kwargs, "now": lambda: NOW})
+
+    monkeypatch.setattr("worldbank.cli.run_extract", extract_at_now)
+
+    result = CliRunner().invoke(
+        app, ["extract", "--config", str(config_path), "--data-dir", str(tmp_path / "data")]
+    )
+
+    assert result.exit_code == 1
+    assert "extract failed, nothing committed" in result.output

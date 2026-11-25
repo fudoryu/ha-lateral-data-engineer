@@ -5,10 +5,12 @@ from pathlib import Path
 
 import requests
 import typer
+import yaml
+from pydantic import ValidationError
 
 from worldbank import __version__
 from worldbank.client import Client, InconsistentPages, PermanentHTTPError, TransientHTTPError
-from worldbank.config import load_config
+from worldbank.config import Config, load_config
 from worldbank.extract import ScopeViolation
 from worldbank.extract import extract as run_extract
 from worldbank.models import ApiErrorResponse, UnexpectedResponse
@@ -25,6 +27,7 @@ EXTRACT_FAILURES = (
     InconsistentPages,
     ScopeViolation,
     requests.RequestException,
+    FileExistsError,  # a run with the same timestamp already exists
 )
 
 app = typer.Typer(
@@ -51,7 +54,7 @@ def version() -> None:
 @app.command()
 def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None:
     """Fetch the configured scope from the API and commit it as a landing run."""
-    settings = load_config(config)
+    settings = _load_config_or_exit(config)
     landing_root = data_dir / "raw" / SOURCE
     try:
         manifest = run_extract(settings, Client(settings.api), landing_root, git_sha=_git_sha())
@@ -61,6 +64,14 @@ def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None
     for warning in manifest.warnings:
         typer.echo(f"warning: {warning}", err=True)
     typer.echo(f"committed run {manifest.run_id}: {len(manifest.files)} files in {landing_root}")
+
+
+def _load_config_or_exit(path: Path) -> Config:
+    try:
+        return load_config(path)
+    except (OSError, yaml.YAMLError, ValidationError) as exc:
+        typer.echo(f"invalid configuration {path}: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
 
 
 def _git_sha() -> str | None:
