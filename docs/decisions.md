@@ -14,6 +14,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
+| [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
 
 ---
 
@@ -281,3 +282,49 @@ Completeness is measured against the **expected set**: every configured country 
 - The completeness report covers every expected combination, including ones the API never mentioned.
 - Adding a country or indicator in configuration automatically extends the expected set (NFR-4).
 - Today's live data is fully `present` ([source-system §6](source-system.md#6-missing-values)), so `null_value`, `missing_row` and `incomplete` must be proven with crafted test fixtures.
+
+---
+
+## ADR-0009: Analytics interpretations: latest year, income-group aggregation, year-over-year
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-2, FR-ANA-3, FR-ANA-4 · **Resolves:** Q2, Q4, Q5
+
+### Context
+Three analytics questions in the brief leave room for interpretation: what "latest available year" means (Q2), how to compare income groups when indicators differ in nature (Q4), and what 2018's year-over-year change is when 2017 is outside the requested range (Q5).
+
+### Decision
+**Latest available year (Q2):**
+- The main comparison shows **each country at its own latest year with a value** within 2018–2024. Each value is shown with the year it comes from.
+- The **latest year common to all countries** (for a like-for-like comparison) is provided in a **separate derived table**, not mixed into the main comparison.
+
+**Income-group aggregation by year (Q4):** each indicator is aggregated in the way that matches its nature:
+
+| Indicator | Group value |
+|---|---|
+| Population | sum |
+| GDP | sum |
+| GDP per capita | recomputed as Σ GDP ÷ Σ population (not an average of ratios) |
+| Life expectancy | population-weighted mean |
+
+- Each group-year row reports `n_countries` and `n_countries_with_data`.
+- Values are computed over the countries that have data; the coverage columns make any gap visible.
+
+**Year-over-year change (Q5, and nulls in general):** every row reports the absolute and the percentage change. When either can't be computed, it's `null` with a reason:
+
+| Reason | When |
+|---|---|
+| `prior_out_of_scope` | the prior year is outside the reporting range, which always applies to 2018 |
+| `prior_missing` | the prior year has no value |
+| `prior_zero` | the prior value is 0: the absolute change is computed, the percentage isn't |
+| `current_missing` | the current year has no value |
+
+### Alternatives considered
+- **Only each country's own latest year, or only a common year:** the first hides when countries are compared across different years; the second throws away newer data. Keeping both, in separate tables, avoids either problem.
+- **Unweighted averages for every indicator in a group:** an average of GDP per capita or life expectancy across countries of very different sizes misrepresents the group.
+- **Fetching 2017 as a lookback year for 2018 year-over-year:** considered and dropped for now. It would extend the request range beyond the brief's 2018–2024, and can be revisited in a superseding record.
+
+### Consequences
+- Every reported value states its year (latest-year view) or its coverage (income-group view).
+- No year-over-year value is ever silently 0 or misleading. A null always comes with a reason.
+- The lower-middle income group currently contains only India, which the README must point out.
