@@ -16,6 +16,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
 | [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
+| [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
 
 ---
 
@@ -354,3 +355,28 @@ Measured on the live data for the full scope (9 countries × 8 years, 72 combina
 ### Consequences
 - The check catches mixed releases, a wrong unit, or a mismatched join, while ignoring rounding noise.
 - If the World Bank ever changes how it derives GDP per capita, the check will fail loudly and the tolerance must be revisited in a superseding record.
+
+---
+
+## ADR-0011: Current income classification applies to every year
+
+- **Date:** 2026-11-24 · **Kind:** Assumption · **Status:** Accepted
+- **Serves:** FR-ANA-4 · **Resolves:** Q3
+
+### Context
+FR-ANA-4 compares indicators across income groups **by year**. The World Bank reclassifies countries every July 1, so ideally each year would use that year's classification. The API's country endpoint provides only the **current** classification, with no history ([source-system §8](source-system.md#8-income-classification-is-current-only)). The brief also requires the public API to be the only production data source.
+
+### Decision
+- **Assumption:** each country's **current** income classification (from the latest committed run) applies to **every reporting year**.
+- **Modeled at the right grain anyway:** income group is stored per **country × year**, and the income-group comparison joins on (country, year), not on a country attribute. If a historical source is ever allowed, only that table's contents change; the reports don't.
+- **Visible in the output:** the income-group results carry `classification_basis = 'current_applied_to_all_years'` and `classified_as_of` (the run date), so analysts can't miss the assumption.
+- **History captured going forward:** every committed run keeps its country metadata (ADR-0006), so future reclassifications are preserved from now on.
+
+### Alternatives considered
+- **The World Bank's historical classification file:** a spreadsheet published outside the API. Rejected: it breaks the brief's API-only rule.
+- **Recomputing groups from GNI per capita and yearly thresholds:** the thresholds aren't available through the API and would have to be maintained by hand. Rejected.
+- **Tracking classification changes across our own runs (SCD type 2) as the yearly basis:** it records when *we* saw a change (system time), not what applied in the data year (business time). Our first run is today, so every 2018–2024 observation would still map to today's group. It's kept as audit history (above), not as the yearly basis.
+
+### Consequences
+- Income-group comparisons for past years carry hindsight bias whenever a country changed group during 2018–2024. Whether any of the nine countries did can't be verified through the API, so the README states this as a caveat, not as a claim.
+- The bias grows as countries near the classification thresholds are added.

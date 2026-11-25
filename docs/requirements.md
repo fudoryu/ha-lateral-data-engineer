@@ -126,7 +126,7 @@ These are not answered by the brief. Each is resolved by a decision or assumptio
 |---|---|---|
 | Q1 | What counts as **"incomplete"** compared with "missing"? (A null value? An absent row? Partial coverage across years?) | [ADR-0008](decisions.md#adr-0008-definitions-of-missing-and-incomplete-data) |
 | Q2 | Does **"latest available year"** mean each country's own latest year, or one common year across countries? | [ADR-0009](decisions.md#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) |
-| Q3 | Which **income-group classification** applies to each year? (The API provides only the current classification.) | Open |
+| Q3 | Which **income-group classification** applies to each year? (The API provides only the current classification.) | [ADR-0011](decisions.md#adr-0011-current-income-classification-applies-to-every-year) |
 | Q4 | How should **income groups be aggregated** (sum, mean, population-weighted), and how are countries with missing data handled? | [ADR-0009](decisions.md#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) |
 | Q5 | What is the YoY result for **2018**, whose prior year (2017) falls outside the stated range? | [ADR-0009](decisions.md#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) |
 | Q6 | What **tolerance** applies to cross-indicator consistency checks? | [ADR-0010](decisions.md#adr-0010-gdp-consistency-check-with-a-01-tolerance) |
