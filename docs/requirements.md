@@ -142,7 +142,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ING-2 | `src/worldbank/extract.py`: one observations request per indicator (ADR-0002), checked against the request | `tests/test_extract.py` |
 | FR-ING-3 | `src/worldbank/client.py`: follows every page; checks page consistency and row totals | `tests/test_client.py` |
 | FR-ING-4 | Retries in `src/worldbank/client.py`; error bodies and malformed responses in `src/worldbank/models.py`; all-or-nothing runs in `src/worldbank/extract.py` (no manifest on failure, non-zero exit) | `tests/test_client.py`, `tests/test_models.py`, `tests/test_extract.py` |
-| FR-MOD-1 | TBD | TBD |
+| FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/load.py`, separate from later layers | `tests/test_load.py` |
 | FR-MOD-2 | TBD | TBD |
 | FR-MOD-3 | TBD | TBD |
 | FR-ANA-1 | TBD | TBD |
@@ -152,7 +152,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-1 | TBD | TBD |
 | FR-DQ-2 | TBD | TBD |
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
-| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/landing.py` | `tests/test_landing.py` |
+| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/landing.py`; the raw layer keeps them per response, verified against the manifest on load | `tests/test_landing.py`, `tests/test_load.py` |
 | NFR-2 | TBD | TBD |
 | NFR-3 | Partial: API values never coerced (`src/worldbank/models.py`) | `tests/test_models.py` |
 | NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` | `tests/test_config.py` |
