@@ -16,7 +16,7 @@ How the source behaves, verified against the live API on **2026-11-24**. Each fi
 | Observations (FR-ING-2) | `/country/BRA;CAN;…/indicator/SP.POP.TOTL?format=json&date=2018:2024&per_page=1000&source=2` |
 | Historical releases ("vintages") | `/sources/57/country/{iso3}/series/{code}/time/YR{year}/version/{yyyymm}?format=json` |
 
-Several countries can be requested in one call, separated by `;`.
+Several countries can be requested in one call, separated by `;`. Several indicators can be too, when `source` is given: `/country/BRA;IND/indicator/SP.POP.TOTL;NY.GDP.MKTP.CD?format=json&source=2` returns both indicators, but `meta.sourceid` comes back as `null` in that case.
 
 ## 2. Response shape
 
