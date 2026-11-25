@@ -138,10 +138,10 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 
 | Requirement | Implemented in | Verified by |
 |---|---|---|
-| FR-ING-1 | TBD | TBD |
-| FR-ING-2 | TBD | TBD |
+| FR-ING-1 | `src/worldbank/extract.py`: country metadata fetched and landed; every configured code must come back | `tests/test_extract.py` |
+| FR-ING-2 | `src/worldbank/extract.py`: one observations request per indicator (ADR-0002), checked against the request | `tests/test_extract.py` |
 | FR-ING-3 | `src/worldbank/client.py`: follows every page; checks page consistency and row totals | `tests/test_client.py` |
-| FR-ING-4 | Partial: transient errors retried with backoff (`src/worldbank/client.py`); error bodies and malformed responses detected (`src/worldbank/models.py`) | `tests/test_client.py`, `tests/test_models.py` |
+| FR-ING-4 | Retries in `src/worldbank/client.py`; error bodies and malformed responses in `src/worldbank/models.py`; all-or-nothing runs in `src/worldbank/extract.py` (no manifest on failure, non-zero exit) | `tests/test_client.py`, `tests/test_models.py`, `tests/test_extract.py` |
 | FR-MOD-1 | TBD | TBD |
 | FR-MOD-2 | TBD | TBD |
 | FR-MOD-3 | TBD | TBD |

@@ -18,6 +18,7 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 
 | Command | Fallback without `just` | Purpose |
 |---|---|---|
+| n/a | `uv run worldbank extract` | fetch the configured scope and commit a landing run (calls the live API) |
 | `just test` | `uv run pytest` | tests (offline) |
 | `just check` | see the `justfile` | lint + format check + type check + tests: **the definition of done** (ADR-0013) |
 
