@@ -1,0 +1,129 @@
+{
+  "recorded_at": "2026-11-25T01:52:29+00:00",
+  "config": {
+    "api": {
+      "base_url": "https://api.worldbank.org/v2",
+      "source": 2,
+      "per_page": 25,
+      "timeout": {
+        "connect_seconds": 10.0,
+        "read_seconds": 30.0
+      },
+      "retry": {
+        "attempts": 5,
+        "initial_backoff_seconds": 1.0,
+        "max_backoff_seconds": 30.0
+      }
+    },
+    "scope": {
+      "countries": [
+        "BRA",
+        "CAN",
+        "DEU",
+        "GBR",
+        "IND",
+        "JPN",
+        "MEX",
+        "USA",
+        "ZAF"
+      ],
+      "indicators": [
+        "SP.POP.TOTL",
+        "NY.GDP.MKTP.CD",
+        "NY.GDP.PCAP.CD",
+        "SP.DYN.LE00.IN"
+      ],
+      "years": {
+        "start": 2018,
+        "end": 2024
+      }
+    }
+  },
+  "files": [
+    {
+      "file": "endpoint=countries/page=1.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF?format=json&per_page=25&page=1",
+      "sha256": "e279fd1886139035adf25eb1c765eba51c6f1e54c930467d9543614b734467eb"
+    },
+    {
+      "file": "endpoint=indicators/SP.POP.TOTL/page=1.json",
+      "url": "https://api.worldbank.org/v2/indicator/SP.POP.TOTL?format=json&per_page=25&page=1",
+      "sha256": "f3a7540c299c5216d47573298a79dfae9cd6cefcafcc291a3d6ef86212fcc9d8"
+    },
+    {
+      "file": "endpoint=indicators/NY.GDP.MKTP.CD/page=1.json",
+      "url": "https://api.worldbank.org/v2/indicator/NY.GDP.MKTP.CD?format=json&per_page=25&page=1",
+      "sha256": "0d624b1e549abe51b0a726e8c6d5740e2d0afcb0d3c15def1903e13b2a8785fe"
+    },
+    {
+      "file": "endpoint=indicators/NY.GDP.PCAP.CD/page=1.json",
+      "url": "https://api.worldbank.org/v2/indicator/NY.GDP.PCAP.CD?format=json&per_page=25&page=1",
+      "sha256": "44fc974b6b3f154bc951b7e5e97e79d65f02d2116aa3b966f3c5e063a6ba16e8"
+    },
+    {
+      "file": "endpoint=indicators/SP.DYN.LE00.IN/page=1.json",
+      "url": "https://api.worldbank.org/v2/indicator/SP.DYN.LE00.IN?format=json&per_page=25&page=1",
+      "sha256": "aeeebb843dc8dcf26ee2a854074670fbed9c2e7b1314ca96c8b6ae649ee74df5"
+    },
+    {
+      "file": "endpoint=observations/SP.POP.TOTL/page=1.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.POP.TOTL?date=2018%3A2024&source=2&format=json&per_page=25&page=1",
+      "sha256": "26469737fffa2c602cd8c26c4a1280762ab69e864c780b4261d70b98bb9dd389"
+    },
+    {
+      "file": "endpoint=observations/SP.POP.TOTL/page=2.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.POP.TOTL?date=2018%3A2024&source=2&format=json&per_page=25&page=2",
+      "sha256": "40677b0423eb72d97f66dd0a7705f42023104918ab69337b3177550ea898f8b3"
+    },
+    {
+      "file": "endpoint=observations/SP.POP.TOTL/page=3.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.POP.TOTL?date=2018%3A2024&source=2&format=json&per_page=25&page=3",
+      "sha256": "9c444631654f84755598f26a5adae301e80b851c4bc87563226d35e6542a46d4"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.MKTP.CD/page=1.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.MKTP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=1",
+      "sha256": "1e1140a612fcb0b4fe6f43e96fa1e9a21c8d85cc2f78f769734c657fee6abff5"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.MKTP.CD/page=2.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.MKTP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=2",
+      "sha256": "003c259ffb36ef1037900d2116071069920d7af57ce50895ffeb04181de5fa27"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.MKTP.CD/page=3.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.MKTP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=3",
+      "sha256": "7b1bf2cc361561877c084104bda0a40e1600d8cce89f81f519f05ec14eaab4f4"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.PCAP.CD/page=1.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.PCAP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=1",
+      "sha256": "26840aadba1e942ef79324925783ca4cc2c587201c252505966836bd8bc7bdd0"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.PCAP.CD/page=2.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.PCAP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=2",
+      "sha256": "613a09893c60b44a3a4a3a95fd9e84c4df6e08469caaa9f0a538417b35e97361"
+    },
+    {
+      "file": "endpoint=observations/NY.GDP.PCAP.CD/page=3.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/NY.GDP.PCAP.CD?date=2018%3A2024&source=2&format=json&per_page=25&page=3",
+      "sha256": "7d6ed637818e2eb9811fa91e10964fb5c4881725aacb4247877bb341ad4bdeec"
+    },
+    {
+      "file": "endpoint=observations/SP.DYN.LE00.IN/page=1.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.DYN.LE00.IN?date=2018%3A2024&source=2&format=json&per_page=25&page=1",
+      "sha256": "a582982a54e61c3a1c01d80695bab113c65410d13cd2f4f3006fa1e4b4fc8e20"
+    },
+    {
+      "file": "endpoint=observations/SP.DYN.LE00.IN/page=2.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.DYN.LE00.IN?date=2018%3A2024&source=2&format=json&per_page=25&page=2",
+      "sha256": "e96a2ca06a63d71d6f96f893b3fa500729132917f66727b9eaed5e7779924ec4"
+    },
+    {
+      "file": "endpoint=observations/SP.DYN.LE00.IN/page=3.json",
+      "url": "https://api.worldbank.org/v2/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF/indicator/SP.DYN.LE00.IN?date=2018%3A2024&source=2&format=json&per_page=25&page=3",
+      "sha256": "3017c5412ca53b821bad60e2fb3d468acd82079fcabb290676a57cdcf717d5fe"
+    }
+  ]
+}

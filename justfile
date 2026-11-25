@@ -12,3 +12,7 @@ check:
     uv run ruff format --check .
     uv run mypy
     uv run pytest
+
+# Re-record live API responses as test fixtures (calls the live API; commit separately).
+record-fixtures:
+    uv run python pipelines/worldbank/tests/record_fixtures.py

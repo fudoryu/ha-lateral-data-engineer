@@ -151,7 +151,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ANA-4 | TBD | TBD |
 | FR-DQ-1 | TBD | TBD |
 | FR-DQ-2 | TBD | TBD |
-| FR-DQ-3 | TBD | TBD |
+| FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
 | NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/landing.py` | `tests/test_landing.py` |
 | NFR-2 | TBD | TBD |
 | NFR-3 | Partial: API values never coerced (`src/worldbank/models.py`) | `tests/test_models.py` |
