@@ -9,12 +9,14 @@ How the source behaves, verified against the live API on **2026-11-24**. Each fi
 
 ## 1. Endpoints relevant to the requirements
 
-| Purpose | Request |
-|---|---|
-| Country metadata (FR-ING-1) | `/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF?format=json&per_page=50` |
-| Indicator metadata | `/indicator/SP.POP.TOTL?format=json` |
-| Observations (FR-ING-2) | `/country/BRA;CAN;…/indicator/SP.POP.TOTL?format=json&date=2018:2024&per_page=1000&source=2` |
-| Historical releases ("vintages") | `/sources/57/country/{iso3}/series/{code}/time/YR{year}/version/{yyyymm}?format=json` |
+| Purpose | Request | Pipeline name |
+|---|---|---|
+| Country metadata (FR-ING-1) | `/country/BRA;CAN;DEU;GBR;IND;JPN;MEX;USA;ZAF?format=json&per_page=50` | `countries` |
+| Indicator metadata | `/indicator/SP.POP.TOTL?format=json` | `indicators` |
+| Indicator values by country (FR-ING-2) | `/country/BRA;CAN;…/indicator/SP.POP.TOTL?format=json&date=2018:2024&per_page=1000&source=2` | `observations` |
+| Historical releases ("vintages") | `/sources/57/country/{iso3}/series/{code}/time/YR{year}/version/{yyyymm}?format=json` | not used by the pipeline |
+
+**Why the pipeline names differ from the API paths.** The API doesn't name its endpoints, only URL paths, and its documentation groups both indicator calls under "indicator queries". The values call isn't a separate resource: it's `indicator` nested under `country`. Naming landing folders after the path would give two calls named `indicator`, one returning a definition and one returning values. The pipeline therefore names each call by what it returns: `countries` (country metadata), `indicators` (indicator metadata), and `observations` (one value per country, indicator and year). These names appear in landing paths (`endpoint=<name>/`), manifests, and raw tables.
 
 Several countries can be requested in one call, separated by `;`. Several indicators can be too, when `source` is given: `/country/BRA;IND/indicator/SP.POP.TOTL;NY.GDP.MKTP.CD?format=json&source=2` returns both indicators, but `meta.sourceid` comes back as `null` in that case.
 
