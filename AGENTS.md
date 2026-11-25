@@ -20,6 +20,7 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 - Scope changes (countries, indicators, years) go in configuration, never in code (NFR-4).
 - Only `extract` calls the API; every other step reads from the landing zone `data/raw/` (ADR-0003).
 - The landing zone is the system of record; the warehouse is a rebuildable cache (ADR-0003).
+- API responses are validated before a run commits; validation never alters the landed bytes (ADR-0005).
 
 **Stack** (ADR-0001)
 - Python 3.14 managed by uv; run everything through `uv run`.

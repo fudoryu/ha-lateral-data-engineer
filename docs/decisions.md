@@ -10,6 +10,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted |
+| [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
 
 ---
 
@@ -132,3 +133,41 @@ Under ADR-0003, extract writes files to the landing zone before anything reads t
 - The manifest doubles as traceability evidence (NFR-1): a value traces to a file, and the file to its request URL, configuration and code version.
 - Failed runs leave debris that is harmless (ignored) and can be cleaned up explicitly.
 - The per-file hashes make integrity checks on load possible.
+
+---
+
+## ADR-0005: Validate configuration and API responses before committing a run
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ING-3, FR-ING-4, NFR-3, NFR-4, FR-DQ-1
+
+### Context
+The API reports errors with HTTP 200 ([source-system §3](source-system.md#3-errors-are-returned-with-http-200)), silently ignores an unsatisfiable `date` filter and returns every year ([§4](source-system.md#4-an-unsatisfiable-date-filter-is-silently-ignored)), and has inconsistent types such as `per_page` as a number or a string ([§2](source-system.md#2-response-shape)). An invalid configured code would therefore look like "all data missing", and out-of-scope years could leak in unnoticed.
+
+### Decision
+Validation happens during extract, **before the run's manifest is written** (ADR-0004), so a run that fails validation is never committed. It has four levels:
+
+1. **Configuration (pre-flight):** configured country and indicator codes are checked against the metadata responses before any observations are requested. Unknown codes fail fast.
+2. **Envelope:** each response is classified as an error body (`[{"message": [...]}]`), a page (`[meta, data]`), or an unexpected shape. Error bodies and unexpected shapes fail without retry.
+3. **Field contracts (Pydantic v2):**
+   - Strict where correctness depends on it: `value` must be a number or `null` and is never coerced, so `""` or `"N/A"` can't become 0 (NFR-3); `date` must be a four-digit year; ISO3 codes must be three uppercase letters.
+   - Lax where it's harmless: paging integers in `meta` accept `"50"` or `50`.
+   - Tolerant of extra fields: unknown fields are allowed, and logged and recorded in the manifest as warnings. A missing required field or a type change fails the run.
+4. **Request-level checks:**
+   - total rows across pages = `meta.total`
+   - all pages of one request share `meta.lastupdated` and `meta.total`; otherwise the whole request is refetched once, and fails if it still disagrees
+   - returned countries and years ⊆ the requested ones
+   - the indicator ID matches the request
+   - no duplicate (country, year) within a response
+
+Validation never alters the response bytes. The landing zone always holds exactly what the API returned. The loader runs the same validation again on replay.
+
+### Alternatives considered
+- **Check HTTP status only:** misses error bodies returned with HTTP 200.
+- **Strict schemas everywhere, failing on any extra field:** brittle against harmless API additions, while raw already keeps the full payload.
+- **Validate only later in SQL (dbt tests):** too late. A bad run would already be committed, and a configuration typo would look like missing data.
+
+### Consequences
+- Configuration typos, error bodies, out-of-range years and type changes stop a run before it commits.
+- Missing values stay `null` from the API through to the warehouse.
+- New categorical values (for example a new income level) and semantic changes (a unit change) aren't schema problems. They're left to data-quality tests in the transformation layer.
