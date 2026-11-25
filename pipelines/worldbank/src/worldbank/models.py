@@ -63,6 +63,12 @@ class Country(_Model):
     name: str
     region: CodedRef
     incomeLevel: CodedRef
+    # Known fields the pipeline doesn't use; declared so drift warnings only flag new fields.
+    adminregion: Any = None
+    lendingType: Any = None
+    capitalCity: Any = None
+    longitude: Any = None
+    latitude: Any = None
 
 
 class Indicator(_Model):
@@ -72,6 +78,7 @@ class Indicator(_Model):
     source: Ref
     sourceNote: str | None = None
     sourceOrganization: str | None = None
+    topics: Any = None  # known, unused
 
 
 class ApiErrorResponse(Exception):

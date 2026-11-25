@@ -158,6 +158,7 @@ def test_parses_country_metadata() -> None:
     page = parse_page(body([{**META, "per_page": "50"}, [country]]), Country)
 
     assert page.items[0].incomeLevel.id == "UMC"
+    assert page.warnings == []  # every field the live API sends is known
     assert (
         page.items[0].region.value == "Latin America & Caribbean "
     )  # kept raw; trimmed in staging
@@ -177,3 +178,4 @@ def test_parses_indicator_metadata() -> None:
     page = parse_page(body([{**META, "per_page": "50"}, [indicator]]), Indicator)
 
     assert page.items[0].source.id == "2"
+    assert page.warnings == []
