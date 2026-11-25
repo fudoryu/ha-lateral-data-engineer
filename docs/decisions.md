@@ -17,6 +17,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
 | [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
+| [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
 
 ---
 
@@ -380,3 +381,30 @@ FR-ANA-4 compares indicators across income groups **by year**. The World Bank re
 ### Consequences
 - Income-group comparisons for past years carry hindsight bias whenever a country changed group during 2018–2024. Whether any of the nine countries did can't be verified through the API, so the README states this as a caveat, not as a claim.
 - The bias grows as countries near the classification thresholds are added.
+
+---
+
+## ADR-0012: Test fixtures: recorded responses plus crafted scenarios
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-DQ-1, FR-DQ-3, FR-ING-3, FR-ING-4, NFR-2
+
+### Context
+Tests must run without the live API (FR-DQ-3), yet they need to exercise behavior live data doesn't show today: there are no missing values in the current scope ([source-system §6](source-system.md#6-missing-values)), and revisions, error bodies and torn pages can't be triggered on demand. Replay and idempotency tests (ADR-0006) need landing runs with valid manifests and hashes (ADR-0004) as input.
+
+### Decision
+- **Recorded fixtures:** the exact response bytes for the pipeline's real requests (ADR-0002), captured once from the live API by a dedicated recording command, using a small page size so the recordings genuinely span several pages. They're committed under `tests/fixtures/recorded/` with an index (request URL, recording date), treated as immutable, and re-recorded only deliberately, in their own commit.
+- **Crafted scenarios:** built by small Python helpers that modify the recorded baseline, not hand-written JSON files. Scenarios cover: a null value, a missing row, a revised value between runs, a row removed between runs, an HTTP 200 error body, a 5xx followed by success, retries exhausted, years outside the requested range, an unknown extra field, a missing required field, `lastupdated` mismatched across pages, and a tampered landing file.
+- **Two test levels:**
+  - **Ingestion tests** mock HTTP with `responses`, serving recorded or crafted bodies.
+  - **Replay and transformation tests** create their landing runs by running the real extract step against mocked HTTP into a temporary directory, then replay from it. Manifests and hashes are therefore always genuine; none are committed or edited by hand.
+
+### Alternatives considered
+- **Committing ready-made landing runs with manifests:** manifests and hashes would have to be maintained by hand and would drift from the real code path.
+- **One JSON file per crafted scenario:** dozens of near-identical files that drift apart and hide what each scenario changes.
+- **Reusing the ad-hoc samples from exploration:** they don't match the pipeline's exact requests. They stay local and uncommitted.
+
+### Consequences
+- Tests run offline and still use real response data, with all its quirks.
+- Each crafted scenario reads as a short, explicit change to the baseline.
+- Pre-commit hooks that rewrite files (such as end-of-file fixing) must exclude `tests/fixtures/recorded/`. That exclusion is added in the same commit that adds the recordings.

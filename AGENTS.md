@@ -34,7 +34,7 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 ## Guardrails
 
 - **Never call the live API in tests** (FR-DQ-3).
-- **Never hand-edit recorded API responses.**
+- **Never hand-edit recorded API responses** (`tests/fixtures/recorded/`); re-record them deliberately instead (ADR-0012).
 - **Never modify or delete committed landing runs**; current state comes from the latest committed run (ADR-0006).
 - **Never edit `docs/references/`.**
 - **No cloud resources, accounts, or credentials** (NFR-5).
