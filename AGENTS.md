@@ -12,6 +12,17 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 3. [`docs/decisions.md`](docs/decisions.md): accepted decisions and assumptions (ADR-*). Don't contradict one silently; add a superseding entry.
 4. [`docs/references/home-assessment.md`](docs/references/home-assessment.md): the original brief, immutable
 
+## Commands
+
+Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Optional: `just` (`uv tool install rust-just`).
+
+| Command | Fallback without `just` | Purpose |
+|---|---|---|
+| `just test` | `uv run pytest` | tests (offline) |
+| `just check` | see the `justfile` | lint + format check + type check + tests: **the definition of done** (ADR-0013) |
+
+One-time setup of git hooks: `uv run pre-commit install`. CLI: `uv run pipeline <source> <command>`, for example `uv run pipeline worldbank --help` (ADR-0014).
+
 ## Rules
 
 **Data** (from the requirements)
