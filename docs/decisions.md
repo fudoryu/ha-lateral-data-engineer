@@ -6,7 +6,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 
 | ID | Title | Kind | Status |
 |---|---|---|---|
-| [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted |
+| [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted (configuration library amended by ADR-0015) |
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted (path amended by ADR-0014) |
@@ -20,12 +20,13 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
+| [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 
 ---
 
 ## ADR-0001: Technology stack
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (configuration library amended by [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml))
 - **Serves:** NFR-5 (local only), NFR-6 (reproducible from a clean checkout), FR-MOD-1, FR-DQ-1
 
 ### Context
@@ -463,3 +464,25 @@ The repository starts with one source, the World Bank API, but the same research
 - Shared code is extracted into a common workspace package only once a second source actually needs it.
 - More structure than a single source strictly needs: two `pyproject.toml` files.
 - There is no umbrella command across sources; one could be added later as its own workspace project if needed.
+
+---
+
+## ADR-0015: Configuration is loaded with plain Pydantic and PyYAML
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-4, NFR-6 · **Amends:** ADR-0001 (configuration library)
+
+### Context
+ADR-0001 listed pydantic-settings for configuration. When implementing it, the pipeline turned out to have a single configuration source: a committed YAML file (`pipelines/worldbank/config.yml`), with no secrets and no per-environment differences. pydantic-settings' value is merging several sources (environment variables, `.env` files, secrets directories) with the environment taking precedence.
+
+### Decision
+- Configuration is a set of frozen **Pydantic** models (unknown keys rejected), read from YAML with **PyYAML** by an explicit `load_config(path)`.
+- The YAML file is the **only** configuration input: no environment-variable overrides.
+
+### Alternatives considered
+- **pydantic-settings (as in ADR-0001):** environment overrides would be unused locally, and they would let a stray environment variable silently change what gets fetched. A runtime-chosen file path also needs a custom source hook.
+
+### Consequences
+- A run is fully determined by the committed configuration file (plus the code version), which the manifest records.
+- One fewer dependency.
+- **Production upgrade path:** if deployments need per-environment overrides (for example base URL or retry counts in containers or Airflow), switch the top-level model to pydantic-settings' `BaseSettings`. The nested models stay unchanged.
