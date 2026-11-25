@@ -15,6 +15,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
 | [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
+| [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
 
 ---
 
@@ -328,3 +329,28 @@ Three analytics questions in the brief leave room for interpretation: what "late
 - Every reported value states its year (latest-year view) or its coverage (income-group view).
 - No year-over-year value is ever silently 0 or misleading. A null always comes with a reason.
 - The lower-middle income group currently contains only India, which the README must point out.
+
+---
+
+## ADR-0010: GDP consistency check with a 0.1% tolerance
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-DQ-2 · **Resolves:** Q6
+
+### Context
+FR-DQ-2 requires checking that related indicators are consistent with each other. Among the four indicators, one relationship is definitional: GDP ÷ population = GDP per capita. The brief doesn't say how close the values must be (Q6).
+
+Measured on the live data for the full scope (9 countries × 8 years, 72 combinations, fetched 2026-11-24): the largest relative difference between GDP ÷ population and the published GDP per capita was **below 0.000001%**. The World Bank derives GDP per capita from the same release's GDP and population.
+
+### Decision
+- For every country-year where all three values are present, the relative difference `|GDP ÷ population − GDP per capita| ÷ GDP per capita` must be **at most 0.1%**.
+- A violation is a data-quality test failure, which blocks publishing under write-audit-publish (ADR-0007).
+- Country-years with any of the three values missing are skipped by this check. Their gaps are reported by the completeness definitions (ADR-0008).
+
+### Alternatives considered
+- **A loose tolerance such as 2%:** would hide real problems, such as values from different releases being mixed, given that the measured gap is effectively zero.
+- **Exact equality:** fragile against floating-point rounding.
+
+### Consequences
+- The check catches mixed releases, a wrong unit, or a mismatched join, while ignoring rounding noise.
+- If the World Bank ever changes how it derives GDP per capita, the check will fail loudly and the tolerance must be revisited in a superseding record.
