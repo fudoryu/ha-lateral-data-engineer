@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: stg_worldbank__runs
+    description: One row per committed landing run.
+    columns:
+      - name: run_id
+        data_tests: [unique, not_null]
+      - name: committed_at
+        description: When the run's manifest was written (UTC).
+        data_tests: [not_null]
+
+  - name: stg_worldbank__expected_cells
+    description: >
+      Each run's expected set: configured countries x indicators x years, from the configuration
+      recorded with the run (ADR-0008, ADR-0016).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [run_id, country_iso3, indicator_id, observation_year]
+    columns:
+      - name: run_id
+        data_tests: [not_null]
+      - name: country_iso3
+        data_tests: [not_null]
+      - name: indicator_id
+        data_tests: [not_null]
+      - name: observation_year
+        data_tests: [not_null]
+
+  - name: stg_worldbank__observations
+    description: One row per observation returned by the API (run x country x indicator x year).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [run_id, country_iso3, indicator_id, observation_year]
+    columns:
+      - name: response_id
+        description: Landing path of the response page the row came from (NFR-1).
+        data_tests: [not_null]
+      - name: run_id
+        data_tests: [not_null]
+      - name: country_iso3
+        data_tests: [not_null]
+      - name: indicator_id
+        data_tests: [not_null]
+      - name: observation_year
+        data_tests: [not_null]
+      - name: indicator_value
+        description: "The value as published; null when the API returned a null value (NFR-3)."
+      - name: source_lastupdated
+        description: The source's `lastupdated` date for the release the value came from.
+
+  - name: stg_worldbank__countries
+    description: One row per run x country from the country endpoint.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [run_id, country_iso3]
+    columns:
+      - name: country_iso3
+        data_tests: [not_null]
+      - name: income_level_id
+        description: The current income classification at fetch time (source-system §8).
+        data_tests: [not_null]
+
+  - name: stg_worldbank__indicators
+    description: One row per run x indicator from the indicator endpoint.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [run_id, indicator_id]
+    columns:
+      - name: indicator_id
+        data_tests: [not_null]
+      - name: indicator_name
+        data_tests: [not_null]
