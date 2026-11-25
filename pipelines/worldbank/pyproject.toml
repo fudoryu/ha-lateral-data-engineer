@@ -6,6 +6,8 @@ requires-python = ">=3.14,<3.15"
 dependencies = [
     "pydantic>=2.14",
     "pyyaml>=6",
+    "requests>=2.34",
+    "tenacity>=9.2",
     "typer>=0.29",
 ]
 

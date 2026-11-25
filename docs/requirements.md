@@ -140,8 +140,8 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 |---|---|---|
 | FR-ING-1 | TBD | TBD |
 | FR-ING-2 | TBD | TBD |
-| FR-ING-3 | TBD | TBD |
-| FR-ING-4 | Partial: error bodies and malformed responses detected in `src/worldbank/models.py` | `tests/test_models.py` |
+| FR-ING-3 | `src/worldbank/client.py`: follows every page; checks page consistency and row totals | `tests/test_client.py` |
+| FR-ING-4 | Partial: transient errors retried with backoff (`src/worldbank/client.py`); error bodies and malformed responses detected (`src/worldbank/models.py`) | `tests/test_client.py`, `tests/test_models.py` |
 | FR-MOD-1 | TBD | TBD |
 | FR-MOD-2 | TBD | TBD |
 | FR-MOD-3 | TBD | TBD |
