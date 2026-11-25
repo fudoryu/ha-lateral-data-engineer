@@ -9,7 +9,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted |
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
-| [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted |
+| [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted (path amended by ADR-0014) |
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
@@ -19,6 +19,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted |
+| [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 
 ---
 
@@ -118,7 +119,7 @@ Transformations must be re-runnable, debuggable and testable without the live AP
 
 ## ADR-0004: A landing run is committed by writing its manifest last
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (landing path amended by [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace))
 - **Serves:** FR-ING-4, NFR-1, NFR-2
 
 ### Context
@@ -437,3 +438,27 @@ The time box is 4–6 hours and the brief prioritizes ingestion, the data model 
 - A reviewer needs only uv; `just` makes common commands shorter.
 - One command is the gate for every commit and for CI.
 - The recipes, CI workflow and agent-guide command table are introduced together with the code they run, not before.
+
+---
+
+## ADR-0014: One project per pipeline in a uv workspace
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-4, NFR-6 · **Amends:** ADR-0004 (landing path)
+
+### Context
+The repository starts with one source, the World Bank API, but the same research team could add other sources later. Each source has its own client, validation, landing and transformation logic, and may need different dependencies.
+
+### Decision
+- **uv workspace.** The repository root is the workspace root and the home of shared tooling (lint, type check, test configuration, pre-commit). Each pipeline is a **separate project** under `pipelines/<source>/` with its own `pyproject.toml`, `src/` and `tests/`. The first is `pipelines/worldbank/` (project `worldbank-pipeline`, package `worldbank_pipeline`). One `uv.lock` covers the whole workspace.
+- **One CLI, one sub-command per pipeline.** The root project provides the `pipeline` command and registers each pipeline as a sub-command: `pipeline worldbank <command>`.
+- **Landing path per source (amends ADR-0004):** landing runs live under `data/raw/<source>/run_id=<UTC timestamp>/`, for example `data/raw/worldbank/run_id=…/`. Everything else in ADR-0004 stands.
+
+### Alternatives considered
+- **Single package with a namespace per source (`src/pipelines/worldbank/`):** simpler, with one project and one dependency set, but sources can't have isolated dependencies, and the boundary between sources is a convention rather than a project boundary.
+- **Flat single-source project:** the least structure, but adding a second source would mean restructuring.
+
+### Consequences
+- A new source is a new folder under `pipelines/`, registered in the root CLI, without touching existing pipelines.
+- Shared code is extracted into a common workspace package only once a second source actually needs it.
+- More structure than a single source strictly needs: two `pyproject.toml` files and a CLI host at the root.
