@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from worldbank.landing import (
+    AlreadyCommitted,
     LandingRun,
     RequestRecord,
     committed_runs,
@@ -112,3 +113,18 @@ def test_a_run_folder_is_never_reused(tmp_path: Path) -> None:
 def test_config_hash_ignores_key_order() -> None:
     assert config_hash({"a": 1, "b": [1, 2]}) == config_hash({"b": [1, 2], "a": 1})
     assert config_hash({"a": 1}) != config_hash({"a": 2})
+
+
+def test_a_committed_run_is_immutable(tmp_path: Path) -> None:
+    run = write_and_commit(tmp_path)
+    manifest_before = (run.path / "manifest.json").read_bytes()
+
+    with pytest.raises(AlreadyCommitted):
+        run.write_page(
+            endpoint="countries", key=None, page=1, body=b"x", url="u", fetched_at=STARTED
+        )
+    with pytest.raises(AlreadyCommitted):
+        run.commit(
+            committed_at=COMMITTED, pipeline_version="0.1.0", git_sha=None, config={}, warnings=[]
+        )
+    assert (run.path / "manifest.json").read_bytes() == manifest_before

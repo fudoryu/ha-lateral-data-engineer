@@ -61,6 +61,10 @@ class Manifest(_Model):
     warnings: list[str]
 
 
+class AlreadyCommitted(Exception):
+    """A committed run is immutable: it can't be written to or committed again."""
+
+
 class CommittedRun(_Model):
     path: Path
     manifest: Manifest
@@ -103,6 +107,7 @@ class LandingRun:
         fetched_at: datetime,
     ) -> LandedFile:
         """Write one response page, byte for byte."""
+        self._ensure_open()
         relative = Path(f"endpoint={endpoint}")
         if key is not None:
             relative /= key
@@ -136,6 +141,7 @@ class LandingRun:
         warnings: list[str],
     ) -> Manifest:
         """Write the manifest last, atomically: this is what makes the run count."""
+        self._ensure_open()
         manifest = Manifest(
             run_id=self.run_id,
             started_at=self.started_at,
@@ -152,6 +158,10 @@ class LandingRun:
         temporary.write_text(manifest.model_dump_json(indent=2) + "\n", encoding="utf-8")
         os.replace(temporary, self.path / MANIFEST)
         return manifest
+
+    def _ensure_open(self) -> None:
+        if (self.path / MANIFEST).exists():
+            raise AlreadyCommitted(f"{self.path.name} is committed and immutable")
 
 
 def committed_runs(landing_root: Path) -> list[CommittedRun]:
