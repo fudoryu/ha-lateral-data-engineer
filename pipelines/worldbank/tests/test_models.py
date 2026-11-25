@@ -187,3 +187,46 @@ def test_unknown_fields_in_nested_objects_become_warnings() -> None:
     page = parse_page(body([META, [row]]), Observation)
 
     assert page.warnings == ["unknown field in response: Observation.indicator.brand_new"]
+
+
+@pytest.mark.parametrize("value", [0, -12.5, 1.5e13, 70.746, 211998573])
+def test_numeric_values_are_kept_as_is(value: float) -> None:
+    page = parse_page(body([META, [observation(value=value)]]), Observation)
+
+    assert page.items[0].value == value
+
+
+def test_invalid_lastupdated_fails() -> None:
+    with pytest.raises(UnexpectedResponse):
+        parse_page(body([{**META, "lastupdated": "yesterday"}, []]), Observation)
+
+
+def test_every_error_message_is_reported() -> None:
+    error = [
+        {
+            "message": [
+                {
+                    "id": "120",
+                    "key": "Invalid value",
+                    "value": "The provided parameter value is not valid",
+                },
+                {"id": "175", "key": "Invalid format", "value": "The indicator was not found"},
+            ]
+        }
+    ]
+
+    with pytest.raises(ApiErrorResponse, match=r"120 Invalid value.*175 Invalid format"):
+        parse_page(body(error), Observation)
+
+
+def test_lowercase_iso3_is_rejected() -> None:
+    with pytest.raises(UnexpectedResponse):
+        parse_page(body([META, [observation(countryiso3code="bra")]]), Observation)
+
+
+def test_unicode_is_preserved() -> None:
+    row = observation(country={"id": "CI", "value": "Côte d'Ivoire"})
+
+    page = parse_page(json.dumps([META, [row]], ensure_ascii=False).encode(), Observation)
+
+    assert page.items[0].country.value == "Côte d'Ivoire"

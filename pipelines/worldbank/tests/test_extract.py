@@ -249,3 +249,55 @@ def test_cli_reports_a_run_id_collision(tmp_path: Path, monkeypatch: pytest.Monk
 
     assert result.exit_code == 1
     assert "extract failed, nothing committed" in result.output
+
+
+@responses.activate
+def test_requests_are_made_in_order_with_the_right_parameters(tmp_path: Path) -> None:
+    mock_api()
+
+    run(tmp_path)
+
+    urls = [str(c.request.url) for c in responses.calls]
+    assert [u.split("?")[0].removeprefix(BASE) for u in urls] == [
+        "/country/BRA;IND",
+        "/indicator/SP.POP.TOTL",
+        "/country/BRA;IND/indicator/SP.POP.TOTL",
+    ]
+    assert "date=" not in urls[0] and "source=" not in urls[0]
+    assert "date=" not in urls[1]
+
+
+@responses.activate
+def test_manifest_records_the_resolved_config(tmp_path: Path) -> None:
+    mock_api()
+
+    manifest = run(tmp_path)
+
+    assert manifest.config == CONFIG.model_dump(mode="json")
+
+
+@responses.activate
+def test_cli_prints_warnings_to_stderr(tmp_path: Path) -> None:
+    mock_api(observation_meta=meta(4, brand_new="x"))
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(yaml.safe_dump(RAW))
+
+    result = CliRunner().invoke(
+        app, ["extract", "--config", str(config_path), "--data-dir", str(tmp_path)]
+    )
+
+    assert result.exit_code == 0
+    assert "warning: unknown field in response: Meta.brand_new" in result.stderr
+
+
+def test_git_sha_is_none_without_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess
+
+    from worldbank import cli
+
+    def no_git(*args: Any, **kwargs: Any) -> Any:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(subprocess, "run", no_git)
+
+    assert cli._git_sha() is None

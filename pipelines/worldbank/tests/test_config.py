@@ -83,3 +83,59 @@ def test_retry_backoff_bounds_are_checked() -> None:
 
     with pytest.raises(ValidationError, match="max_backoff_seconds"):
         Config.model_validate(raw)
+
+
+@pytest.mark.parametrize(
+    ("section", "key", "value", "valid"),
+    [
+        ("scope", "years", {"start": 1960, "end": 1960}, True),
+        ("scope", "years", {"start": 1959, "end": 2024}, False),
+        ("scope", "years", {"start": 2018, "end": 2101}, False),
+        ("api", "per_page", 32_500, True),
+        ("api", "per_page", 32_501, False),
+        ("api", "source", 0, False),
+        (
+            "api",
+            "retry",
+            {"attempts": 0, "initial_backoff_seconds": 1, "max_backoff_seconds": 1},
+            False,
+        ),
+        (
+            "api",
+            "retry",
+            {"attempts": 1, "initial_backoff_seconds": 2, "max_backoff_seconds": 2},
+            True,
+        ),
+        (
+            "api",
+            "retry",
+            {"attempts": 1, "initial_backoff_seconds": -1, "max_backoff_seconds": 2},
+            False,
+        ),
+        ("api", "timeout", {"connect_seconds": 0, "read_seconds": 30}, False),
+    ],
+)
+def test_boundaries(section: str, key: str, value: object, valid: bool) -> None:
+    raw = _valid()
+    raw[section][key] = value
+
+    if valid:
+        Config.model_validate(raw)
+    else:
+        with pytest.raises(ValidationError):
+            Config.model_validate(raw)
+
+
+def test_config_is_immutable() -> None:
+    config = Config.model_validate(_valid())
+
+    with pytest.raises(ValidationError):
+        config.scope.countries = ["USA"]
+
+
+def test_empty_file_is_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "config.yml"
+    path.write_text("")
+
+    with pytest.raises(ValidationError):
+        load_config(path)

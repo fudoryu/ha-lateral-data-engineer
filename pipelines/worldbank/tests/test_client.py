@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -209,3 +210,92 @@ def test_empty_result_is_one_page_with_no_items() -> None:
     add_page(1, json.dumps([meta, None]))
 
     assert client().fetch(PATH, Observation, {"source": 2}).items == []
+
+
+class RecordingSession(requests.Session):
+    def __init__(self) -> None:
+        super().__init__()
+        self.kwargs: list[dict[str, Any]] = []
+
+    def get(self, url: str | bytes, **kwargs: Any) -> requests.Response:
+        self.kwargs.append(kwargs)
+        return super().get(url, **kwargs)
+
+
+@responses.activate
+def test_configured_timeouts_are_sent_on_every_request() -> None:
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+    session = RecordingSession()
+
+    Client(api(), session=session, sleep=Sleeps()).fetch(PATH, Observation, {"source": 2})
+
+    assert session.kwargs[0]["timeout"] == (10, 30)
+
+
+@responses.activate
+def test_read_timeouts_are_retried() -> None:
+    responses.add(responses.GET, URL, body=requests.Timeout("read timed out"))
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+
+    assert len(client().fetch(PATH, Observation, {"source": 2}).items) == 1
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 404, 410])
+@responses.activate
+def test_no_client_error_is_retried(status: int) -> None:
+    add_page(1, "nope", status=status)
+
+    with pytest.raises(PermanentHTTPError, match=str(status)):
+        client().fetch(PATH, Observation, {"source": 2})
+    assert len(responses.calls) == 1
+
+
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+@responses.activate
+def test_every_server_error_is_retried(status: int) -> None:
+    add_page(1, "busy", status=status)
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+
+    assert len(client().fetch(PATH, Observation, {"source": 2}).items) == 1
+
+
+@responses.activate
+def test_callers_cannot_override_paging_parameters() -> None:
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+
+    client().fetch(PATH, Observation, {"source": 2, "format": "xml", "page": 9, "per_page": 1})
+
+    query = str(responses.calls[0].request.url)
+    assert "format=json" in query and "page=1" in query and "per_page=2" in query
+
+
+@responses.activate
+def test_base_url_trailing_slash_and_leading_path_slash_are_tolerated() -> None:
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+
+    result = Client(api(base_url=BASE + "/"), sleep=Sleeps()).fetch(
+        "/" + PATH, Observation, {"source": 2}
+    )
+
+    assert len(result.items) == 1
+
+
+@responses.activate
+def test_each_page_records_its_final_url_and_utc_fetch_time() -> None:
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+
+    [page] = client().fetch(PATH, Observation, {"source": 2}).pages
+
+    assert page.url.startswith(URL + "?") and "source=2" in page.url
+    assert page.fetched_at.utcoffset() == timedelta(0)
+
+
+@responses.activate
+def test_warnings_are_collected_across_pages_without_duplicates() -> None:
+    extra = {**row("BRA", 2024), "footnote": "x"}
+    add_page(1, page_body(1, 2, 2, [extra]))
+    add_page(2, page_body(2, 2, 2, [{**row("IND", 2024), "footnote": "y"}]))
+
+    result = client().fetch(PATH, Observation, {"source": 2})
+
+    assert result.warnings == ["unknown field in response: Observation.footnote"]

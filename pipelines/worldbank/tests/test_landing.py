@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -128,3 +128,48 @@ def test_a_committed_run_is_immutable(tmp_path: Path) -> None:
             committed_at=COMMITTED, pipeline_version="0.1.0", git_sha=None, config={}, warnings=[]
         )
     assert (run.path / "manifest.json").read_bytes() == manifest_before
+
+
+def test_committed_runs_round_trip_the_manifest(tmp_path: Path) -> None:
+    run = write_and_commit(tmp_path)
+
+    [loaded] = committed_runs(tmp_path)
+
+    assert loaded.path == run.path
+    assert loaded.manifest.files[0].sha256 == hashlib.sha256(BODY).hexdigest()
+    assert loaded.manifest.started_at == STARTED
+
+
+def test_a_corrupt_manifest_fails_loudly(tmp_path: Path) -> None:
+    """A committed run that can't be read is an integrity problem, not an incomplete run."""
+    run = write_and_commit(tmp_path)
+    (run.path / "manifest.json").write_text("{ not json")
+
+    with pytest.raises(ValueError):
+        committed_runs(tmp_path)
+
+
+def test_unrelated_entries_in_the_landing_root_are_ignored(tmp_path: Path) -> None:
+    write_and_commit(tmp_path)
+    (tmp_path / "notes.txt").write_text("hello")
+    (tmp_path / "scratch").mkdir()
+
+    assert len(committed_runs(tmp_path)) == 1
+
+
+def test_run_ids_are_utc_even_for_local_times() -> None:
+    sao_paulo = timezone(timedelta(hours=-3))
+
+    assert new_run_id(datetime(2026, 11, 24, 15, 30, tzinfo=sao_paulo)) == "2026-11-24T18-30-00Z"
+
+
+def test_non_ascii_bytes_are_kept_exactly(tmp_path: Path) -> None:
+    body = '[{"page":1},[{"name":"Côte d\'Ivoire"}]]'.encode()
+    run = LandingRun.start(tmp_path, STARTED)
+
+    landed = run.write_page(
+        endpoint="countries", key=None, page=1, body=body, url="u", fetched_at=STARTED
+    )
+
+    assert (tmp_path / landed.response_id).read_bytes() == body
+    assert landed.bytes == len(body)
