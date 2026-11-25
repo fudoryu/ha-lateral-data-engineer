@@ -9,6 +9,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted |
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
+| [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted |
 
 ---
 
@@ -103,3 +104,31 @@ Transformations must be re-runnable, debuggable and testable without the live AP
 - Tests exercise load and transform from landed files without the API.
 - Locally, the landing zone maps directly to an S3 landing bucket in production.
 - Needs a rule for when a landing run counts as complete; see the next decision.
+
+---
+
+## ADR-0004: A landing run is committed by writing its manifest last
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ING-4, NFR-1, NFR-2
+
+### Context
+Under ADR-0003, extract writes files to the landing zone before anything reads them. If a run crashes or fails validation halfway, its folder holds a partial set of files. The loader needs an unambiguous rule for which runs are complete, and the rule should work the same on local disk and on S3 in production.
+
+### Decision
+- Each run writes into its own folder, `data/raw/run_id=<UTC timestamp>/`, one file per response page with the exact response bytes.
+- When every request has succeeded and passed validation, the run writes **`manifest.json` last**. **The manifest's existence is the commit.** Locally it's written to a temporary name and renamed in the same folder, so the manifest itself is never half-written. On S3, a single object upload is already atomic.
+- The manifest records: `run_id`, start and commit timestamps, the pipeline version (git SHA), the resolved configuration and its hash, every request (URL, page count, `meta.total`, `lastupdated`), every file (path, sha256, size), and any validation warnings.
+- **The loader only reads runs that have a valid manifest, and only the files the manifest lists.** A run without a manifest is incomplete: it's ignored, and its files stay on disk for debugging.
+
+### Alternatives considered
+- **`_SUCCESS` marker file:** the Hadoop-era convention. It marks completion but carries no information: no file list, no hashes, no request details.
+- **Write to a temporary folder, then rename it:** readers never see a partial folder, but renaming isn't atomic on S3 (copy + delete), so it doesn't carry over to production.
+- **Iceberg or Delta table commits:** the modern standard for tables, but overkill for a folder of raw JSON pages.
+- **Commit status in a warehouse table:** contradicts ADR-0003, since the warehouse is a rebuildable cache and the commit state must live with the files.
+
+### Consequences
+- One mechanism behaves identically locally and on S3.
+- The manifest doubles as traceability evidence (NFR-1): a value traces to a file, and the file to its request URL, configuration and code version.
+- Failed runs leave debris that is harmless (ignored) and can be cleaned up explicitly.
+- The per-file hashes make integrity checks on load possible.
