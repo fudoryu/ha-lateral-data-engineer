@@ -117,7 +117,7 @@ class Client:
         retrying = Retrying(
             stop=stop_after_attempt(retry.attempts),
             wait=wait_exponential_jitter(
-                initial=retry.initial_backoff_seconds, max=retry.max_backoff_seconds
+                multiplier=retry.initial_backoff_seconds, max=retry.max_backoff_seconds
             ),
             retry=retry_if_exception_type(
                 (TransientHTTPError, requests.ConnectionError, requests.Timeout)
