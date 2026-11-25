@@ -21,6 +21,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
+| [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
 
 ---
 
@@ -486,3 +487,40 @@ ADR-0001 listed pydantic-settings for configuration. When implementing it, the p
 - A run is fully determined by the committed configuration file (plus the code version), which the manifest records.
 - One fewer dependency.
 - **Production upgrade path:** if deployments need per-environment overrides (for example base URL or retry counts in containers or Airflow), switch the top-level model to pydantic-settings' `BaseSettings`. The nested models stay unchanged.
+
+---
+
+## ADR-0016: dbt project layout, layers and naming
+
+- **Date:** 2026-11-25 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-1, FR-MOD-2, FR-MOD-3, NFR-4, NFR-5
+
+### Context
+ADR-0001 chose dbt-core and dbt-duckdb for transformation. Before writing models, the project needs a structure: where it lives, how layers are separated in a single DuckDB file, how models and columns are named, and where transformation-only parameters (such as how each indicator is aggregated) are configured.
+
+### Decision
+- **Location:** one dbt project per pipeline, at `pipelines/worldbank/dbt/`, with an in-repo `profiles.yml` (no credentials; the warehouse path comes from the `WORLDBANK_WAREHOUSE` environment variable, defaulting to `data/warehouse/worldbank.duckdb`).
+- **dbt Core 1.x**, pinned by `uv.lock`. dbt v2 is out, but ADR-0001 was checked against dbt-core and dbt-duckdb 1.x, which support Python 3.14.
+- **Layers are schemas in one database file:** `raw` (written by the Python loader), `staging`, `intermediate`, `marts`, `reporting`. Schema names are used as is, without dbt's default target-schema prefix. One file keeps write-audit-publish (ADR-0007) a single atomic rename, and maps one-to-one to schemas in one Snowflake database.
+- **Materializations:** staging and intermediate are views; marts and reporting are tables.
+- **Model names keep a layer prefix** even though the schema already shows the layer: `ref()` resolves by model name only, so names must be unique across the project, and the prefix shows the layer wherever the schema isn't visible. One name per object everywhere (file, `ref()`, table, CSV, docs), with no aliases.
+  - Staging: `stg_<source>__<entities>` (one model per source entity; renaming, casting and flattening only).
+  - Intermediate: `int_<entities>_<verb>`.
+  - Marts: Kimball-style `dim_<entity>` and `fct_<process>`, because the model is a star schema and the prefix states the grain at a glance.
+  - Reporting: `rpt_<question>`, one model per analytics output.
+- **Column names:** snake_case, no reserved words (the API's `date` and `value` become `observation_year` and `indicator_value`), `_id` for keys, `is_`/`has_` for booleans, `_at` for UTC timestamps; the same concept has the same name in every model.
+- **The expected set comes from the run's own configuration**, recorded in its manifest and loaded into `raw.landing_runs` (ADR-0004), not from the current `config.yml`. Replaying an older run therefore uses the scope that run was asked for.
+- **How each indicator is aggregated by income group** (ADR-0009) is a documented parameter: the seed `indicator_aggregations.csv` (`sum`, `weighted_mean` or `ratio`, with the related indicators). A test fails if a configured indicator has no aggregation method, so adding an indicator means one configuration entry plus one seed row (NFR-4).
+- **No dbt packages:** the few generic tests needed beyond dbt's built-ins are small macros in the project, so `dbt deps` and network access are never needed.
+
+### Alternatives considered
+- **One database file per layer (`ATTACH`):** mirrors Snowflake databases, but write-audit-publish would need several renames and there's no benefit at this size.
+- **Plain entity names in marts (dbt Labs' current guide):** fine for wide denormalized marts; `dim_`/`fct_` communicates our star schema better.
+- **Aliases for clean table names:** two names per object to translate between while debugging.
+- **The expected set from the current `config.yml`, passed as a dbt variable:** replaying an older run would be judged against a scope it was never asked for.
+- **`dbt_utils`:** convenient, but a dependency and a network fetch for one or two tests.
+
+### Consequences
+- Analysts query `marts.*` and `reporting.*`; `staging` and `intermediate` are implementation details.
+- DuckDB has no roles or grants, so layer boundaries are a convention locally; in Snowflake they become access controls (production note).
+- Every model above staging uses portable SQL (ADR-0001 portability rule).
