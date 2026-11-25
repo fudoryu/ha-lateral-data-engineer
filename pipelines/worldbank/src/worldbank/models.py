@@ -142,5 +142,14 @@ def parse_page[T: BaseModel](body: bytes, item_model: type[T]) -> Page[T]:
 def _unknown_fields(meta: Meta, items: list[Any]) -> list[str]:
     found: set[str] = set()
     for model in [meta, *items]:
-        found.update(f"{type(model).__name__}.{key}" for key in (model.model_extra or {}))
+        _collect_unknown(model, type(model).__name__, found)
     return [f"unknown field in response: {name}" for name in sorted(found)]
+
+
+def _collect_unknown(model: BaseModel, path: str, found: set[str]) -> None:
+    """Record extra keys on `model` and on every nested model, as dotted paths."""
+    found.update(f"{path}.{key}" for key in (model.model_extra or {}))
+    for name in type(model).model_fields:
+        value = getattr(model, name)
+        if isinstance(value, BaseModel):
+            _collect_unknown(value, f"{path}.{name}", found)

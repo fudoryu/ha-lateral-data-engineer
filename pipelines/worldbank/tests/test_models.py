@@ -179,3 +179,11 @@ def test_parses_indicator_metadata() -> None:
 
     assert page.items[0].source.id == "2"
     assert page.warnings == []
+
+
+def test_unknown_fields_in_nested_objects_become_warnings() -> None:
+    row = observation(indicator={"id": "SP.POP.TOTL", "value": "Population, total", "brand_new": 1})
+
+    page = parse_page(body([META, [row]]), Observation)
+
+    assert page.warnings == ["unknown field in response: Observation.indicator.brand_new"]
