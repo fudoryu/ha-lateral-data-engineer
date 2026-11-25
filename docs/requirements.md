@@ -152,7 +152,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-1 | TBD | TBD |
 | FR-DQ-2 | TBD | TBD |
 | FR-DQ-3 | TBD | TBD |
-| NFR-1 | TBD | TBD |
+| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/landing.py` | `tests/test_landing.py` |
 | NFR-2 | TBD | TBD |
 | NFR-3 | Partial: API values never coerced (`src/worldbank/models.py`) | `tests/test_models.py` |
 | NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` | `tests/test_config.py` |
