@@ -1,0 +1,24 @@
+# World Bank pipeline configuration. Scope changes go here, never in code (NFR-4).
+
+api:
+  base_url: https://api.worldbank.org/v2
+  source: 2                    # World Development Indicators, always pinned (ADR-0002)
+  per_page: 1000
+  timeout:
+    connect_seconds: 10
+    read_seconds: 30
+  retry:
+    attempts: 5                # total attempts per request, including the first (ADR-0007)
+    initial_backoff_seconds: 1
+    max_backoff_seconds: 30
+
+scope:
+  countries: [BRA, CAN, DEU, GBR, IND, JPN, MEX, USA, ZAF]
+  indicators:
+    - SP.POP.TOTL              # Population, total
+    - NY.GDP.MKTP.CD           # GDP, current US$
+    - NY.GDP.PCAP.CD           # GDP per capita, current US$
+    - SP.DYN.LE00.IN           # Life expectancy at birth, total years
+  years:
+    start: 2018
+    end: 2024

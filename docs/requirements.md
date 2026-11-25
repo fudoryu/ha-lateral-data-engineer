@@ -134,15 +134,30 @@ These are not answered by the brief. Each is resolved by a decision or assumptio
 
 ## 10. Requirements traceability matrix
 
-To be filled in during implementation.
+Updated as requirements are implemented. Paths are relative to `pipelines/worldbank/` unless they start with `pipelines/` or `docs/`.
 
 | Requirement | Implemented in | Verified by |
 |---|---|---|
-| FR-ING-1 … FR-ING-4 | TBD | TBD |
-| FR-MOD-1 … FR-MOD-3 | TBD | TBD |
-| FR-ANA-1 … FR-ANA-4 | TBD | TBD |
-| FR-DQ-1 … FR-DQ-3 | TBD | TBD |
-| NFR-1 … NFR-6 | TBD | TBD |
+| FR-ING-1 | TBD | TBD |
+| FR-ING-2 | TBD | TBD |
+| FR-ING-3 | TBD | TBD |
+| FR-ING-4 | TBD | TBD |
+| FR-MOD-1 | TBD | TBD |
+| FR-MOD-2 | TBD | TBD |
+| FR-MOD-3 | TBD | TBD |
+| FR-ANA-1 | TBD | TBD |
+| FR-ANA-2 | TBD | TBD |
+| FR-ANA-3 | TBD | TBD |
+| FR-ANA-4 | TBD | TBD |
+| FR-DQ-1 | TBD | TBD |
+| FR-DQ-2 | TBD | TBD |
+| FR-DQ-3 | TBD | TBD |
+| NFR-1 | TBD | TBD |
+| NFR-2 | TBD | TBD |
+| NFR-3 | TBD | TBD |
+| NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` | `tests/test_config.py` |
+| NFR-5 | TBD | TBD |
+| NFR-6 | TBD | TBD |
 
 ## 11. Deliverables
 
