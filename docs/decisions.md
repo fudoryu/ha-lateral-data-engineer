@@ -12,6 +12,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted |
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
+| [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 
 ---
 
@@ -203,3 +204,37 @@ The World Bank revises past values silently between releases ([source-system §7
 - Replay as of any earlier committed run gives point-in-time state.
 - Tests must prove it: replaying twice gives identical tables, two identical runs give identical tables, a changed value updates current state and creates a new version, a removed row shows as missing, and a tampered landing file fails the run.
 - Rebuilding from every run doesn't scale indefinitely. The production note covers refreshes triggered by the source's `lastupdated` (still re-pulling the full history window), plus retention and compaction of landing runs.
+
+---
+
+## ADR-0007: All-or-nothing runs and write-audit-publish
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ING-4, FR-DQ-1, NFR-2, NFR-3
+
+### Context
+Two failure modes would hurt analysts:
+- **A partially successful extract.** If one indicator fails, a first run would show it as "missing", indistinguishable from data genuinely missing at the source (NFR-3). Later runs would mix snapshots, breaking ADR-0006's "latest run is a complete snapshot".
+- **A data-quality failure mid-transformation.** dbt stops downstream models when a test fails, but models already rebuilt stay rebuilt, leaving analytical tables half-updated.
+
+### Decision
+**Extract is all-or-nothing:**
+- Transient failures (timeouts, connection errors, HTTP 429 and 5xx) are retried with exponential backoff and jitter, up to a configured number of attempts.
+- Error bodies and contract violations (ADR-0005) aren't retried.
+- If any request ultimately fails, the run isn't committed (no manifest, per ADR-0004), nothing new is loaded, and the command exits with a non-zero code and a clear error.
+
+**Transformation uses write-audit-publish:**
+1. **Write:** load raw tables and run the dbt models into a new warehouse file, `warehouse.next.duckdb`.
+2. **Audit:** run every data-quality test against it.
+3. **Publish:** only if every test passes, atomically rename it to the live warehouse file, then export the reporting outputs.
+
+On any failure, the previous warehouse and outputs stay untouched, and the failed `.next` file is kept for debugging.
+
+### Alternatives considered
+- **Partial success (commit the indicators that worked):** friendlier on paper, but it needs a separate "not ingested" status and per-indicator snapshot selection, and missing data at the source becomes ambiguous. With about 6 requests and a run measured in seconds, re-running is cheap.
+- **Build in place, without write-audit-publish:** simpler, but a failed test leaves half-updated tables visible to analysts.
+
+### Consequences
+- Analysts only ever see data from a complete run that passed every check.
+- Possible because the warehouse is a rebuildable cache (ADR-0003): building a fresh copy costs seconds.
+- In production this maps to one orchestrator task per indicator, with per-task retries and freshness alerts, and to write-audit-publish in Snowflake via a cloned schema plus `ALTER SCHEMA … SWAP WITH`, or via Iceberg branches.
