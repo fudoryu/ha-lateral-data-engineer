@@ -9,7 +9,8 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 **Read in this order:**
 1. [`docs/requirements.md`](docs/requirements.md): what and why, IDs (FR-*, NFR-*, Q*), deliverables (§11)
 2. [`docs/source-system.md`](docs/source-system.md): verified World Bank API behavior (errors, quirks, silent revisions)
-3. [`docs/references/home-assessment.md`](docs/references/home-assessment.md): the original brief, immutable
+3. [`docs/decisions.md`](docs/decisions.md): accepted decisions and assumptions (ADR-*). Don't contradict one silently; add a superseding entry.
+4. [`docs/references/home-assessment.md`](docs/references/home-assessment.md): the original brief, immutable
 
 ## Rules
 
@@ -18,9 +19,13 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 - Every output value is traceable to the API response it came from (NFR-1).
 - Scope changes (countries, indicators, years) go in configuration, never in code (NFR-4).
 
+**Stack** (ADR-0001)
+- Python 3.14 managed by uv; run everything through `uv run`.
+- Dialect-specific SQL only in the staging layer and the raw loader; everything above staging stays portable.
+
 **Commits** (Conventional Commits; the hook enforces the format)
 - Scopes: `ingestion`, `storage`, `transformation`, `serving`, `config`, `docs`, `repo`.
-- Reference requirement IDs in the body, for example `Implements FR-ING-3.`
+- Reference requirement and decision IDs in the body, for example `Implements FR-ING-3; see ADR-0001.`
 - Commit small, in the brief's priority order (requirements §8). Never squash: the history is a deliverable.
 
 ## Guardrails
