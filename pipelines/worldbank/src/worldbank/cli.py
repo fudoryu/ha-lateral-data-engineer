@@ -1,10 +1,14 @@
-"""`pipeline worldbank <command>`."""
+"""Command-line entry point: `uv run worldbank <command>`."""
 
 import typer
 
-from worldbank_pipeline import __version__
+from worldbank import __version__
 
-app = typer.Typer(help="World Bank country indicators pipeline.", no_args_is_help=True)
+app = typer.Typer(
+    help="World Bank country indicators pipeline.",
+    no_args_is_help=True,
+    add_completion=False,
+)
 
 
 @app.callback()

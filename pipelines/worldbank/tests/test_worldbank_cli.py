@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
-from worldbank_pipeline import __version__
-from worldbank_pipeline.cli import app
+from worldbank import __version__
+from worldbank.cli import app
 
 runner = CliRunner()
 

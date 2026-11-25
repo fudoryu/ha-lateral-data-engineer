@@ -1,16 +1,13 @@
+# Workspace root: shared tooling and configuration only. All code lives in pipelines/<source>/ (ADR-0014).
 [project]
 name = "data-pipelines"
 version = "0.1.0"
-description = "Workspace root: the `pipeline` CLI and shared tooling for each source pipeline."
+description = "Workspace root for the source pipelines under pipelines/."
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
 dependencies = [
-    "typer>=0.29",
-    "worldbank-pipeline",
+    "worldbank",
 ]
-
-[project.scripts]
-pipeline = "pipeline_cli.cli:app"
 
 [dependency-groups]
 dev = [
@@ -20,18 +17,14 @@ dev = [
     "ruff>=0.17",
 ]
 
-[build-system]
-requires = ["uv_build>=0.10,<0.14"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-name = "pipeline_cli"
+[tool.uv]
+package = false
 
 [tool.uv.workspace]
 members = ["pipelines/*"]
 
 [tool.uv.sources]
-worldbank-pipeline = { workspace = true }
+worldbank = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -41,12 +34,12 @@ target-version = "py314"
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pipeline_cli", "worldbank_pipeline"]
+known-first-party = ["worldbank"]
 
 [tool.mypy]
 strict = true
-files = ["src", "tests", "pipelines/worldbank/src", "pipelines/worldbank/tests"]
+files = ["pipelines/worldbank/src", "pipelines/worldbank/tests"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "pipelines/worldbank/tests"]
+testpaths = ["pipelines/worldbank/tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]

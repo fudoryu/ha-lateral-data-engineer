@@ -450,8 +450,8 @@ The time box is 4–6 hours and the brief prioritizes ingestion, the data model 
 The repository starts with one source, the World Bank API, but the same research team could add other sources later. Each source has its own client, validation, landing and transformation logic, and may need different dependencies.
 
 ### Decision
-- **uv workspace.** The repository root is the workspace root and the home of shared tooling (lint, type check, test configuration, pre-commit). Each pipeline is a **separate project** under `pipelines/<source>/` with its own `pyproject.toml`, `src/` and `tests/`. The first is `pipelines/worldbank/` (project `worldbank-pipeline`, package `worldbank_pipeline`). One `uv.lock` covers the whole workspace.
-- **One CLI, one sub-command per pipeline.** The root project provides the `pipeline` command and registers each pipeline as a sub-command: `pipeline worldbank <command>`.
+- **uv workspace.** The repository root is a virtual workspace project: shared tooling and configuration only (lint, type check, test configuration, pre-commit), with no code of its own. Each pipeline is a **separate project** under `pipelines/<source>/` with its own `pyproject.toml`, `src/` and `tests/`. The first is `pipelines/worldbank/` (project and package `worldbank`). One `uv.lock` covers the whole workspace.
+- **One command per pipeline.** Each pipeline provides its own command, named after its source: `worldbank <command>`.
 - **Landing path per source (amends ADR-0004):** landing runs live under `data/raw/<source>/run_id=<UTC timestamp>/`, for example `data/raw/worldbank/run_id=…/`. Everything else in ADR-0004 stands.
 
 ### Alternatives considered
@@ -459,6 +459,7 @@ The repository starts with one source, the World Bank API, but the same research
 - **Flat single-source project:** the least structure, but adding a second source would mean restructuring.
 
 ### Consequences
-- A new source is a new folder under `pipelines/`, registered in the root CLI, without touching existing pipelines.
+- A new source is a new folder under `pipelines/` with its own command, without touching existing pipelines.
 - Shared code is extracted into a common workspace package only once a second source actually needs it.
-- More structure than a single source strictly needs: two `pyproject.toml` files and a CLI host at the root.
+- More structure than a single source strictly needs: two `pyproject.toml` files.
+- There is no umbrella command across sources; one could be added later as its own workspace project if needed.

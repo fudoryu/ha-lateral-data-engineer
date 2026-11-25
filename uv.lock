@@ -5,7 +5,7 @@ requires-python = "==3.14.*"
 [manifest]
 members = [
     "data-pipelines",
-    "worldbank-pipeline",
+    "worldbank",
 ]
 
 [[package]]
@@ -110,10 +110,9 @@ wheels = [
 [[package]]
 name = "data-pipelines"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
-    { name = "typer" },
-    { name = "worldbank-pipeline" },
+    { name = "worldbank" },
 ]
 
 [package.dev-dependencies]
@@ -125,10 +124,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "typer", specifier = ">=0.29" },
-    { name = "worldbank-pipeline", editable = "pipelines/worldbank" },
-]
+requires-dist = [{ name = "worldbank", editable = "pipelines/worldbank" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -557,7 +553,7 @@ wheels = [
 ]
 
 [[package]]
-name = "worldbank-pipeline"
+name = "worldbank"
 version = "0.1.0"
 source = { editable = "pipelines/worldbank" }
 dependencies = [

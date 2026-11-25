@@ -21,7 +21,7 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 | `just test` | `uv run pytest` | tests (offline) |
 | `just check` | see the `justfile` | lint + format check + type check + tests: **the definition of done** (ADR-0013) |
 
-One-time setup of git hooks: `uv run pre-commit install`. CLI: `uv run pipeline <source> <command>`, for example `uv run pipeline worldbank --help` (ADR-0014).
+One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has its own command, for example `uv run worldbank --help` (ADR-0014).
 
 ## Rules
 
