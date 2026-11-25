@@ -141,7 +141,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ING-1 | TBD | TBD |
 | FR-ING-2 | TBD | TBD |
 | FR-ING-3 | TBD | TBD |
-| FR-ING-4 | TBD | TBD |
+| FR-ING-4 | Partial: error bodies and malformed responses detected in `src/worldbank/models.py` | `tests/test_models.py` |
 | FR-MOD-1 | TBD | TBD |
 | FR-MOD-2 | TBD | TBD |
 | FR-MOD-3 | TBD | TBD |
@@ -154,7 +154,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-3 | TBD | TBD |
 | NFR-1 | TBD | TBD |
 | NFR-2 | TBD | TBD |
-| NFR-3 | TBD | TBD |
+| NFR-3 | Partial: API values never coerced (`src/worldbank/models.py`) | `tests/test_models.py` |
 | NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` | `tests/test_config.py` |
 | NFR-5 | TBD | TBD |
 | NFR-6 | TBD | TBD |
