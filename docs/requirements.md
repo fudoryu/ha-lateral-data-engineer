@@ -124,7 +124,7 @@ These are not answered by the brief. Each is resolved by a decision or assumptio
 
 | ID | Question | Resolved by |
 |---|---|---|
-| Q1 | What counts as **"incomplete"** compared with "missing"? (A null value? An absent row? Partial coverage across years?) | Open |
+| Q1 | What counts as **"incomplete"** compared with "missing"? (A null value? An absent row? Partial coverage across years?) | [ADR-0008](decisions.md#adr-0008-definitions-of-missing-and-incomplete-data) |
 | Q2 | Does **"latest available year"** mean each country's own latest year, or one common year across countries? | Open |
 | Q3 | Which **income-group classification** applies to each year? (The API provides only the current classification.) | Open |
 | Q4 | How should **income groups be aggregated** (sum, mean, population-weighted), and how are countries with missing data handled? | Open |

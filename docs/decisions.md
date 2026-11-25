@@ -13,6 +13,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
+| [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
 
 ---
 
@@ -238,3 +239,45 @@ On any failure, the previous warehouse and outputs stay untouched, and the faile
 - Analysts only ever see data from a complete run that passed every check.
 - Possible because the warehouse is a rebuildable cache (ADR-0003): building a fresh copy costs seconds.
 - In production this maps to one orchestrator task per indicator, with per-task retries and freshness alerts, and to write-audit-publish in Snowflake via a cloned schema plus `ALTER SCHEMA … SWAP WITH`, or via Iceberg branches.
+
+---
+
+## ADR-0008: Definitions of missing and incomplete data
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-1, NFR-3 · **Resolves:** Q1
+
+### Context
+FR-ANA-1 asks which country-indicator-year combinations are "missing or incomplete", but the brief doesn't define either term. The source signals missing data in two different ways: a row with `"value": null`, or no row at all ([source-system §6](source-system.md#6-missing-values)). Missing data must never be treated as zero (NFR-3).
+
+### Decision
+Completeness is measured against the **expected set**: every configured country × configured indicator × reporting year (2018–2024), regardless of what the API returned.
+
+- **Cell level** (one country, indicator, year):
+
+  | Status | Meaning |
+  |---|---|
+  | `present` | the API returned a numeric value |
+  | `null_value` | the API returned the row with `"value": null` |
+  | `missing_row` | the API returned no row for this combination |
+
+- **Series level** (one country × indicator across the reporting years):
+
+  | Status | Meaning |
+  |---|---|
+  | `complete` | every expected year is `present` |
+  | `incomplete` | some, but not all, expected years are `present` |
+  | `missing` | no expected year is `present` |
+
+  Each series also reports `n_present` and `n_expected`.
+
+**This resolves Q1:** "missing" refers to a cell (or a whole series) with no value; "incomplete" refers to a series with partial coverage.
+
+### Alternatives considered
+- **Cell level only:** answers "which combinations", but makes partial coverage across years hard to see at a glance.
+- **Treat `null_value` and `missing_row` as one status:** simpler, but hides a real difference in how the source reports gaps, which can matter when investigating a source issue.
+
+### Consequences
+- The completeness report covers every expected combination, including ones the API never mentioned.
+- Adding a country or indicator in configuration automatically extends the expected set (NFR-4).
+- Today's live data is fully `present` ([source-system §6](source-system.md#6-missing-values)), so `null_value`, `missing_row` and `incomplete` must be proven with crafted test fixtures.
