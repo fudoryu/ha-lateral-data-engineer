@@ -11,6 +11,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted |
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
+| [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
 
 ---
 
@@ -171,3 +172,34 @@ Validation never alters the response bytes. The landing zone always holds exactl
 - Configuration typos, error bodies, out-of-range years and type changes stop a run before it commits.
 - Missing values stay `null` from the API through to the warehouse.
 - New categorical values (for example a new income level) and semantic changes (a unit change) aren't schema problems. They're left to data-quality tests in the transformation layer.
+
+---
+
+## ADR-0006: Fetch the full scope every run, keep every run, latest run wins
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-1, NFR-2, FR-DQ-1 · **Resolves:** Q7
+
+### Context
+The World Bank revises past values silently between releases ([source-system §7](source-system.md#7-past-values-are-revised-silently)): India's 2019 population moved by 22.6 million between releases, and Brazil's 2018 GDP by 1.7%. The API gives no per-value change signal, only a source-level `lastupdated` date. So "unchanged source data" (NFR-2) can't be assumed between runs, and fetching only new years would miss revisions. The data is also small (about 250 values).
+
+### Decision
+1. **Full fetch:** every run requests the full configured scope. There's no incremental loading by year, and warehouse tables are fully rebuilt on every run.
+2. **Keep every run:** committed landing runs (ADR-0004) are never overwritten or deleted by the pipeline. The raw warehouse tables are rebuilt from all committed runs, as a log of fetches.
+3. **Latest run wins:** each committed run is a complete snapshot, so **current state = the rows of the latest committed run**, not the latest value per record. A value the source revises is changed data: the newer run wins, and the older value stays in raw. **This resolves Q7.**
+4. **Idempotency lives in the analytical layer:** replaying with unchanged landing data produces identical analytical tables, and the business key is unique (NFR-2).
+5. **Stable lineage:** each response's ID is its landing path (for example `run_id=…/endpoint=indicator/SP.POP.TOTL/page=1.json`), assigned at landing, so it survives warehouse rebuilds. Analytical rows carry the source response ID, request URL, fetch time and the source's `lastupdated` (NFR-1).
+6. **Integrity enforced:** the loader recomputes each file's sha256 and compares it with the manifest. Any mismatch fails the run.
+7. **Revision history:** a model keeps one version per (country, indicator, year), starting a new version whenever the value changes between consecutive runs. Revisions are visible to analysts.
+
+### Alternatives considered
+- **Incremental loading of new years only:** misses revisions to past years, which the evidence shows are common.
+- **Keep only the latest snapshot:** less storage, but loses revision detection, replay as of earlier runs, and historical lineage. At about 60 KB per run, keeping everything costs essentially nothing.
+- **Latest value per record (instead of latest run):** a value the source deletes would survive forever from an older run.
+- **IDs generated at load time:** they'd change on every warehouse rebuild and break lineage.
+
+### Consequences
+- Re-runs never duplicate analytical records. Revisions update current values and remain traceable.
+- Replay as of any earlier committed run gives point-in-time state.
+- Tests must prove it: replaying twice gives identical tables, two identical runs give identical tables, a changed value updates current state and creates a new version, a removed row shows as missing, and a tampered landing file fails the run.
+- Rebuilding from every run doesn't scale indefinitely. The production note covers refreshes triggered by the source's `lastupdated` (still re-pulling the full history window), plus retention and compaction of landing runs.

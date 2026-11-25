@@ -120,17 +120,17 @@ If time runs short, deliver in this order:
 
 ## 9. Open questions (ambiguities in the source)
 
-These are not answered by the brief. Each will be resolved as a documented assumption.
+These are not answered by the brief. Each is resolved by a decision or assumption in [`decisions.md`](decisions.md).
 
-| ID | Question |
-|---|---|
-| Q1 | What counts as **"incomplete"** compared with "missing"? (A null value? An absent row? Partial coverage across years?) |
-| Q2 | Does **"latest available year"** mean each country's own latest year, or one common year across countries? |
-| Q3 | Which **income-group classification** applies to each year? (The API provides only the current classification.) |
-| Q4 | How should **income groups be aggregated** (sum, mean, population-weighted), and how are countries with missing data handled? |
-| Q5 | What is the YoY result for **2018**, whose prior year (2017) falls outside the stated range? |
-| Q6 | What **tolerance** applies to cross-indicator consistency checks? |
-| Q7 | If the source **revises** a value between runs, is that "unchanged source data"? Which value wins? |
+| ID | Question | Resolved by |
+|---|---|---|
+| Q1 | What counts as **"incomplete"** compared with "missing"? (A null value? An absent row? Partial coverage across years?) | Open |
+| Q2 | Does **"latest available year"** mean each country's own latest year, or one common year across countries? | Open |
+| Q3 | Which **income-group classification** applies to each year? (The API provides only the current classification.) | Open |
+| Q4 | How should **income groups be aggregated** (sum, mean, population-weighted), and how are countries with missing data handled? | Open |
+| Q5 | What is the YoY result for **2018**, whose prior year (2017) falls outside the stated range? | Open |
+| Q6 | What **tolerance** applies to cross-indicator consistency checks? | Open |
+| Q7 | If the source **revises** a value between runs, is that "unchanged source data"? Which value wins? | [ADR-0006](decisions.md#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) |
 
 ## 10. Requirements traceability matrix
 
