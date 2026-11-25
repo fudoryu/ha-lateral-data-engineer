@@ -1,0 +1,26 @@
+# dbt project for the World Bank pipeline: layout, layers and naming in ADR-0016.
+name: worldbank
+version: "0.1.0"
+config-version: 2
+profile: worldbank
+
+model-paths: [models]
+seed-paths: [seeds]
+test-paths: [tests]
+macro-paths: [macros]
+clean-targets: [target, logs]
+
+models:
+  worldbank:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+    reporting:
+      +schema: reporting
+      +materialized: table

@@ -1,0 +1,10 @@
+# Local DuckDB warehouse; no credentials (NFR-5). transform.py points WORLDBANK_WAREHOUSE at the
+# write-audit-publish staging file (ADR-0007); the default suits running dbt by hand from the repo root.
+worldbank:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('WORLDBANK_WAREHOUSE', 'data/warehouse/worldbank.duckdb') }}"
+      schema: main
+      threads: 4

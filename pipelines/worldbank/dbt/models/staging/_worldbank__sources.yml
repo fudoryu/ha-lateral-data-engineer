@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: worldbank
+    description: >
+      Raw layer written by `worldbank load` from every committed landing run (ADR-0003, ADR-0006).
+      Files are checked against their manifest sha256 and response contracts before loading.
+    schema: raw
+    tables:
+      - name: landing_runs
+        description: One row per committed landing run, with the configuration it was extracted with.
+        columns:
+          - name: run_id
+            data_tests: [unique, not_null]
+      - name: api_requests
+        description: One row per API request in a run (pages, total rows, source lastupdated).
+      - name: api_responses
+        description: One row per landed response page; `payload` is the exact response body.
+        columns:
+          - name: response_id
+            description: The page's landing path, a stable ID that survives warehouse rebuilds.
+            data_tests: [unique, not_null]
+          - name: run_id
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('worldbank', 'landing_runs')
+                    field: run_id
