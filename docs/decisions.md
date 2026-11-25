@@ -7,6 +7,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | ID | Title | Kind | Status |
 |---|---|---|---|
 | [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted |
+| [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 
 ---
 
@@ -48,3 +49,30 @@ The brief allows any stack, requires a local run with no cloud resources or acco
 - A clean checkout needs only uv: `uv run pipeline …` works without anything else installed.
 - About 90% of the transformation code ports to dbt-snowflake by switching the adapter. The rest is confined to staging and the loader by the portability rule.
 - DuckDB is a local stand-in for Snowflake, made necessary by the no-cloud constraint. The production note must say that real development would use Snowflake dev schemas, since dialect differences can't be fully caught locally.
+
+---
+
+## ADR-0002: One request per indicator, covering all countries
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ING-1, FR-ING-2, FR-ING-3, NFR-4
+
+### Context
+Observations can be requested per country × indicator (36 requests for the current scope) or per indicator with every country in one call, since the API accepts `;`-separated country codes ([source-system §1](source-system.md#1-endpoints-relevant-to-the-requirements)). The API also has more than one dataset; World Development Indicators is `source=2`.
+
+### Decision
+- **Observations:** one request per configured indicator, covering all configured countries and the configured years:
+  `/v2/country/{iso3;iso3;…}/indicator/{code}?format=json&date={start}:{end}&per_page=1000&source=2`
+- **Metadata:** one request for all configured countries (`/v2/country/{iso3;…}`) and one per configured indicator (`/v2/indicator/{code}`).
+- **Paging:** always follow `meta.pages`, even though the current scope fits in one page.
+- **Dataset pinned:** `source=2` is always passed explicitly.
+
+### Alternatives considered
+- **One request per country × indicator:** finer-grained retries, but 36 requests now, and the count grows with every added country.
+- **One request for all indicators:** the API supports it (`;`-separated indicator codes with `source=2`; verified 2026-11-24) and it would need the fewest requests. Rejected because one failure or retry would cover every indicator, `meta.sourceid` comes back `null` for multi-indicator calls, and per-indicator checks such as row counts against `meta.total` become coarser.
+
+### Consequences
+- The request count grows with indicators, not countries: 4 observation requests today. Countries are the more likely dimension to grow (NFR-4).
+- A failed request affects every country for that indicator; a retry repeats just that one request.
+- Paging matters only above 1000 rows per indicator (roughly 140 countries over 7 years), so tests must force paging with a small `per_page`.
+- Pinning `source=2` means a change in the API's default dataset can't silently change results.
