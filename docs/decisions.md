@@ -18,6 +18,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
 | [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
+| [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted |
 
 ---
 
@@ -408,3 +409,31 @@ Tests must run without the live API (FR-DQ-3), yet they need to exercise behavio
 - Tests run offline and still use real response data, with all its quirks.
 - Each crafted scenario reads as a short, explicit change to the baseline.
 - Pre-commit hooks that rewrite files (such as end-of-file fixing) must exclude `tests/fixtures/recorded/`. That exclusion is added in the same commit that adds the recordings.
+
+---
+
+## ADR-0013: Developer tooling and documentation layout
+
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-6, FR-DQ-1, deliverables (requirements §11)
+
+### Context
+The time box is 4–6 hours and the brief prioritizes ingestion, the data model and tests over tooling. Reviewers must be able to run everything from a clean checkout (NFR-6), and both humans and AI agents work in the repository.
+
+### Decision
+- **Task runner: `just`**, with recipes `run` (extract → load → transform → export), `replay` (no API calls), `test` (offline), and `check` (lint, type checks, tests, and dbt build on fixtures, all offline). `just` is a convenience, installed with `uv tool install rust-just`. Every recipe has a documented fallback, `uv run pipeline <step>`, that needs nothing beyond uv.
+- **Definition of done:** `just check` passes.
+- **Continuous integration:** one workflow runs `just check` offline on every push.
+- **Kept lean:** the agent guide (`AGENTS.md`, imported by `CLAUDE.md`), pre-commit hooks, and CI are in scope. Agent-specific extras (custom skills, hooks, permission settings) are out of scope unless time remains.
+- **Documentation layout: flat `docs/`, one file per purpose:** `requirements.md` (what and why), `source-system.md` (evidence about the source), `decisions.md` (this log), and `references/` (the immutable brief). A new document is added only when existing ones can't hold the content well.
+
+### Alternatives considered
+- **Make:** universally available, but recipes are harder to read and parameterize.
+- **Plain `uv run` only:** no extra tool, but longer commands. Kept as the fallback.
+- **Nested docs structure (product / design / guides):** better for large projects; unnecessary overhead for a handful of documents.
+- **Full agent tooling from the start:** costs time that the brief's priorities assign elsewhere.
+
+### Consequences
+- A reviewer needs only uv; `just` makes common commands shorter.
+- One command is the gate for every commit and for CI.
+- The recipes, CI workflow and agent-guide command table are introduced together with the code they run, not before.
