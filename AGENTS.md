@@ -8,7 +8,8 @@ A local, configuration-driven pipeline: World Bank API → traceable yearly indi
 
 **Read in this order:**
 1. [`docs/requirements.md`](docs/requirements.md): what and why, IDs (FR-*, NFR-*, Q*), deliverables (§11)
-2. [`docs/references/home-assessment.md`](docs/references/home-assessment.md): the original brief, immutable
+2. [`docs/source-system.md`](docs/source-system.md): verified World Bank API behavior (errors, quirks, silent revisions)
+3. [`docs/references/home-assessment.md`](docs/references/home-assessment.md): the original brief, immutable
 
 ## Rules
 
