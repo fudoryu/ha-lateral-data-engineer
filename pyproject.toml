@@ -14,6 +14,7 @@ dev = [
     "mypy>=2.4",
     "pre-commit>=4",
     "pytest>=9.2",
+    "pytest-cov>=7",
     "responses>=0.26",
     "ruff>=0.17",
     "types-pyyaml>=6.0.12.20261122",
@@ -49,3 +50,12 @@ testpaths = ["pipelines/worldbank/tests"]
 pythonpath = ["pipelines/worldbank/tests"]  # test helpers such as scenarios.py
 addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
 filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["worldbank"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = true
