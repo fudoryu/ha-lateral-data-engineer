@@ -48,6 +48,9 @@ def extract(
     missing = sorted(set(scope.countries) - returned)
     if missing:
         raise ScopeViolation(f"unknown country codes in config: {', '.join(missing)}")
+    unrequested = sorted(returned - set(scope.countries))
+    if unrequested:
+        raise ScopeViolation(f"country metadata outside the request: {', '.join(unrequested)}")
 
     for code in scope.indicators:
         fetched_indicator = client.fetch(f"indicator/{code}", Indicator)

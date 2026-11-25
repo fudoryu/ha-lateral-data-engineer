@@ -155,6 +155,20 @@ def test_configured_country_missing_from_metadata_fails(
         run(api, recorded_config, tmp_path)
 
 
+def test_unrequested_country_in_metadata_fails(
+    api: RecordedApi, recorded_config: Config, tmp_path: Path
+) -> None:
+    meta, countries = api.payload("endpoint=countries/page=1.json")
+    extra = {**countries[0], "id": "FRA", "iso2Code": "FR", "name": "France"}
+    api.set_payload(
+        "endpoint=countries/page=1.json",
+        [{**meta, "total": meta["total"] + 1}, [*countries, extra]],
+    )
+
+    with pytest.raises(ScopeViolation, match="country metadata outside the request: FRA"):
+        run(api, recorded_config, tmp_path)
+
+
 def test_empty_indicator_metadata_fails(
     api: RecordedApi, recorded_config: Config, tmp_path: Path
 ) -> None:
