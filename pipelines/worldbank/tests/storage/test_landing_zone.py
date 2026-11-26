@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from worldbank.landing import (
+from worldbank.storage.landing_zone import (
     AlreadyCommitted,
-    LandingRun,
     RequestRecord,
+    RunWriter,
     committed_runs,
     config_hash,
     new_run_id,
@@ -19,8 +19,8 @@ COMMITTED = datetime(2026, 11, 24, 18, 30, 5, tzinfo=UTC)
 BODY = b'[{"page":1},[]]'  # no trailing newline: bytes must be kept exactly
 
 
-def write_and_commit(root: Path, started: datetime = STARTED) -> LandingRun:
-    run = LandingRun.start(root, started)
+def write_and_commit(root: Path, started: datetime = STARTED) -> RunWriter:
+    run = RunWriter.start(root, started)
     run.write_page(
         endpoint="observations",
         key="SP.POP.TOTL",
@@ -78,7 +78,7 @@ def test_manifest_records_files_requests_and_config(tmp_path: Path) -> None:
 
 
 def test_metadata_pages_without_a_key(tmp_path: Path) -> None:
-    run = LandingRun.start(tmp_path, STARTED)
+    run = RunWriter.start(tmp_path, STARTED)
     landed = run.write_page(
         endpoint="countries", key=None, page=1, body=BODY, url="u", fetched_at=STARTED
     )
@@ -89,7 +89,7 @@ def test_metadata_pages_without_a_key(tmp_path: Path) -> None:
 def test_only_committed_runs_are_listed_oldest_first(tmp_path: Path) -> None:
     write_and_commit(tmp_path, datetime(2026, 11, 25, tzinfo=UTC))
     write_and_commit(tmp_path, datetime(2026, 11, 24, tzinfo=UTC))
-    incomplete = LandingRun.start(tmp_path, datetime(2026, 11, 26, tzinfo=UTC))
+    incomplete = RunWriter.start(tmp_path, datetime(2026, 11, 26, tzinfo=UTC))
     incomplete.write_page(
         endpoint="countries", key=None, page=1, body=BODY, url="u", fetched_at=STARTED
     )
@@ -104,10 +104,10 @@ def test_no_landing_root_means_no_runs(tmp_path: Path) -> None:
 
 
 def test_a_run_folder_is_never_reused(tmp_path: Path) -> None:
-    LandingRun.start(tmp_path, STARTED)
+    RunWriter.start(tmp_path, STARTED)
 
     with pytest.raises(FileExistsError):
-        LandingRun.start(tmp_path, STARTED)
+        RunWriter.start(tmp_path, STARTED)
 
 
 def test_config_hash_ignores_key_order() -> None:
@@ -165,7 +165,7 @@ def test_run_ids_are_utc_even_for_local_times() -> None:
 
 def test_non_ascii_bytes_are_kept_exactly(tmp_path: Path) -> None:
     body = '[{"page":1},[{"name":"Côte d\'Ivoire"}]]'.encode()
-    run = LandingRun.start(tmp_path, STARTED)
+    run = RunWriter.start(tmp_path, STARTED)
 
     landed = run.write_page(
         endpoint="countries", key=None, page=1, body=body, url="u", fetched_at=STARTED

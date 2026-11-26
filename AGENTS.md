@@ -20,7 +20,7 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 |---|---|---|
 | n/a | `uv run worldbank extract` | fetch the configured scope and commit a landing run (calls the live API) |
 | `just test` | `uv run pytest` | tests (offline) |
-| `just record-fixtures` | `uv run python pipelines/worldbank/tests/record_fixtures.py` | re-record live API responses as test fixtures (commit separately) |
+| `just record-fixtures` | `uv run python pipelines/worldbank/scripts/record_fixtures.py` | re-record live API responses as test fixtures (commit separately) |
 | `just check` | see the `justfile` | lint + format check + type check + tests with a 95% line-and-branch coverage gate: **the definition of done** (ADR-0013) |
 
 One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has its own command, for example `uv run worldbank --help` (ADR-0014).

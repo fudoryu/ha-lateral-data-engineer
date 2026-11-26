@@ -7,9 +7,9 @@ import requests
 import responses
 from responses import matchers
 
-from worldbank.client import Client, InconsistentPages, PermanentHTTPError, TransientHTTPError
+from worldbank.api.client import Client, InconsistentPages, PermanentHTTPError, TransientHTTPError
+from worldbank.api.contracts import ApiErrorResponse, Observation
 from worldbank.config import Api
-from worldbank.models import ApiErrorResponse, Observation
 
 BASE = "https://api.worldbank.org/v2"
 PATH = "country/BRA;IND/indicator/SP.POP.TOTL"

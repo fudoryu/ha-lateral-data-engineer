@@ -17,8 +17,8 @@ from pydantic import BaseModel
 from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 
 from worldbank import __version__
+from worldbank.api.contracts import Page, parse_page
 from worldbank.config import Api
-from worldbank.models import Page, parse_page
 
 USER_AGENT = f"worldbank-pipeline/{__version__}"
 

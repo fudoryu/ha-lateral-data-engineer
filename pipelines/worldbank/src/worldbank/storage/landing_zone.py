@@ -79,7 +79,7 @@ def config_hash(config: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
 
 
-class LandingRun:
+class RunWriter:
     """A run being written. Nothing in it counts until `commit` writes the manifest."""
 
     def __init__(self, landing_root: Path, run_id: str, started_at: datetime) -> None:
@@ -91,7 +91,7 @@ class LandingRun:
         self._requests: list[RequestRecord] = []
 
     @classmethod
-    def start(cls, landing_root: Path, now: datetime) -> LandingRun:
+    def start(cls, landing_root: Path, now: datetime) -> RunWriter:
         run = cls(landing_root, new_run_id(now), now)
         run.path.mkdir(parents=True, exist_ok=False)  # never reuse or overwrite a run
         return run

@@ -8,10 +8,10 @@ from typing import Any
 
 import responses
 
-from worldbank.client import Client
+from worldbank.api.client import Client
 from worldbank.config import Config
-from worldbank.extract import extract
-from worldbank.landing import committed_runs
+from worldbank.steps.extract import extract
+from worldbank.storage.landing_zone import committed_runs
 
 
 def test_recordings_are_unmodified(recorded_dir: Path, recorded_index: dict[str, Any]) -> None:

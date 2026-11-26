@@ -6,12 +6,12 @@ import duckdb
 import pytest
 import responses
 
-from worldbank.client import Client
+from worldbank.api.client import Client
+from worldbank.api.contracts import UnexpectedResponse
 from worldbank.config import Config
-from worldbank.extract import extract
-from worldbank.landing import LandingRun, Manifest
-from worldbank.load import IntegrityError, load
-from worldbank.models import UnexpectedResponse
+from worldbank.steps.extract import extract
+from worldbank.storage.landing_zone import Manifest, RunWriter
+from worldbank.storage.warehouse import IntegrityError, load_raw
 
 
 def extract_recorded(config: Config, root: Path, at: datetime) -> Manifest:
@@ -32,7 +32,7 @@ def test_loads_one_row_per_run_request_and_page(
         recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC)
     )
 
-    summary = load(tmp_path / "raw", tmp_path / "wh.duckdb")
+    summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     assert (summary.runs, summary.responses) == (1, len(manifest.files))
     wh = tmp_path / "wh.duckdb"
@@ -45,7 +45,7 @@ def test_payload_is_the_exact_response_and_queryable_as_json(
     recorded_api: responses.RequestsMock, recorded_config: Config, tmp_path: Path
 ) -> None:
     extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC))
-    load(tmp_path / "raw", tmp_path / "wh.duckdb")
+    load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     total = scalar(
         tmp_path / "wh.duckdb",
@@ -67,9 +67,9 @@ def test_every_committed_run_is_loaded_and_incomplete_runs_are_not(
 ) -> None:
     extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC))
     extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 25, tzinfo=UTC))
-    LandingRun.start(tmp_path / "raw", datetime(2026, 11, 26, tzinfo=UTC))  # never committed
+    RunWriter.start(tmp_path / "raw", datetime(2026, 11, 26, tzinfo=UTC))  # never committed
 
-    summary = load(tmp_path / "raw", tmp_path / "wh.duckdb")
+    summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     assert summary.runs == 2
 
@@ -78,14 +78,14 @@ def test_load_always_starts_from_an_empty_warehouse(
     recorded_api: responses.RequestsMock, recorded_config: Config, tmp_path: Path
 ) -> None:
     extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC))
-    load(tmp_path / "raw", tmp_path / "wh.duckdb")
-    load(tmp_path / "raw", tmp_path / "wh.duckdb")
+    load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+    load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     assert scalar(tmp_path / "wh.duckdb", "select count(*) from raw.landing_runs") == 1
 
 
 def test_no_runs_gives_empty_raw_tables(tmp_path: Path) -> None:
-    summary = load(tmp_path / "raw", tmp_path / "wh.duckdb")
+    summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     assert summary.runs == 0
     assert scalar(tmp_path / "wh.duckdb", "select count(*) from raw.api_responses") == 0
@@ -103,7 +103,7 @@ def test_a_tampered_landing_file_fails_the_load(
     page.write_bytes(page.read_bytes().replace(b'"value":', b'"value" :', 1))
 
     with pytest.raises(IntegrityError, match="sha256"):
-        load(tmp_path / "raw", tmp_path / "wh.duckdb")
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
 
 def test_a_missing_landing_file_fails_the_load(
@@ -113,7 +113,7 @@ def test_a_missing_landing_file_fails_the_load(
     _first_observation_page(tmp_path / "raw").unlink()
 
     with pytest.raises(IntegrityError, match="missing"):
-        load(tmp_path / "raw", tmp_path / "wh.duckdb")
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
 
 def test_responses_are_revalidated_on_load(
@@ -137,4 +137,4 @@ def test_responses_are_revalidated_on_load(
     manifest_path.write_text(manifest.model_copy(update={"files": files}).model_dump_json())
 
     with pytest.raises(UnexpectedResponse):
-        load(tmp_path / "raw", tmp_path / "wh.duckdb")
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")

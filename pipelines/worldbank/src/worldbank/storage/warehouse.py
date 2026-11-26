@@ -21,8 +21,8 @@ from pathlib import Path
 import duckdb
 from pydantic import BaseModel
 
-from worldbank.landing import CommittedRun, committed_runs
-from worldbank.models import Country, Indicator, Observation, parse_page
+from worldbank.api.contracts import Country, Indicator, Observation, parse_page
+from worldbank.storage.landing_zone import CommittedRun, committed_runs
 
 ENDPOINT_MODELS: dict[str, type[BaseModel]] = {
     "countries": Country,
@@ -77,7 +77,7 @@ class LoadSummary:
     responses: int
 
 
-def load(landing_root: Path, warehouse: Path) -> LoadSummary:
+def load_raw(landing_root: Path, warehouse: Path) -> LoadSummary:
     """Build a fresh warehouse file at `warehouse` from all committed runs under `landing_root`."""
     runs = committed_runs(landing_root)
     bodies = {run.manifest.run_id: _verified_bodies(run) for run in runs}

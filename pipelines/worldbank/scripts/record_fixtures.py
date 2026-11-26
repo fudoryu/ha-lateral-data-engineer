@@ -1,6 +1,6 @@
 """Record live World Bank API responses as test fixtures (ADR-0012).
 
-Usage (from the repo root): `uv run python pipelines/worldbank/tests/record_fixtures.py`
+Usage (from the repo root): `uv run python pipelines/worldbank/scripts/record_fixtures.py`
 
 Runs a real extract with a small page size, so observations span several pages, and copies the
 exact response bytes into tests/fixtures/recorded/ with an index. Recordings are immutable:
@@ -13,13 +13,13 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from worldbank.client import Client
+from worldbank.api.client import Client
 from worldbank.config import load_config
-from worldbank.extract import extract
+from worldbank.steps.extract import extract
 
 HERE = Path(__file__).parent
 CONFIG = HERE.parent / "config.yml"
-TARGET = HERE / "fixtures" / "recorded"
+TARGET = HERE.parent / "tests" / "fixtures" / "recorded"
 RECORDING_PAGE_SIZE = 25  # 63 rows per indicator -> 3 pages
 
 

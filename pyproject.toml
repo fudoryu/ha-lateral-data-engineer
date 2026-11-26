@@ -42,7 +42,7 @@ known-first-party = ["worldbank"]
 
 [tool.mypy]
 strict = true
-files = ["pipelines/worldbank/src", "pipelines/worldbank/tests"]
+files = ["pipelines/worldbank/src", "pipelines/worldbank/tests", "pipelines/worldbank/scripts"]
 mypy_path = "pipelines/worldbank/tests"
 
 [tool.pytest.ini_options]
