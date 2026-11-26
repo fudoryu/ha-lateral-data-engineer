@@ -35,9 +35,6 @@ models:
           arguments:
             columns: [run_id, country_iso3, indicator_id, observation_year]
     columns:
-      - name: response_id
-        description: Landing path of the response page the row came from (NFR-1).
-        data_tests: [not_null]
       - name: run_id
         data_tests: [not_null]
       - name: country_iso3
@@ -48,6 +45,11 @@ models:
         data_tests: [not_null]
       - name: indicator_value
         description: "The value as published; null when the API returned a null value (NFR-3)."
+      - name: source_response_id
+        description: >
+          Landing path of the response page the row came from (`raw.api_responses.response_id`;
+          NFR-1, ADR-0006).
+        data_tests: [not_null]
       - name: source_lastupdated
         description: The source's `lastupdated` date for the release the value came from.
 

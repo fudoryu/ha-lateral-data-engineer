@@ -20,16 +20,16 @@ flattened as (
 
 final as (
     select
-        response_id,
         run_id,
         row ->> 'countryiso3code' as country_iso3,
-        row -> 'country' ->> 'id' as country_iso2,
         row -> 'indicator' ->> 'id' as indicator_id,
         (row ->> 'date')::integer as observation_year,
         (row ->> 'value')::double as indicator_value,
         nullif(row ->> 'unit', '') as unit,
         nullif(row ->> 'obs_status', '') as obs_status,
         (row ->> 'decimal')::integer as decimals,
+        row -> 'country' ->> 'id' as country_iso2,
+        response_id as source_response_id,
         url as source_url,
         fetched_at,
         lastupdated::date as source_lastupdated

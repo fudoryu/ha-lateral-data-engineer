@@ -19,7 +19,6 @@ flattened as (
 
 final as (
     select
-        response_id,
         run_id,
         row ->> 'id' as country_iso3,
         row ->> 'iso2Code' as country_iso2,
@@ -28,6 +27,7 @@ final as (
         trim(row -> 'region' ->> 'value') as region_name,
         row -> 'incomeLevel' ->> 'id' as income_level_id,
         trim(row -> 'incomeLevel' ->> 'value') as income_level_name,
+        response_id as source_response_id,
         url as source_url,
         fetched_at
     from flattened

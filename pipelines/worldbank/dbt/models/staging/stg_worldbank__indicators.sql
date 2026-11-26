@@ -18,7 +18,6 @@ flattened as (
 
 final as (
     select
-        response_id,
         run_id,
         row ->> 'id' as indicator_id,
         trim(row ->> 'name') as indicator_name,
@@ -27,6 +26,7 @@ final as (
         trim(row -> 'source' ->> 'value') as source_name,
         nullif(trim(row ->> 'sourceNote'), '') as definition,
         nullif(trim(row ->> 'sourceOrganization'), '') as source_organization,
+        response_id as source_response_id,
         url as source_url,
         fetched_at
     from flattened
