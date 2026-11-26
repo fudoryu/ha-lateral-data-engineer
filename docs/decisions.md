@@ -22,6 +22,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
+| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
 
 ---
 
@@ -524,3 +525,69 @@ ADR-0001 chose dbt-core and dbt-duckdb for transformation. Before writing models
 - Analysts query `marts.*` and `reporting.*`; `staging` and `intermediate` are implementation details.
 - DuckDB has no roles or grants, so layer boundaries are a convention locally; in Snowflake they become access controls (production note).
 - Every model above staging uses portable SQL (ADR-0001 portability rule).
+
+---
+
+## ADR-0017: Marts data model: grain, keys, relationships and lineage
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2, FR-MOD-3, NFR-1, NFR-2, NFR-3, FR-ANA-1, FR-ANA-4
+
+### Context
+FR-MOD-2 asks for the grain, business keys and relationships of the final tables. Staging (ADR-0016) holds one row per run per source entity. The marts have to show current state (latest run wins, ADR-0006), make every expected cell visible, including ones the API never returned (ADR-0008), carry the yearly income classification at its own grain (ADR-0011), keep each value traceable to the API response it came from (NFR-1), and keep revisions visible (ADR-0006 §7).
+
+### Decision
+**A star schema with one long fact.** Every final table is keyed by natural keys from the source or the landing zone. There are no surrogate keys.
+
+| Table | Grain | Key | Main columns |
+|---|---|---|---|
+| `fct_indicator_value` | country × indicator × year, latest run | `country_iso3`, `indicator_id`, `observation_year` | `indicator_value`, `value_status`, `run_id`, `source_response_id` |
+| `fct_indicator_value_versions` | one version of a cell's value across runs | `country_iso3`, `indicator_id`, `observation_year`, `valid_from_run_id` | `indicator_value`, `value_status`, `valid_to_run_id`, `is_current`, `source_response_id` |
+| `dim_country` | country, latest run | `country_iso3` | ISO2 code, name, region, `income_level_id` (the **current** classification) |
+| `dim_indicator` | indicator, latest run | `indicator_id` | name, unit, source, definition |
+| `dim_country_income_group_by_year` | country × year | `country_iso3`, `observation_year` | `income_level_id`, `classification_basis`, `classified_as_of` (ADR-0011) |
+| `dim_run` | committed landing run | `run_id` | started and committed times, pipeline version, git SHA, config hash, `is_latest` |
+| `dim_source_response` | landed response page | `source_response_id` | `run_id`, endpoint, request key, page, request URL, `fetched_at`, the source's `lastupdated`, sha256 |
+
+**The fact is built on the expected set.** `fct_indicator_value` has one row for every cell in the latest run's expected set (ADR-0008, ADR-0016), left-joined to that run's observations. `value_status` is `present`, `null_value` or `missing_row`, and `indicator_value` is null unless the status is `present`. Missing is never zero (NFR-3).
+
+**Values are `double`.** The API sends JSON numbers, which are already double precision, so a decimal type would only add precision the source doesn't have.
+
+**No year dimension.** `observation_year` is an integer. A year has no attributes to describe here.
+
+**Lineage is normalized into typed keys.** Each fact row carries:
+- `run_id`: the run whose snapshot the row belongs to. For `missing_row` cells, it's the run that expected the cell.
+- `source_response_id`: the landing path of the page the value was parsed from (ADR-0006 §5). It's null exactly when the status is `missing_row`, because no response contained the cell.
+
+`run_id` is also part of `source_response_id`. Keeping it as its own column is deliberate: `missing_row` cells have a run but no response, and "current state" becomes a filter on one column. Tests ensure the two never disagree.
+
+**Relationships** (each enforced by a `relationships` test):
+- `fct_indicator_value` and `fct_indicator_value_versions` → `dim_country`, `dim_indicator`, `dim_run`, `dim_source_response`
+- `dim_source_response` → `dim_run`
+- `dim_country_income_group_by_year` → `dim_country`
+- Reports join facts to income groups on (`country_iso3`, `observation_year`), never on a country attribute (ADR-0011).
+
+**Revision history.** `fct_indicator_value_versions` compares each cell across consecutive committed runs whose expected set contains it. A new version starts when the value or the status changes, compared null-safely. `valid_to_run_id` is the first run with a different value (exclusive), or null while the version is still open. `is_current` marks the version that belongs to the latest run. A cell later removed from the scope keeps its history but has no current version.
+
+**Tests that hold the model together:**
+- each table's key is unique and not null;
+- `value_status` takes only the three accepted values;
+- `source_response_id` is null if and only if `value_status = 'missing_row'`;
+- `indicator_value` is null unless `value_status = 'present'`;
+- a fact row's `run_id` equals its response's `run_id`;
+- the fact's row count equals the latest run's expected set;
+- exactly one version per cell is current, and it matches `fct_indicator_value`.
+
+### Alternatives considered
+- **A wide fact (one column per indicator):** easier to read for one report, but every new indicator changes the schema (NFR-4), and a per-cell status and lineage need one column set per indicator. Wide shapes belong in reporting, if anywhere.
+- **Surrogate keys:** the natural keys are stable, short and meaningful, and the marts are rebuilt from the landing zone anyway (ADR-0003). Hashed keys would only add a translation step.
+- **Lineage as one JSON column on the fact:** it would break the rule that SQL above staging stays portable, lose types and dbt tests, and repeat the same details on every row from a page.
+- **Only `source_response_id` on the fact, deriving the run from it:** `missing_row` cells have no response, so they would lose their run.
+- **A composite response key (`run_id` plus a path within the run):** removes the overlap between the two columns, but changes the response ID ADR-0006 defined, and makes every lineage join a two-column join.
+- **Income group as a column of `dim_country` only:** couldn't hold a yearly classification if a historical source is ever allowed (ADR-0011).
+
+### Consequences
+- Analysts get one fact table for every question. Gaps show up as rows with a status, not as absent rows.
+- Any value can be traced to its file with one join: `source_response_id` names the landed page, and `dim_source_response` gives its URL, fetch time and checksum.
+- `dim_source_response` and `dim_run` grow with pages and runs, not with values. In production they're append-only and can load incrementally.
+- Revisions the World Bank makes without notice show up as new versions instead of disappearing.
