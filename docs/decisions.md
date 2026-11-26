@@ -8,7 +8,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 |---|---|---|---|
 | [ADR-0001](#adr-0001-technology-stack) | Technology stack | Decision | Accepted (configuration library amended by ADR-0015) |
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
-| [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted |
+| [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted (command name amended by ADR-0018) |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted (path amended by ADR-0014) |
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
@@ -18,11 +18,12 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
 | [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
-| [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted |
+| [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted (recipe names amended by ADR-0018) |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
+| [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Accepted |
 
 ---
 
@@ -96,7 +97,7 @@ Observations can be requested per country × indicator (36 requests for the curr
 
 ## ADR-0003: Separate ingestion from transformation; replay from landed files
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (command name amended by [ADR-0018](#adr-0018-pipeline-commands-extract-build-run))
 - **Serves:** FR-MOD-1, FR-DQ-3, NFR-1, NFR-2
 
 ### Context
@@ -418,7 +419,7 @@ Tests must run without the live API (FR-DQ-3), yet they need to exercise behavio
 
 ## ADR-0013: Developer tooling and documentation layout
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (recipe names amended by [ADR-0018](#adr-0018-pipeline-commands-extract-build-run))
 - **Serves:** NFR-6, FR-DQ-1, deliverables (requirements §11)
 
 ### Context
@@ -591,3 +592,38 @@ FR-MOD-2 asks for the grain, business keys and relationships of the final tables
 - Any value can be traced to its file with one join: `source_response_id` names the landed page, and `dim_source_response` gives its URL, fetch time and checksum.
 - `dim_source_response` and `dim_run` grow with pages and runs, not with values. In production they're append-only and can load incrementally.
 - Revisions the World Bank makes without notice show up as new versions instead of disappearing.
+
+---
+
+## ADR-0018: Pipeline commands: extract, build, run
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-2, NFR-6, FR-DQ-1 · **Amends:** ADR-0003 (the `replay` command), ADR-0013 (the `run` and `replay` recipes)
+
+### Context
+ADR-0003 names a `replay` command for load → transform → export, and ADR-0013 names the matching `just` recipes. Before the command exists, its name and its neighbours should be ones data engineers recognise without reading the docs. Write-audit-publish (ADR-0007) also decides which steps may run on their own: loading `raw` into the live warehouse before the audit would show analysts unaudited data.
+
+### Decision
+Each pipeline's command (ADR-0014) has three subcommands, named after the tools data engineers already use:
+
+| Command | Does | Network |
+|---|---|---|
+| `worldbank extract` | calls the API and commits a new landing run (ADR-0003, ADR-0004) | yes |
+| `worldbank build` | rebuilds the warehouse from the landing zone with write-audit-publish (ADR-0007): load `raw` from every committed run, `dbt build`, publish only if every test passes, then export the reports | no |
+| `worldbank run` | `extract`, then `build`: the scheduled job | yes |
+
+- **`build` replaces `replay`.** It matches `dbt build` (models plus tests) and says what the command does: rebuild the warehouse. "Replay" stays the name of the concept (rebuilding from landed files) used in ADR-0006, ADR-0012 and ADR-0016.
+- **Load and transform are stages, not commands.** `build` logs each stage by name (load, transform, publish, export), so the ELT shape stays visible. A standalone `load` would write to the live warehouse before the audit.
+- **`build --as-of <run_id>`** rebuilds from the committed runs up to that run, so "latest run" means that run (ADR-0006: point-in-time replay). It writes to its own file and never publishes over the live warehouse.
+- **`build --no-publish`** stops after the audit and keeps `warehouse.next.duckdb` for inspection.
+- **`just` recipes** follow the commands: `run` and `build`, with `uv run worldbank <command>` as the fallback (ADR-0013).
+
+### Alternatives considered
+- **`replay` (ADR-0003):** accurate, but not a name data engineers expect for "rebuild the warehouse".
+- **Separate `load` and `transform` commands (textbook ELT):** familiar, but under write-audit-publish they only make sense together. Run apart, they'd publish unaudited data or need a hidden hand-off file.
+- **`extract` also loading the warehouse:** merges the one networked step with the offline ones, against ADR-0003, and hides the S3 → warehouse boundary that exists in production.
+
+### Consequences
+- The README and agent guide document three commands. Running dbt by hand against a scratch file stays available for model development.
+- Point-in-time rebuilds are one flag, which makes the landing zone's role as system of record easy to demonstrate.
+- Possible later additions, each in its own commit if time allows: `worldbank runs` (list landing runs and which one is live), `worldbank docs` (dbt docs and lineage), `extract --dry-run`.
