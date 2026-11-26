@@ -24,6 +24,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Accepted |
+| [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 
 ---
 
@@ -627,3 +628,34 @@ Each pipeline's command (ADR-0014) has three subcommands, named after the tools 
 - The README and agent guide document three commands. Running dbt by hand against a scratch file stays available for model development.
 - Point-in-time rebuilds are one flag, which makes the landing zone's role as system of record easy to demonstrate.
 - Possible later additions, each in its own commit if time allows: `worldbank runs` (list landing runs and which one is live), `worldbank docs` (dbt docs and lineage), `extract --dry-run`.
+
+---
+
+## ADR-0019: Hand-written extraction instead of an EL framework
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-1, NFR-2, NFR-3, FR-ING-3, FR-ING-4, FR-DQ-3
+
+### Context
+Extract-and-load frameworks such as **dlt**, Meltano (Singer SDK) and Airbyte provide paging, retries, schema handling, load history and loading into DuckDB, mostly through configuration. A reviewer will reasonably ask why this pipeline writes its own client, landing zone and raw loader (`api/`, `storage/`) instead. dlt is the strongest candidate: it's a Python library rather than a platform, has a REST API source driven by configuration, and loads into DuckDB.
+
+### Decision
+Keep extraction hand-written (requests + tenacity + Pydantic, ADR-0001), for these reasons:
+
+1. **Byte-exact landed responses.** Lineage rests on the exact HTTP response pages: a value's `source_response_id` is the landed page's path, the loader checks each page's sha256 against the manifest, and validation never alters the landed bytes (ADR-0005, ADR-0006, ADR-0017). dlt extracts *items* and writes its own normalized files, not the responses as received. Keeping the pages would mean capturing them in hooks and running our landing zone next to dlt anyway.
+2. **The envelope carries facts we need.** Each page's metadata (`lastupdated`, `page`, `pages`, `total`) feeds request-level checks (rows across pages = `meta.total`; all pages share `lastupdated`) and the `source_lastupdated` lineage column. A framework that yields only the data rows drops it, or needs custom code to keep it.
+3. **The World Bank's quirks are the hard part.** Errors come back with HTTP 200, an unsatisfiable `date` filter is silently ignored, and paging fields change type ([source-system §2–4](source-system.md#2-response-shape)). Every one of these needs explicit handling: in dlt, as response hooks and custom checks. That's the same logic, written as workarounds around the framework instead of as plain tested code.
+4. **The commit rule and audit metadata are ours.** A run counts only once its manifest is written last, recording the resolved configuration, its hash, the git SHA, every request and every file (ADR-0004). The run's own configuration also defines the expected set (ADR-0016). dlt's load IDs and pipeline state are close, but don't carry this rule or this record.
+5. **Names and shapes stay untouched until staging.** dlt normalizes identifiers and splits nested JSON into child tables during load. This pipeline keeps the raw payload as received and does every rename and flattening in one visible place: the dbt staging layer (ADR-0016).
+6. **Write-audit-publish stays ours either way.** dlt loads data; it doesn't audit the dbt models and publish the warehouse atomically (ADR-0007). A framework would remove only part of the code, while adding a second state store to reason about.
+7. **Small scope, high bar.** Four endpoints and about 250 values per run don't need a framework's breadth, and the brief values correctness and traceability over coverage. The mechanics (paging, retries, atomic commits, contracts) are about 600 lines, fully tested offline against recorded responses (ADR-0012), and readable in one sitting.
+
+### Alternatives considered
+- **dlt with its REST API source:** the least code for paging, retries and loading, plus schema contracts and load history. Rejected for reasons 1 to 6: we'd keep most of our own code around it and lose byte-exact pages as the unit of lineage.
+- **Meltano / Singer SDK tap:** a well-known connector structure (client, streams, schemas), but emits records rather than responses (same gap as reason 1) and adds a separate target and the Singer message protocol for one source.
+- **Airbyte:** a platform with its own deployment, which the local-only, no-accounts constraint (NFR-5) rules out.
+
+### Consequences
+- We own paging, retries and contract checks, and their tests. Coverage is enforced by `just check` (ADR-0013).
+- The code structure mirrors a connector: `api/client.py` and `api/contracts.py` play the roles of a Singer tap's `client.py` and `streams.py`/`schemas/`, which keeps the code familiar to reviewers who know those tools.
+- **Production note:** with many sources, extraction should move to a framework such as dlt, keeping the landing zone conventions (raw responses as received, manifest commit, run IDs) and write-audit-publish as the platform's own contract. The README says so.
