@@ -14,7 +14,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted (§7's audience amended by ADR-0028) |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
-| [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
+| [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted (income-group aggregation superseded by ADR-0038) |
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
 | [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted (modelling amended by ADR-0030) |
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
@@ -43,6 +43,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
+| [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Accepted |
 
 ---
 
@@ -1159,3 +1160,27 @@ A review of the marts found four indicator columns that misled more than they in
 ### Consequences
 - `dim_indicators` holds an indicator's identity, description, release and aggregation method, and nothing else.
 - The API's other indicator fields stay in staging and the landing zone (NFR-1).
+
+---
+
+## ADR-0038: Income groups average their countries
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-4, NFR-4, FR-MOD-2 · **Supersedes:** ADR-0009's income-group aggregation (Q4) · **Amends:** ADR-0010, ADR-0037
+
+### Context
+ADR-0009 aggregated each indicator by its nature: population and GDP summed, GDP per capita as Σ GDP ÷ Σ population, life expectancy weighted by population. That needed an aggregation seed, an intermediate model, four columns in `dim_indicators` (`aggregation_method` and the numerator, denominator and weight indicators), three self-joins in the report, and a seed row for every new indicator, without which the build failed. The marts should be a minimal star schema whose every column is obviously correct.
+
+### Decision
+- **An income group's value is the average of its countries that have a value,** the same rule for every indicator: `avg(indicator_value)` per group, indicator and year, with `n_countries_with_data` of `n_countries`. A group without data has a null average, never 0.
+- **The aggregation recipe is removed:** the `indicator_aggregations` seed, `int_indicators_joined_to_aggregations` and the four `dim_indicators` columns.
+- **The GDP consistency check (FR-DQ-2) names its three indicators directly** instead of reading them from `dim_indicators`, and checks nothing when any of them is out of scope.
+
+### Alternatives considered
+- **Keep the per-indicator recipe (ADR-0009):** economically exact totals and an aggregate GDP per capita, at the cost of metadata in the marts and setup for every indicator.
+- **Exact aggregates written out in the report's SQL:** simple to read, but adding an indicator would mean editing the report.
+
+### Consequences
+- The value describes the typical country in a group: an average population, not a total, and an average of GDP per capita, not the group's GDP per capita. The README states it as an assumption.
+- Adding an indicator is configuration only, with no seed row.
+- `dim_indicators` holds an indicator's identity, description and release, and nothing about aggregation.
