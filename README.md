@@ -24,7 +24,7 @@ uvx --from rust-just just run
 | `just export` | `uv run worldbank export` | write every report table to `data/outputs/*.csv` |
 | `just check` | see the `justfile` | lint (Python and SQL), types, and all tests, offline: the definition of done |
 
-The warehouse is `data/warehouse/worldbank.duckdb`; open it with any DuckDB client. `uv run worldbank --help` lists every command and option, including `--log-format json` and `load --as-of <run_id>` (rebuild as of an earlier run).
+The warehouse is `data/warehouse/worldbank.duckdb`; open it with any DuckDB client. `uv run worldbank --help` lists every command and option, including `--log-format json`, `load --as-of <run_id>` (rebuild as of an earlier run), and scope overrides for one run: `just run --countries BRA,IND --indicators SP.POP.TOTL --years 2020:2024` (ADR-0035).
 
 ## What you get
 
@@ -138,7 +138,9 @@ Configuration only (NFR-4):
 
 1. Add the code to `scope.countries` or `scope.indicators` in [`pipelines/worldbank/config.yml`](pipelines/worldbank/config.yml). Codes are validated against the API before anything is fetched.
 2. **Indicators only:** add a row to [`seeds/indicator_aggregations.csv`](pipelines/worldbank/dbt/seeds/indicator_aggregations.csv) saying how it aggregates by income group (`sum`, `ratio` with its numerator and denominator, or `weighted_mean` with its weight). The build fails if it's missing, and a `ratio` indicator is automatically checked against its parts.
-3. Run `just run`. The expected set, every model and every report extend on their own.
+3. Run `just run`. The expected set, every model and every report extend on their own; an end-to-end test proves it.
+
+To try a different scope once without editing the file, pass it on the command line: `just run --countries BRA,IND,ZAF --years 2020:2024`.
 
 ## Production design note
 
@@ -180,9 +182,6 @@ Configuration only (NFR-4):
 
 ## Unfinished work and next steps
 
-- **NFR-2 end to end:** reruns are proven idempotent at landing and load (identical bytes, fresh rebuilds); a test that two builds from the same runs give identical reports would prove it at the output.
-- **NFR-4 demo:** a test that adds a country and an indicator through configuration only and checks every report extends.
-- **Crafted scenarios through dbt:** the end-to-end test uses recorded data, where everything is present; running the null, missing and revision scenarios through dbt would complement the dbt unit tests.
 - **Optional extras** (brief, FR-ANA-5): a dashboard or extra view.
 
 ## AI usage
