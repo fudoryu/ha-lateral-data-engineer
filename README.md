@@ -156,19 +156,22 @@ To try a different scope once without editing the file, pass it on the command l
 
 ## Production design note
 
+How I would operate this in production, following the five points in the brief. The local design already has the production shape (immutable landing, write-audit-publish, structured logs); each piece maps to a managed service.
+
 ### Scheduling and incremental refreshes
-- An orchestrator (Airflow or Dagster) would run the same tasks as `just run`: extract, then load (`COPY INTO` or Snowpipe from S3), then `dbt build`, then the swap, with retries per task. A daily schedule is more than enough, since the World Bank publishes a few releases a year.
-- Refreshes would be triggered by a change in the source's `lastupdated`, but would still fetch the whole window, because revisions are silent (ADR-0006). Raw loads become incremental, one new run at a time, and old landing runs are compacted or moved to cold storage, keeping their manifests for audit.
-- In CI, `dbt build` would run against a Snowflake CI schema, using slim CI for changed models, with the same unit and data tests.
+- An orchestrator (Airflow, for example MWAA on AWS, or Azure Data Factory) runs the same tasks as `just run`: extract, then load, then `dbt build`, then the swap, with retries per task. A daily schedule is more than enough: the World Bank publishes a few releases a year.
+- **Incremental where it's safe:** the raw load is incremental, one new committed run at a time, and the orchestrator can skip the extract when no indicator's `lastupdated` has changed. The extract itself still fetches the whole window, because the World Bank revises past values silently (ADR-0006); at this volume that's a few requests a day. Old landing runs are compacted or moved to cold storage, keeping their manifests for audit.
+- In CI, `dbt build` runs against a Snowflake CI schema, with slim CI for changed models and the same unit and data tests.
 
-### Late, corrected or changed source data
-- Every run is a complete snapshot and the latest wins, so corrections land automatically; `int_indicator_values_versioned` records each revision.
-- A spike in revisions, new API fields (recorded as warnings) or a drop in coverage raises a warning; a contract violation stops the extract before anything is committed.
+### Handling late, corrected, or changed source data
+- **Late data** (a 2024 value published months later) and **corrections** need no special path: every run is a complete snapshot and the latest wins, so the next run picks them up, and `int_indicator_values_versioned` keeps every revision with the run that introduced it.
+- **Changed structure** is caught at the boundary: a contract violation (a type change, a missing field, an error returned with HTTP 200, a response that doesn't match its request) stops the extract before anything is committed, so analysts keep the last good state. New, unknown fields are recorded as warnings in the manifest rather than failing the run.
+- **Changed meaning** (a unit or definition change) is caught by the data tests, notably the cross-indicator check that GDP per capita stays within 0.1% of GDP ÷ population (ADR-0010).
 
-### Monitoring, alerting and data-quality failures
-- **Logs:** every step emits structured events (ADR-0024). `--log-format json` produces one object per line for CloudWatch or Datadog, and `run_id` reconstructs a run end to end.
-- **Metrics:** requests, retries and latency per run; rows per indicator; extract and build duration; and **freshness**, measured as the time since the last committed run and each indicator's `source_lastupdated`.
-- **Data quality:** dbt tests gate every publish; `run_results.json` is stored per build to track failures over time; coverage (`missing_row`, `null_value`) and revision rates are compared with the previous run.
+### Monitoring, alerting, and data-quality failures
+- **Logs:** every step emits structured events (ADR-0024); `--log-format json` gives one object per line for CloudWatch, Azure Monitor or Datadog, and `run_id` reconstructs a run end to end.
+- **Metrics:** requests, retries and latency per run; rows per indicator; extract and build duration; and **freshness**: the time since the last committed run, and each indicator's `source_lastupdated`.
+- **Data-quality failures block, they don't leak:** dbt tests gate every publish, so a failed test leaves the last good warehouse live, and the failed build is kept for inspection. `run_results.json` is stored per build to track failures over time, and coverage (`missing_row`, `null_value`) and revision rates are compared with the previous run.
 - **Alerting:**
 
   | Severity | When |
@@ -176,22 +179,22 @@ To try a different scope once without editing the file, pass it on the command l
   | Page | the extract failed after its retries; a dbt test failed, so publishing was refused; no run was committed within the freshness SLA (for example 26 hours on a daily schedule) |
   | Warn | retries above a threshold; new API fields; a spike in revisions; a drop in coverage |
 
-- **Investigating a failure:** nothing is lost. Landed runs are immutable and a failed build is kept, so `worldbank load --as-of <run_id>` followed by `dbt build` rebuilds any past state, and `trace_value.sql` traces a value to its page, run and history.
+### Backfills and replay-ability
+- **Replay:** the landing zone is the system of record, so any warehouse state, current or past, is a replay of committed runs (`worldbank load --as-of <run_id>`, then `dbt build`), with no API call. Changing a model and rebuilding history is the same operation.
+- **Backfill:** extending the scope, whether an earlier year or a new country, is a configuration change and one run. Each run's expected set comes from the configuration recorded in its manifest, so older runs keep their own scope (ADR-0016).
+- **Tracing:** `analyses/trace_value.sql` follows any published value to its landed page, its run and its revision history.
 
-### Backfills and replay
-- The landing zone is the system of record: any warehouse state is a replay of committed runs (`load --as-of`), with no API call.
-- Extending the scope, whether an earlier year or a new country, is a configuration change and one run. Each run's expected set comes from the configuration recorded with it, so older runs keep their own scope (ADR-0016).
+### Mapping to Snowflake plus AWS Glue or EMR, or Azure
 
-### Mapping to Snowflake and AWS
-
-| Local | Production |
-|---|---|
-| landing zone on disk | an S3 bucket with the same layout; uploading the manifest is the atomic commit |
-| `worldbank extract` | a Python task (AWS Glue Python shell, Lambda or a container); with many sources, an EL framework such as dlt, keeping the same landing conventions (ADR-0019) |
-| `worldbank load` | `COPY INTO` or Snowpipe from an S3 stage with an explicit file list, or AWS Glue/EMR (Spark) writing Iceberg tables that Snowflake reads |
-| DuckDB layers as schemas | Snowflake databases per layer and schemas per domain (`MARTS.<DOMAIN>.…`), with grants per layer so analysts read only marts and reporting |
-| the `.next` file and atomic rename | build in a cloned schema, test, then `ALTER SCHEMA … SWAP WITH` (or Iceberg branches) |
-| `just` | the orchestrator's DAG |
+| Local | Snowflake + AWS | Azure |
+|---|---|---|
+| landing zone on disk | S3, same layout; uploading the manifest last is the atomic commit | ADLS Gen2, same layout and commit rule |
+| `worldbank extract` | a Python job: AWS Glue Python shell, Lambda or a container task | Azure Functions or a Container Apps job |
+| `worldbank load` | `COPY INTO` or Snowpipe from an S3 external stage, with an explicit file list; or Glue/EMR (Spark) writing Iceberg tables that Snowflake reads | `COPY INTO` or Snowpipe from an ADLS stage (Snowflake on Azure); or Databricks or Fabric Spark writing Delta/Iceberg tables |
+| dbt on DuckDB | dbt on Snowflake (dbt-snowflake), databases per layer and grants per layer, so analysts read only marts and reporting | the same on Snowflake on Azure; or dbt on Databricks, Fabric or Synapse |
+| the `.next` file and the atomic rename | build in a cloned schema, test, then `ALTER SCHEMA … SWAP WITH` | the same on Snowflake; on Delta, publish by swapping views or tables after tests pass |
+| `just` | Airflow (MWAA) or Step Functions | Azure Data Factory or Airflow |
+| structured logs on stderr | CloudWatch | Azure Monitor (Log Analytics) |
 
 ## Beyond the brief
 
