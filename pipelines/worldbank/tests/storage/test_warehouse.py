@@ -1,4 +1,3 @@
-import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -7,7 +6,6 @@ import pytest
 import responses
 
 from worldbank.api.client import Client
-from worldbank.api.contracts import UnexpectedResponse
 from worldbank.config import Config
 from worldbank.steps.extract import extract
 from worldbank.storage.landing_zone import Manifest, RunWriter
@@ -113,28 +111,4 @@ def test_a_missing_landing_file_fails_the_load(
     _first_observation_page(tmp_path / "raw").unlink()
 
     with pytest.raises(IntegrityError, match="missing"):
-        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
-
-
-def test_responses_are_revalidated_on_load(
-    recorded_api: responses.RequestsMock, recorded_config: Config, tmp_path: Path
-) -> None:
-    manifest = extract_recorded(
-        recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC)
-    )
-    # Corrupt a page *and* its manifest hash, so only contract validation can catch it.
-    page = _first_observation_page(tmp_path / "raw")
-    page.write_bytes(b"not json")
-    run_dir = page.parents[2]  # ./run_id=…/endpoint=observations/<code>/page=1.json
-    manifest_path = run_dir / "manifest.json"
-    response_id = page.relative_to(tmp_path / "raw").as_posix()
-    files = [
-        f.model_copy(update={"sha256": hashlib.sha256(b"not json").hexdigest()})
-        if f.response_id == response_id
-        else f
-        for f in manifest.files
-    ]
-    manifest_path.write_text(manifest.model_copy(update={"files": files}).model_dump_json())
-
-    with pytest.raises(UnexpectedResponse):
         load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")

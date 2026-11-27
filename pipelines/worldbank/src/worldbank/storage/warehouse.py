@@ -1,9 +1,10 @@
 """Load: rebuild the warehouse's raw layer from every committed landing run (ADR-0003, ADR-0006).
 
 The warehouse is a rebuildable cache, so loading always starts from an empty database file.
-Before anything is inserted, each landed file is checked against the sha256 in its run's manifest
-and re-validated against the response contracts (ADR-0005), so an edited or corrupted landing file
-can't silently change the data.
+Before anything is inserted, each landed file is checked against the sha256 in its run's manifest,
+so an edited or corrupted landing file can't silently change the data. Response contracts are
+enforced once, at extract time: a matching hash proves the bytes are the ones validated then
+(ADR-0020).
 
 Raw tables (one row per landing run, request, and response page; never deduplicated):
     raw.landing_runs    run metadata, including the configuration the run was extracted with
@@ -19,16 +20,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
-from pydantic import BaseModel
 
-from worldbank.api.contracts import Country, Indicator, Observation, parse_page
 from worldbank.storage.landing_zone import CommittedRun, committed_runs
-
-ENDPOINT_MODELS: dict[str, type[BaseModel]] = {
-    "countries": Country,
-    "indicators": Indicator,
-    "observations": Observation,
-}
 
 DDL = """
 create schema raw;
@@ -101,7 +94,6 @@ def _verified_bodies(run: CommittedRun) -> dict[str, bytes]:
         body = path.read_bytes()
         if hashlib.sha256(body).hexdigest() != landed.sha256:
             raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
-        parse_page(body, ENDPOINT_MODELS[landed.endpoint])  # same contracts as at extract time
         bodies[landed.response_id] = body
     return bodies
 
