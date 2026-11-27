@@ -80,7 +80,7 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 
 ## Data model
 
-The marts are a current-state **snowflake schema**, not a star: one fact and four dimensions at natural keys, holding the latest run only. The fact points to countries and indicators, and a country points to its region and income group, so reaching a group from a value takes two joins (ADR-0017, ADR-0028 to ADR-0032, ADR-0039, ADR-0040).
+The marts are a current-state dimensional model with normalized dimensions, a **snowflake schema** in Kimball's terms (unrelated to the Snowflake warehouse), not a star: one fact and four dimensions at natural keys, holding the latest run only. The fact points to countries and indicators, and a country points to its region and income group, so reaching a group from a value takes two joins (ADR-0017, ADR-0028 to ADR-0032, ADR-0039, ADR-0040).
 
 ```
   dim_regions             dim_countries           fct_country_indicator_values    dim_indicators
