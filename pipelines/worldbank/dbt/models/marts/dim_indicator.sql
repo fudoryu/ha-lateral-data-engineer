@@ -16,6 +16,7 @@ final AS (
         definition,
         source_organization,
         source_lastupdated,
+        display_decimals,
         aggregation_method,
         numerator_indicator_id,
         denominator_indicator_id,

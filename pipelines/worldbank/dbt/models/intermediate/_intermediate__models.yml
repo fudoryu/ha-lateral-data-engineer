@@ -113,10 +113,10 @@ models:
               arguments:
                 values: [current_applied_to_all_years]
 
-  - name: int_indicators_joined_to_releases
+  - name: int_indicators_joined_to_latest_observations
     description: >
-      The latest run's indicators with the release date of their current values
-      (`source_lastupdated`, from the latest run's observation pages; one per indicator).
+      The latest run's indicators with what their current observations say about them: the
+      release date (`source_lastupdated`) and the display precision (`display_decimals`).
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]

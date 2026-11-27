@@ -18,9 +18,7 @@ final AS (
         income_groups.income_group_id,
         cells.indicator_value,
         cells.value_status,
-        cells.unit,
         cells.obs_status,
-        cells.decimals,
         cells.source_response_id
     FROM cells
     LEFT JOIN income_groups

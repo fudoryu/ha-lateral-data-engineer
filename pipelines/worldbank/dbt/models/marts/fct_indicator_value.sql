@@ -16,9 +16,7 @@ final AS (
         income_group_id,
         indicator_value,
         value_status,
-        unit,
         obs_status,
-        decimals,
         source_response_id
     FROM cells
 )

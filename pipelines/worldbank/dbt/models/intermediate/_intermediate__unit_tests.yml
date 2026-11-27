@@ -209,7 +209,7 @@ unit_tests:
   - name: indicators_get_their_aggregation_method
     model: int_indicators_joined_to_aggregations
     given:
-      - input: ref('int_indicators_joined_to_releases')
+      - input: ref('int_indicators_joined_to_latest_observations')
         rows:
           - {indicator_id: NY.GDP.PCAP.CD}
           - {indicator_id: NEW.INDICATOR}
@@ -252,30 +252,33 @@ unit_tests:
         - {country_id: IND, observation_year: 2019, income_group_id: LMC,
            classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
 
-  - name: indicators_get_the_release_of_their_latest_observations
+  - name: indicators_get_the_release_and_precision_of_their_latest_observations
     description: >
-      The date comes from the latest run's observation pages only: not from metadata pages, not
-      from older runs. An indicator without observation pages has none.
-    model: int_indicators_joined_to_releases
+      The release date comes from the latest run's observation pages only, not from metadata
+      pages or older runs; the precision from the latest values. An indicator without
+      observations has neither.
+    model: int_indicators_joined_to_latest_observations
     given:
       - input: ref('int_indicators_filtered_to_latest_run')
         rows:
-          - {indicator_id: SP.POP.TOTL}
+          - {indicator_id: SP.DYN.LE00.IN}
           - {indicator_id: NEW.INDICATOR}
       - input: ref('int_responses_joined_to_runs')
         rows:
-          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: true,
+          - {request_key: SP.DYN.LE00.IN, endpoint: observations, is_latest_run: true,
              source_lastupdated: 2026-11-11}
-          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: true,
-             source_lastupdated: 2026-11-11}
-          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: false,
+          - {request_key: SP.DYN.LE00.IN, endpoint: observations, is_latest_run: false,
              source_lastupdated: 2026-07-01}
           - {request_key: NEW.INDICATOR, endpoint: indicators, is_latest_run: true,
              source_lastupdated: null}
+      - input: ref('int_indicator_values_filtered_to_latest_run')
+        rows:
+          - {indicator_id: SP.DYN.LE00.IN, decimals: 1}
+          - {indicator_id: SP.DYN.LE00.IN, decimals: 1}
     expect:
       rows:
-        - {indicator_id: SP.POP.TOTL, source_lastupdated: 2026-11-11}
-        - {indicator_id: NEW.INDICATOR, source_lastupdated: null}
+        - {indicator_id: SP.DYN.LE00.IN, source_lastupdated: 2026-11-11, display_decimals: 1}
+        - {indicator_id: NEW.INDICATOR, source_lastupdated: null, display_decimals: null}
 
   - name: income_groups_are_ordered_low_to_high
     model: int_income_groups_joined_to_order
