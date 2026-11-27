@@ -22,7 +22,6 @@ final AS (
         indicators.indicator_name,
         facts.observation_year,
         facts.value_status,
-        facts.value_status <> 'present' AS is_missing,
         facts.indicator_value
     FROM facts
     INNER JOIN countries ON facts.country_id = countries.country_id
