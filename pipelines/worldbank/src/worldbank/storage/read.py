@@ -8,9 +8,8 @@ edited, missing, moved or corrupted file stops every reader.
 """
 
 import hashlib
+from dataclasses import dataclass
 from pathlib import Path
-
-from pydantic import BaseModel, ConfigDict
 
 from worldbank.storage.manifest import MANIFEST, RUN_PREFIX, Manifest
 
@@ -19,9 +18,8 @@ class IntegrityError(Exception):
     """A landed file is missing or doesn't match the sha256 recorded in its manifest."""
 
 
-class CommittedRun(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+@dataclass(frozen=True)
+class CommittedRun:
     path: Path
     manifest: Manifest
 
@@ -30,7 +28,7 @@ class CommittedRun(BaseModel):
         return self.path / MANIFEST
 
     def verified_files(self) -> list[Path]:
-        """Every file the manifest lists, each checked against its sha256 first."""
+        """Every file the manifest lists, each checked against its size and sha256 first."""
         files = []
         for landed in self.manifest.files:
             if not landed.response_id.startswith(f"{self.path.name}/"):
@@ -42,7 +40,7 @@ class CommittedRun(BaseModel):
                 raise IntegrityError(f"{landed.response_id}: listed in the manifest but missing")
             if path.stat().st_size != landed.bytes:
                 raise IntegrityError(f"{landed.response_id}: size doesn't match the manifest")
-            if hashlib.sha256(path.read_bytes()).hexdigest() != landed.sha256:
+            if _sha256(path) != landed.sha256:
                 raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
             files.append(path)
         return files
@@ -61,3 +59,8 @@ def committed_runs(landing_root: Path) -> list[CommittedRun]:
                 raise IntegrityError(f"{path.name}: its manifest is for run {manifest.run_id}")
             runs.append(CommittedRun(path=path, manifest=manifest))
     return runs
+
+
+def _sha256(path: Path) -> str:
+    with path.open("rb") as file:
+        return hashlib.file_digest(file, "sha256").hexdigest()  # streamed, not read whole
