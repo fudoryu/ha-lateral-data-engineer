@@ -21,7 +21,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted (recipe names amended by ADR-0018) |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
-| [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted (mart names pluralized by ADR-0032) |
+| [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted (mart names pluralized by ADR-0032; staging's job clarified by ADR-0033) |
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028) |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
@@ -38,6 +38,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted |
 | [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted (pluralized by ADR-0032) |
 | [ADR-0032](#adr-0032-every-table-name-is-plural) | Every table name is plural | Decision | Accepted |
+| [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
 
 ---
 
@@ -1038,3 +1039,26 @@ ADR-0016 names staging and intermediate models after plural entities (`stg_world
 
 ### Consequences
 - One convention from staging to marts, matching the dbt guide reviewers are likely to know.
+
+---
+
+## ADR-0033: Staging cleans values; intermediate interprets them
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-3 · **Amends:** ADR-0016 (what staging does)
+
+### Context
+ADR-0016 says staging does "renaming, casting and flattening only", yet staging already trimmed names because the API sends some with trailing spaces (source-system §2). Text from the source can also carry repeated spaces, tabs or empty strings. In medallion terms, the landing zone and `raw` are bronze (exact source), and staging starts silver (cleaned, typed, standardized).
+
+### Decision
+- **Staging renames, casts, flattens and cleans values,** one source entity at a time, with no joins or business rules. Every text value from the source goes through `normalize_text`: trimmed, runs of whitespace (spaces, tabs, newlines) collapsed to one space, and empty results turned into null.
+- **Labels stay readable:** names keep the World Bank's wording and case (`High income`, `United States`); codes (`HIC`, `USA`) are the standardized values for logic, and our own category values stay lowercase snake_case.
+- **Intermediate interprets:** anything that's a business decision rather than cleaning (mapping a source's region to a company's own region, reconciling two sources' spellings) belongs in intermediate.
+
+### Alternatives considered
+- **Normalize in intermediate:** every model reading staging would repeat it, or a cleaning-only model per entity would be needed, which ADR-0026 forbids as a pass-through.
+- **Upper-case, underscored labels (`HIGH_INCOME`):** standard for codes, but these are display labels; codes already exist next to them.
+
+### Consequences
+- Every layer above staging sees clean text; the raw layer keeps the exact bytes.
+- The README maps the layers to the medallion vocabulary for readers who think in bronze, silver and gold.
