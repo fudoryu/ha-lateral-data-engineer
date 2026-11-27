@@ -1,34 +1,11 @@
 version: 2
 
-# The final data model (ADR-0017, FR-MOD-2): a star schema at natural keys. Every description
-# states the table's grain, key and relationships; the tests below enforce them.
+# The final data model for analysts (ADR-0017, ADR-0028, FR-MOD-2): a current-state star schema at
+# natural keys, latest run only. Every description states the table's grain, key and
+# relationships; the tests below enforce them. Run-level lineage and history stay in
+# intermediate, for engineers (see analyses/trace_value.sql).
 
 models:
-  - name: dim_run
-    description: >
-      Grain: one committed extract run. Key: `run_id`. `is_latest` marks the run whose rows are
-      current state (ADR-0006).
-    columns:
-      - name: run_id
-        data_tests: [unique, not_null]
-      - name: is_latest
-        data_tests: [not_null]
-
-  - name: dim_source_response
-    description: >
-      Grain: one landed API response page. Key: `source_response_id`, the page's landing path.
-      Relationships: `run_id` → dim_run. Where every value came from (NFR-1).
-    columns:
-      - name: source_response_id
-        data_tests: [unique, not_null]
-      - name: run_id
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_run')
-                field: run_id
-
   - name: dim_country
     description: >
       Grain: one configured country, latest run. Key: `country_iso3`. `income_level_id` is the
@@ -70,9 +47,9 @@ models:
     description: >
       Grain: one expected country × indicator × year of the latest run (current state). Key:
       (`country_iso3`, `indicator_id`, `observation_year`). Relationships: → dim_country,
-      dim_indicator, dim_country_income_group_by_year (on country and year), dim_run and
-      dim_source_response. `value_status` is present, null_value or missing_row; the value is
-      null unless present, and missing rows have no source response (ADR-0008, NFR-3).
+      dim_indicator, dim_country_income_group_by_year (on country and year). `value_status` is
+      present, null_value or missing_row; the value is null unless present, and missing rows
+      have no source response (ADR-0008, NFR-3).
     data_tests:
       - unique_combination:
           arguments:
@@ -95,54 +72,13 @@ models:
           - accepted_values:
               arguments:
                 values: [present, null_value, missing_row]
-      - name: run_id
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_run')
-                field: run_id
       - name: source_response_id
-        description: Null exactly when the status is missing_row.
+        description: >
+          Technical lineage, not for analysis (ADR-0028): the landed page the value came from,
+          which is also its path in the landing zone. Null exactly when the status is
+          missing_row. Trace it with analyses/trace_value.sql.
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_source_response')
+                to: ref('int_responses_joined_to_runs')
                 field: source_response_id
-
-  - name: fct_indicator_value_versions
-    description: >
-      Grain: one version of a cell's value across runs. Key: (`country_iso3`, `indicator_id`,
-      `observation_year`, `valid_from_run_id`). Relationships: → dim_country, dim_indicator,
-      dim_run (`valid_from_run_id`, `valid_to_run_id`). A version is valid until
-      `valid_to_run_id` (exclusive, null while open); `is_current` marks the version in
-      fct_indicator_value (ADR-0006, ADR-0017).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_iso3, indicator_id, observation_year, valid_from_run_id]
-    columns:
-      - name: country_iso3
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_country')
-                field: country_iso3
-      - name: indicator_id
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_indicator')
-                field: indicator_id
-      - name: valid_from_run_id
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_run')
-                field: run_id
-      - name: valid_to_run_id
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_run')
-                field: run_id

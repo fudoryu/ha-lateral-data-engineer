@@ -1,11 +1,11 @@
 -- Current state has exactly one row per cell the latest run was configured to fetch (ADR-0008,
--- ADR-0017): no cell is lost, none is invented. Fails with both counts when they differ.
+-- ADR-0028): no cell is lost, none is invented. Fails with both counts when they differ.
 WITH
 
 latest_expected AS (
     SELECT count(*) AS cells
     FROM {{ ref('stg_worldbank__expected_cells') }} AS expected
-    INNER JOIN {{ ref('dim_run') }} AS runs ON expected.run_id = runs.run_id
+    INNER JOIN {{ ref('int_runs_ranked') }} AS runs ON expected.run_id = runs.run_id
     WHERE runs.is_latest
 ),
 

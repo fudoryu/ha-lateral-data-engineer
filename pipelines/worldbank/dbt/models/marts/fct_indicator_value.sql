@@ -1,6 +1,6 @@
 -- Current state: one row per expected country x indicator x year of the latest run, with its
--- value, status and lineage (ADR-0008, ADR-0017). `indicator_value` is null unless the status is
--- present; missing is never zero (NFR-3).
+-- value and status (ADR-0008, ADR-0028). `indicator_value` is null unless the status is present;
+-- missing is never zero (NFR-3). `source_response_id` is technical lineage (NFR-1).
 WITH
 
 cells AS (
@@ -17,7 +17,6 @@ final AS (
         unit,
         obs_status,
         decimals,
-        run_id,
         source_response_id,
         source_lastupdated
     FROM cells
