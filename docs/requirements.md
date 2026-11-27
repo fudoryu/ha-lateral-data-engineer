@@ -143,8 +143,8 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ING-3 | `src/worldbank/source/client.py`: follows every page; checks page consistency and row totals | `tests/source/test_client.py` |
 | FR-ING-4 | Retries in `src/worldbank/source/client.py`; error bodies and malformed responses in `src/worldbank/source/contracts.py`; all-or-nothing runs in `src/worldbank/source/extract.py` (no manifest on failure, non-zero exit) | `tests/source/test_client.py`, `tests/source/test_contracts.py`, `tests/source/test_extract.py` |
 | FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/warehouse/load.py`, separate from later layers | `tests/warehouse/test_load.py` |
-| FR-MOD-2 | TBD | TBD |
-| FR-MOD-3 | TBD | TBD |
+| FR-MOD-2 | Partial: star schema in `dbt/models/marts/` (ADR-0017); each mart's grain, key and relationships stated in `_marts__models.yml` (README data-model section to come) | dbt key, relationship and singular tests (`unique_combination`, `relationships`, `assert_fact_*`) |
+| FR-MOD-3 | Staging flattens the JSON into typed, consistently named columns; marts expose only those (ADR-0016) | dbt unit tests on staging; `tests/test_pipeline.py` |
 | FR-ANA-1 | TBD | TBD |
 | FR-ANA-2 | TBD | TBD |
 | FR-ANA-3 | TBD | TBD |
@@ -152,7 +152,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-1 | Partial: dbt tests run on every build, before publish (`just build`, ADR-0007, ADR-0022); `just check` runs the whole chain offline, extract → load → dbt build → publish, on recorded responses | `tests/test_pipeline.py` |
 | FR-DQ-2 | TBD | TBD |
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
-| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/write.py`; the raw layer keeps them per response; committed runs are read only through sha256-verified reads (`src/worldbank/storage/read.py`) | `tests/storage/test_write.py`, `tests/storage/test_read.py`, `tests/warehouse/test_load.py` |
+| NFR-1 | Each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/write.py`; committed runs are read only through sha256-verified reads (`src/worldbank/storage/read.py`); every current value carries `run_id` and `source_response_id` to `dim_source_response` (`dbt/models/marts/`) | `tests/storage/test_write.py`, `tests/storage/test_read.py`, `tests/warehouse/test_load.py`, dbt `assert_fact_run_matches_its_response_run` and relationship tests |
 | NFR-2 | Partial: `worldbank load` rebuilds a fresh warehouse file from every committed run, never the live one; `--as-of` rebuilds as of an earlier run (`src/worldbank/warehouse/load.py`) | `tests/warehouse/test_load.py` |
 | NFR-3 | Partial: API values never coerced (`src/worldbank/source/contracts.py`); staging keeps JSON nulls null (`dbt/models/staging/stg_worldbank__observations.sql`) | `tests/source/test_contracts.py`, dbt unit test `observations_keep_null_values_null_and_blank_units_null` |
 | NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` and `src/worldbank/source/config.py` | `tests/test_config.py` |
