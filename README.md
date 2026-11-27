@@ -14,7 +14,9 @@ git clone <this repository> && cd ha-lateral-data-engineer
 uvx --from rust-just just run
 ```
 
-`just run` is the whole pipeline: it fetches the configured scope from the API, rebuilds and tests the warehouse, publishes it only if every test passed, and exports the reports to `data/outputs/`. `uvx` runs `just` without installing it; with `just` installed (`uv tool install rust-just`), `just run` is enough.
+`just run` is the whole pipeline: it fetches the configured scope from the API, rebuilds and tests the warehouse, publishes it only if every test passed, and exports the reports to `data/outputs/`. `uvx` comes with uv; it runs `just` without installing it, and is short for `uv tool run --from rust-just just run`, which works with the `uv` command alone. With `just` installed (`uv tool install rust-just`), `just run` is enough.
+
+Verified on a fresh clone with empty uv caches: uv downloads Python and every dependency, the run completes, and the exported reports match the committed sample.
 
 | Command | Without `just` | Does |
 |---|---|---|
