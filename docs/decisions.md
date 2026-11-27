@@ -35,7 +35,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
 | [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
 | [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Superseded by ADR-0030 |
-| [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted |
+| [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted (a dimension of its own and no sort order, ADR-0040) |
 | [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted (pluralized by ADR-0032) |
 | [ADR-0032](#adr-0032-every-table-name-is-plural) | Every table name is plural | Decision | Accepted |
 | [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
@@ -44,7 +44,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
 | [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Accepted |
-| [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted |
+| [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040) |
+| [ADR-0040](#adr-0040-income-groups-get-their-own-dimension) | Income groups get their own dimension | Decision | Accepted |
 
 ---
 
@@ -1209,3 +1210,27 @@ ADR-0009 aggregated each indicator by its nature: population and GDP summed, GDP
 ### Consequences
 - Countries reach their region through `region_id`, a dimension-to-dimension relationship: a small snowflake on one attribute.
 - Every mart column now has a use or a documented meaning.
+
+---
+
+## ADR-0040: Income groups get their own dimension
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2 · **Amends:** ADR-0039 · **Supersedes:** ADR-0030's sort order
+
+### Context
+ADR-0039 gave regions their own dimension but kept the income group's name and sort order on every country, so the two groupings of a country were modeled differently. The sort order came from a seed that existed only to list groups from low to high income in reports.
+
+### Decision
+- **`dim_income_groups`, one row per income group of the latest run's countries,** keyed by the World Bank's `income_group_id`, with `income_group_name`. `int_income_groups_derived_from_countries` collects the distinct ones; a group id with two names fails its uniqueness test.
+- **`dim_countries` keeps only foreign keys for its groupings:** `region_id` and `income_group_id`.
+- **No sort order in the model:** the `income_groups` seed, `int_countries_joined_to_income_groups` and `income_group_sort_order` are removed. Ordering groups from low to high income is presentation, so the HTML report orders them itself; the CSV export sorts by `income_group_id`.
+
+### Alternatives considered
+- **Keep the group on the country (ADR-0039):** one join fewer for the income-group report, but two groupings modeled two ways.
+- **Keep the sort order in `dim_income_groups`:** reports sort without knowing the groups, at the cost of a seed and a column that only serve display.
+
+### Consequences
+- Regions and income groups are modeled the same way: a dimension each, with an id and a name, reached from `dim_countries`.
+- The project has no seeds left.
+- A new income group would appear in the HTML report after the known ones, until the report's display order lists it.
