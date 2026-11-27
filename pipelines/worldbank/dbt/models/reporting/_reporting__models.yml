@@ -78,12 +78,14 @@ models:
 
   - name: rpt_income_group_by_year
     description: >
-      FR-ANA-4: each indicator per income group and year. `average_value` is the average of the
-      group's countries that have a value, the same rule for every indicator (ADR-0038): the
-      typical country in the group, not the group's total. `n_countries_with_data` of
-      `n_countries` says how many contributed; with none, the average is null, never 0. Income
-      groups are the current classification applied to every year (ADR-0011, ADR-0040; see the
-      README's assumptions). Grain: one income group × indicator × year.
+      FR-ANA-4: the brief's four indicators per income group and year (ADR-0043). `group_value`
+      is aggregated the way each indicator requires, and `aggregation` says how: population and
+      GDP summed; GDP per capita as total GDP / total population; life expectancy as a
+      population-weighted mean. Only countries with everything the formula needs contribute:
+      `n_countries_with_data` of `n_countries`; with none, the value is null, never 0. An
+      indicator outside the four has no row. Income groups are the current classification
+      applied to every year (ADR-0011, ADR-0040; see the README's assumptions). Grain: one income
+      group × indicator × year.
     data_tests:
       - unique_combination:
           arguments:

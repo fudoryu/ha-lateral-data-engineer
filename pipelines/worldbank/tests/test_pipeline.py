@@ -177,7 +177,7 @@ def test_nulls_gaps_zeros_and_revisions_reach_the_reports(
         ("BRA", POP, 2018): "prior_out_of_scope",
     }
     india_gdp_2019 = one(groups, income_group_id="LMC", indicator_id=GDP, observation_year=2019)
-    assert (india_gdp_2019["average_value"], india_gdp_2019["n_countries_with_data"]) == ("", "0")
+    assert (india_gdp_2019["group_value"], india_gdp_2019["n_countries_with_data"]) == ("", "0")
     revised = one(cells, country_id="USA", indicator_id=LIFE_EXPECTANCY, observation_year=2022)
     assert float(revised["indicator_value"]) == 79.5  # the latest release wins (ADR-0006)
 
@@ -222,4 +222,6 @@ def test_adding_a_country_and_an_indicator_is_configuration_only(
     life_by_group = [
         r for r in reports["rpt_income_group_by_year"] if r["indicator_id"] == LIFE_EXPECTANCY
     ]
-    assert life_by_group and all(r["average_value"] is not None for r in life_by_group)
+    assert life_by_group and all(
+        r["aggregation"] == "population-weighted mean" and r["group_value"] for r in life_by_group
+    )

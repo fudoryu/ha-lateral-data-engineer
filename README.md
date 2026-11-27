@@ -46,7 +46,7 @@ The warehouse is `data/warehouse/worldbank.duckdb` and opens in any DuckDB clien
 | What is the year-over-year change, handling missing or zero prior values? | `rpt_year_over_year`: absolute and percent change, or null with a `null_change_reason` | country × indicator × year |
 | How do the countries compare for the latest available year? | `rpt_latest_year_by_country`: each country at its own latest year, shown and ranked | country × indicator |
 | | `rpt_latest_common_year`: every country at the latest year they all share | country × indicator |
-| How do the indicators compare across income groups, by year? | `rpt_income_group_by_year`: the average of each group's countries, with coverage counts | income group × indicator × year |
+| How do the indicators compare across income groups, by year? | `rpt_income_group_by_year`: each indicator aggregated the way it requires, with coverage counts | income group × indicator × year |
 
 With today's data every series in scope is complete, so `null_value`, `missing_row` and most null-change reasons appear only in the tests that prove them. To see how the pipeline behaves with real gaps, I also ran it on a wider, random scope (see [Beyond the brief](#beyond-the-brief)).
 
@@ -123,7 +123,7 @@ The brief leaves several questions open. I resolved them as follows ([requiremen
 - **Missing and incomplete** (Q1, ADR-0008): I measure against the configured scope. A cell is `null_value` (a row with a null) or `missing_row` (no row); a series is `incomplete` when some years are present and `missing` when none are.
 - **Latest available year** (Q2, ADR-0009): each country at its own latest year with a value, with the year shown, plus a separate like-for-like table at the latest year all countries share.
 - **Income groups are the World Bank's current classification, applied to every year** (Q3, ADR-0011, ADR-0030). The API publishes only today's classification, and the brief allows no other source. If a country changed group during 2018–2024, its earlier years are grouped with hindsight; whether any of the nine did can't be verified through the API. Note that the lower-middle-income group contains India alone.
-- **Income-group aggregation** (Q4, ADR-0038): each group's value is the average of its countries that have a value, the same rule for every indicator. It describes the typical country in the group, not the group's total, so it's an average population rather than a total, and an average of GDP per capita rather than Σ GDP ÷ Σ population. The coverage counts say how many countries contributed.
+- **Income-group aggregation** (Q4, ADR-0043): each indicator is aggregated the way its nature requires, written out in the report's SQL: population and GDP are summed; GDP per capita is Σ GDP ÷ Σ population, never an average of the countries' ratios; life expectancy is weighted by population. Only countries with everything a formula needs contribute, and the coverage counts say how many did. The report covers the brief's four indicators: a newly configured indicator extends every other report on its own, but this one only once its aggregate is added (the one exception to configuration-only scope).
 - **The 2018 year-over-year change** (Q5, ADR-0009) is null with the reason `prior_out_of_scope`, because 2017 isn't fetched.
 - **Consistency tolerance** (Q6, ADR-0010): 0.1%. The largest difference I measured on live data was below 0.000001%.
 - **Revised values** (Q7, ADR-0006): the World Bank revises past values silently, so every run fetches the full scope and the latest committed run wins. Earlier values remain in the landing zone and the value history.
@@ -153,7 +153,7 @@ The decisions I consider most important, each recorded with its alternatives:
 This takes configuration only (NFR-4):
 
 1. Add the code to `scope.countries` or `scope.indicators` in [`pipelines/worldbank/config.yml`](pipelines/worldbank/config.yml). Codes are validated against the API before anything is fetched.
-2. Run `just run`. The expected set, every model and every report extend on their own, and an end-to-end test proves it.
+2. Run `just run`. The expected set, every model and every report extend on their own, and an end-to-end test proves it. The one exception is the income-group report, which aggregates each of the brief's indicators by its own formula (ADR-0043): a new indicator appears there once its formula is added.
 
 To try a different scope once without editing the file, pass it on the command line: `just run --countries BRA,IND,ZAF --years 2020:2024`.
 
