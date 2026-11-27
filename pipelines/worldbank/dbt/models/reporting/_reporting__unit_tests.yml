@@ -1,11 +1,12 @@
 version: 2
 
 unit_tests:
-  - name: series_are_complete_incomplete_or_missing
+  - name: cells_and_series_are_present_incomplete_or_missing
     description: >
-      All years present is complete, some is incomplete, none is missing; null values and
-      missing rows both count as gaps (ADR-0008).
-    model: rpt_completeness_by_series
+      Each cell keeps its status; a series with every year present is complete, with some is
+      incomplete, with none is missing. Null values and missing rows both count as gaps
+      (ADR-0008).
+    model: rpt_completeness
     given:
       - input: ref('fct_country_indicator_values')
         rows:
@@ -25,12 +26,12 @@ unit_tests:
           - {indicator_id: SP.POP.TOTL, indicator_name: "Population, total"}
     expect:
       rows:
-        - {country_id: BRA, series_status: complete, n_present: 2, n_expected: 2,
-           n_null_value: 0, n_missing_row: 0}
-        - {country_id: IND, series_status: incomplete, n_present: 1, n_expected: 2,
-           n_null_value: 1, n_missing_row: 0}
-        - {country_id: ZAF, series_status: missing, n_present: 0, n_expected: 2,
-           n_null_value: 1, n_missing_row: 1}
+        - {country_id: BRA, observation_year: 2023, value_status: present, series_status: complete}
+        - {country_id: BRA, observation_year: 2024, value_status: present, series_status: complete}
+        - {country_id: IND, observation_year: 2023, value_status: present, series_status: incomplete}
+        - {country_id: IND, observation_year: 2024, value_status: null_value, series_status: incomplete}
+        - {country_id: ZAF, observation_year: 2023, value_status: missing_row, series_status: missing}
+        - {country_id: ZAF, observation_year: 2024, value_status: null_value, series_status: missing}
 
   - name: year_over_year_changes_and_every_null_reason
     description: >
@@ -64,11 +65,38 @@ unit_tests:
         - {observation_year: 2022, absolute_change: 5, percent_change: null,
            null_change_reason: prior_zero}
 
-  - name: each_country_is_shown_at_its_own_latest_year
+  - name: each_country_at_its_latest_year_and_everyone_at_the_common_year
     description: >
-      Brazil's latest is 2024, India's 2023; South Africa has no value and keeps a row with
-      nulls, unranked.
-    model: rpt_latest_year_by_country
+      Brazil's latest year is 2024, India's 2023, so they're ranked on different years; 2023 is
+      the latest year both have, and on it India (30) ranks above Brazil (10).
+    model: rpt_latest_year
+    given:
+      - input: ref('fct_country_indicator_values')
+        rows:
+          - {country_id: BRA, indicator_id: X, observation_year: 2023, indicator_value: 10, value_status: present}
+          - {country_id: BRA, indicator_id: X, observation_year: 2024, indicator_value: 12, value_status: present}
+          - {country_id: IND, indicator_id: X, observation_year: 2023, indicator_value: 30, value_status: present}
+          - {country_id: IND, indicator_id: X, observation_year: 2024, indicator_value: null, value_status: missing_row}
+      - input: ref('dim_countries')
+        rows:
+          - {country_id: BRA, country_name: Brazil}
+          - {country_id: IND, country_name: India}
+          - {country_id: ZAF, country_name: South Africa}
+      - input: ref('dim_indicators')
+        rows:
+          - {indicator_id: X, indicator_name: An indicator}
+    expect:
+      rows:
+        - {country_id: BRA, latest_year: 2024, latest_value: 12, latest_rank: 2,
+           common_year: 2023, common_value: 10, common_rank: 2}
+        - {country_id: IND, latest_year: 2023, latest_value: 30, latest_rank: 1,
+           common_year: 2023, common_value: 30, common_rank: 1}
+
+  - name: a_country_without_values_keeps_its_row_and_removes_the_common_year
+    description: >
+      South Africa has no value in any year: it keeps a row, unranked, and no year is common to
+      all countries, so every common column is null.
+    model: rpt_latest_year
     given:
       - input: ref('fct_country_indicator_values')
         rows:
@@ -88,60 +116,12 @@ unit_tests:
           - {indicator_id: X, indicator_name: An indicator}
     expect:
       rows:
-        - {country_id: BRA, latest_year: 2024, indicator_value: 12, rank_in_indicator: 2}
-        - {country_id: IND, latest_year: 2023, indicator_value: 30, rank_in_indicator: 1}
-        - {country_id: ZAF, latest_year: null, indicator_value: null, rank_in_indicator: null}
-
-  - name: the_common_year_is_the_latest_every_country_has
-    description: >
-      Brazil has 2023 and 2024, India only 2023, so 2023 is the latest year both have, and both
-      are compared on it.
-    model: rpt_latest_common_year
-    given:
-      - input: ref('fct_country_indicator_values')
-        rows:
-          - {country_id: BRA, indicator_id: X, observation_year: 2023, indicator_value: 10, value_status: present}
-          - {country_id: BRA, indicator_id: X, observation_year: 2024, indicator_value: 12, value_status: present}
-          - {country_id: IND, indicator_id: X, observation_year: 2023, indicator_value: 30, value_status: present}
-          - {country_id: IND, indicator_id: X, observation_year: 2024, indicator_value: null, value_status: missing_row}
-      - input: ref('dim_countries')
-        rows:
-          - {country_id: BRA, country_name: Brazil}
-          - {country_id: IND, country_name: India}
-          - {country_id: ZAF, country_name: South Africa}
-      - input: ref('dim_indicators')
-        rows:
-          - {indicator_id: X, indicator_name: An indicator}
-    expect:
-      rows:
-        - {country_id: BRA, common_year: 2023, indicator_value: 10, rank_in_indicator: 2}
-        - {country_id: IND, common_year: 2023, indicator_value: 30, rank_in_indicator: 1}
-
-  - name: without_a_common_year_every_country_keeps_a_row
-    description: South Africa has no value in any year, so no year is common to all countries.
-    model: rpt_latest_common_year
-    given:
-      - input: ref('fct_country_indicator_values')
-        rows:
-          - {country_id: BRA, indicator_id: X, observation_year: 2023, indicator_value: 10, value_status: present}
-          - {country_id: BRA, indicator_id: X, observation_year: 2024, indicator_value: 12, value_status: present}
-          - {country_id: IND, indicator_id: X, observation_year: 2023, indicator_value: 30, value_status: present}
-          - {country_id: IND, indicator_id: X, observation_year: 2024, indicator_value: null, value_status: missing_row}
-          - {country_id: ZAF, indicator_id: X, observation_year: 2023, indicator_value: null, value_status: null_value}
-          - {country_id: ZAF, indicator_id: X, observation_year: 2024, indicator_value: null, value_status: missing_row}
-      - input: ref('dim_countries')
-        rows:
-          - {country_id: BRA, country_name: Brazil}
-          - {country_id: IND, country_name: India}
-          - {country_id: ZAF, country_name: South Africa}
-      - input: ref('dim_indicators')
-        rows:
-          - {indicator_id: X, indicator_name: An indicator}
-    expect:
-      rows:
-        - {country_id: BRA, common_year: null, indicator_value: null, rank_in_indicator: null}
-        - {country_id: IND, common_year: null, indicator_value: null, rank_in_indicator: null}
-        - {country_id: ZAF, common_year: null, indicator_value: null, rank_in_indicator: null}
+        - {country_id: BRA, latest_year: 2024, latest_value: 12, latest_rank: 2,
+           common_year: null, common_value: null, common_rank: null}
+        - {country_id: IND, latest_year: 2023, latest_value: 30, latest_rank: 1,
+           common_year: null, common_value: null, common_rank: null}
+        - {country_id: ZAF, latest_year: null, latest_value: null, latest_rank: null,
+           common_year: null, common_value: null, common_rank: null}
 
   - name: income_groups_aggregate_each_indicator_by_its_nature
     description: >

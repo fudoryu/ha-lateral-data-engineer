@@ -4,11 +4,14 @@ version: 2
 # CSV. They read only the marts (ADR-0027); each states the question it answers and its grain.
 
 models:
-  - name: rpt_completeness_by_cell
+  - name: rpt_completeness
     description: >
-      FR-ANA-1, cell level: every expected country × indicator × year with its status: present,
-      null_value (the API returned the row with a null) or missing_row (no row at all). Grain:
-      one country × indicator × year (ADR-0008).
+      FR-ANA-1: every expected country × indicator × year with its `value_status` (present,
+      null_value: the API returned the row with a null, or missing_row: no row at all) and its
+      series' `series_status` across the reporting years (complete: every year present,
+      incomplete: some, missing: none). Filter `value_status` for missing combinations and
+      `series_status` for incomplete series. Grain: one country × indicator × year (ADR-0008,
+      ADR-0044).
     data_tests:
       - unique_combination:
           arguments:
@@ -16,23 +19,13 @@ models:
     columns:
       - name: value_status
         data_tests:
+          - not_null
           - accepted_values:
               arguments:
                 values: [present, null_value, missing_row]
-
-  - name: rpt_completeness_by_series
-    description: >
-      FR-ANA-1, series level: each country × indicator over the reporting years is complete
-      (every year present), incomplete (some) or missing (none), with `n_present` of
-      `n_expected` and how the gaps split between null values and missing rows. Grain: one
-      country × indicator (ADR-0008).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_id, indicator_id]
-    columns:
       - name: series_status
         data_tests:
+          - not_null
           - accepted_values:
               arguments:
                 values: [complete, incomplete, missing]
@@ -55,22 +48,14 @@ models:
               arguments:
                 values: [current_missing, prior_out_of_scope, prior_missing, prior_zero]
 
-  - name: rpt_latest_year_by_country
+  - name: rpt_latest_year
     description: >
-      FR-ANA-3, main view: each country at its own latest year with a value, per indicator;
-      `latest_year` shows which year, since it can differ by country. `rank_in_indicator`
-      ranks countries by that value (1 = highest). A country with no value keeps its row, with
-      nulls. Grain: one country × indicator (ADR-0009).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_id, indicator_id]
-
-  - name: rpt_latest_common_year
-    description: >
-      FR-ANA-3, like-for-like view: per indicator, every country at `common_year`, the latest
-      year all countries have a value for, ranked by that value (1 = highest). Grain: one
-      country × indicator (ADR-0009).
+      FR-ANA-3: each country per indicator at its own latest year with a value (`latest_year`,
+      `latest_value`, `latest_rank`), next to the latest year every country has a value for
+      (`common_year`, `common_value`, `common_rank`), which compares like with like. Ranks are
+      within the indicator, 1 being the highest. A country without a value keeps its row,
+      unranked; with no year common to all, the common columns are null. Grain: one country ×
+      indicator (ADR-0009, ADR-0044).
     data_tests:
       - unique_combination:
           arguments:

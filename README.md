@@ -37,15 +37,13 @@ The warehouse is `data/warehouse/worldbank.duckdb` and opens in any DuckDB clien
 
 ## What it produces
 
-[`reports/report.html`](reports/report.html) presents all four answers on one page. Behind it are six reporting tables, each exported to `data/outputs/`:
+[`reports/report.html`](reports/report.html) presents all four answers on one page. Behind it are four reporting tables, one per question, each exported to `data/outputs/`:
 
 | Question in the brief | Table | Grain |
 |---|---|---|
-| Which country-indicator-year combinations are missing or incomplete? | `rpt_completeness_by_cell`: every expected cell with its status (`present`, `null_value`, `missing_row`) | country × indicator × year |
-| | `rpt_completeness_by_series`: `complete`, `incomplete` or `missing` across the years, with counts | country × indicator |
+| Which country-indicator-year combinations are missing or incomplete? | `rpt_completeness`: every expected value with its status (`present`, `null_value`, `missing_row`) and its series' status (`complete`, `incomplete`, `missing`) | country × indicator × year |
 | What is the year-over-year change, handling missing or zero prior values? | `rpt_year_over_year`: absolute and percent change, or null with a `null_change_reason` | country × indicator × year |
-| How do the countries compare for the latest available year? | `rpt_latest_year_by_country`: each country at its own latest year, shown and ranked | country × indicator |
-| | `rpt_latest_common_year`: every country at the latest year they all share | country × indicator |
+| How do the countries compare for the latest available year? | `rpt_latest_year`: each country at its own latest year, ranked, next to every country at the latest year they all share | country × indicator |
 | How do the indicators compare across income groups, by year? | `rpt_income_group_by_year`: each indicator aggregated the way it requires, with coverage counts | income group × indicator × year |
 
 With today's data every series in scope is complete, so `null_value`, `missing_row` and most null-change reasons appear only in the tests that prove them. To see how the pipeline behaves with real gaps, I also ran it on a wider, random scope (see [Beyond the brief](#beyond-the-brief)).

@@ -25,6 +25,7 @@ REASONS = {
     "prior_missing": "no prior value",
     "prior_zero": "prior was 0",
 }
+STATUSES = ("present", "null_value", "missing_row")
 STATUS_COLORS = {"complete": "#d8efe0", "incomplete": "#fbe7c6", "missing": "#f6d0cc"}
 LINE_COLORS = ("#c2410c", "#0f766e", "#1d4ed8", "#7e22ce")
 
@@ -60,11 +61,9 @@ def render_report(warehouse: Path, output: Path) -> Path:
 
 
 _TABLES = {
-    "rpt_completeness_by_cell": "country_id, indicator_id, observation_year",
-    "rpt_completeness_by_series": "country_name, indicator_name",
+    "rpt_completeness": "country_name, indicator_name, observation_year",
     "rpt_year_over_year": "indicator_name, country_name, observation_year",
-    "rpt_latest_year_by_country": "indicator_name, rank_in_indicator NULLS LAST, country_name",
-    "rpt_latest_common_year": "indicator_name, rank_in_indicator NULLS LAST, country_name",
+    "rpt_latest_year": "indicator_name, latest_rank NULLS LAST, country_name",
     "rpt_income_group_by_year": "indicator_name, income_group_id, observation_year",
 }
 
@@ -108,11 +107,28 @@ def _grouped(rows: list[Row], key: str) -> dict[str, list[Row]]:
 # --- sections ------------------------------------------------------------------------------------
 
 
-def _completeness(cells: list[Row], series: list[Row]) -> str:
-    counts = {
-        status: sum(1 for c in cells if c["value_status"] == status)
-        for status in ("present", "null_value", "missing_row")
-    }
+def _series(cells: list[Row]) -> list[Row]:
+    """One row per country and indicator, counting its cells by status."""
+    by_series: dict[tuple[str, str], list[Row]] = defaultdict(list)
+    for cell in cells:
+        by_series[(cell["country_name"], cell["indicator_name"])].append(cell)
+    return [
+        {
+            "country_name": country,
+            "indicator_name": indicator,
+            "series_status": rows[0]["series_status"],
+            "n_expected": len(rows),
+            **{
+                f"n_{status}": sum(r["value_status"] == status for r in rows) for status in STATUSES
+            },
+        }
+        for (country, indicator), rows in by_series.items()
+    ]
+
+
+def _completeness(cells: list[Row]) -> str:
+    counts = {status: sum(1 for c in cells if c["value_status"] == status) for status in STATUSES}
+    series = _series(cells)
     countries = sorted({s["country_name"] for s in series})
     indicators = sorted({s["indicator_name"] for s in series})
     by_pair = {(s["country_name"], s["indicator_name"]): s for s in series}
@@ -177,29 +193,16 @@ def _year_over_year(changes: list[Row]) -> str:
 it's never shown as 0. The first year has no prior year in scope.</p>{out}</section>"""
 
 
-def _latest(latest: list[Row], common: list[Row]) -> str:
+def _latest(latest: list[Row]) -> str:
     out = ""
-    common_by = {(r["indicator_name"], r["country_name"]): r for r in common}
     for indicator, rows in _grouped(latest, "indicator_name").items():
-        common_year = next(
-            (
-                c["common_year"]
-                for c in common
-                if c["indicator_name"] == indicator and c["common_year"] is not None
-            ),
-            None,
-        )
-        common_values = {
-            country: row["indicator_value"]
-            for (name, country), row in common_by.items()
-            if name == indicator
-        }
+        common_year = next((r["common_year"] for r in rows if r["common_year"] is not None), None)
         body = "".join(
-            f'<tr><td class="num">{r["rank_in_indicator"] or "—"}</td>'
+            f'<tr><td class="num">{r["latest_rank"] or "—"}</td>'
             f"<th>{_e(r['country_name'])}</th>"
-            f'<td class="num">{_number(r["indicator_value"])}</td>'
+            f'<td class="num">{_number(r["latest_value"])}</td>'
             f'<td class="num">{r["latest_year"] or "—"}</td>'
-            f'<td class="num">{_number(common_values[r["country_name"]])}</td></tr>'
+            f'<td class="num">{_number(r["common_value"])}</td></tr>'
             for r in rows
         )
         common_label = f"value in {common_year}" if common_year else "no year common to all"
@@ -323,9 +326,9 @@ footer {{ margin-top:48px; color:var(--muted); font-size:13px; }}
 reporting tables.</p>
 <nav><a href="#completeness">Completeness</a><a href="#year-over-year">Year over year</a>
 <a href="#latest">Latest year</a><a href="#income-groups">Income groups</a></nav>
-{_completeness(tables["rpt_completeness_by_cell"], tables["rpt_completeness_by_series"])}
+{_completeness(tables["rpt_completeness"])}
 {_year_over_year(tables["rpt_year_over_year"])}
-{_latest(tables["rpt_latest_year_by_country"], tables["rpt_latest_common_year"])}
+{_latest(tables["rpt_latest_year"])}
 {_income_groups(tables["rpt_income_group_by_year"])}
 <footer>Source: World Bank API, World Development Indicators. Missing values are never shown as
 0. The same tables are exported as CSV to <code>data/outputs/</code>.</footer>

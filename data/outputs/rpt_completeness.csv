@@ -1,0 +1,253 @@
+country_id,country_name,indicator_id,indicator_name,observation_year,value_status,indicator_value,series_status
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2018,present,1916933898010.99,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2019,present,1873288205059.69,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2020,present,1476107231310.49,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2021,present,1670647398904.9,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2022,present,1951923942083.32,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2023,present,2191131765684.63,complete
+BRA,Brazil,NY.GDP.MKTP.CD,GDP (current US$),2024,present,2185821610689.31,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,9300.66164923219,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,9029.83326681073,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,7074.19378337644,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,7972.5366498646,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,9281.33334441234,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,10377.5892792557,complete
+BRA,Brazil,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,10310.5486973693,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,75.633,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,75.809,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,74.506,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,73.038,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,74.872,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,75.848,complete
+BRA,Brazil,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,76.023,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2018,present,206107261.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2019,present,207455459.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2020,present,208660842.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2021,present,209550294.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2022,present,210306415.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2023,present,211140729.0,complete
+BRA,Brazil,SP.POP.TOTL,"Population, total",2024,present,211998573.0,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2018,present,1725330736237.69,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2019,present,1743728952156.85,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2020,present,1655686966881.99,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2021,present,2022377950896.78,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2022,present,2200562785046.32,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2023,present,2196593836347.42,complete
+CAN,Canada,NY.GDP.MKTP.CD,GDP (current US$),2024,present,2270076189683.46,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,46539.2177903178,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,46352.9695208927,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,43537.8981198851,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,52886.6407813788,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,56496.9275340663,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,54847.5370112652,complete
+CAN,Canada,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,55015.7066917734,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,81.8036585365854,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,82.1585365853659,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,81.53,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,81.4514634146342,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,81.0948780487805,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,81.6263414634146,complete
+CAN,Canada,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,82.1080487804878,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2018,present,37072620.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2019,present,37618495.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2020,present,38028638.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2021,present,38239864.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2022,present,38950132.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2023,present,40049088.0,complete
+CAN,Canada,SP.POP.TOTL,"Population, total",2024,present,41262329.0,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2018,present,4055433215301.96,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2019,present,3959894794039.21,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2020,present,3941398957073.94,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2021,present,4355251953410.78,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2022,present,4201021706478.62,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2023,present,4562207532490.28,complete
+DEU,Germany,NY.GDP.MKTP.CD,GDP (current US$),2024,present,4685592577804.69,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,48916.1686612154,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,47656.199739747,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,47394.8734504469,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,52349.2459994422,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,50506.5179638543,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,54776.7668235491,complete
+DEU,Germany,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,56103.7323182554,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,80.8926829268293,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,81.2926829268293,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,81.0414634146342,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,80.790243902439,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,80.6080487804878,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,81.0414634146342,complete
+DEU,Germany,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,80.7926829268293,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2018,present,82905782.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2019,present,83092962.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2020,present,83160871.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2021,present,83196078.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2022,present,83177813.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2023,present,83287273.0,complete
+DEU,Germany,SP.POP.TOTL,"Population, total",2024,present,83516593.0,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2018,present,2897028009916.05,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2019,present,2875710080015.3,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2020,present,2724001478304.59,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2021,present,3194559188925.93,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2022,present,3181244350465.41,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2023,present,3420796653789.08,complete
+GBR,United Kingdom,NY.GDP.MKTP.CD,GDP (current US$),2024,present,3695539513534.15,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,43704.3162296687,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,43160.6843971799,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,40815.1255364787,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,47695.6491523474,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,47034.7795621476,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,49919.6896621586,complete
+GBR,United Kingdom,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,53341.3131094262,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,81.2560975609756,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,81.3691219512195,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,80.331756097561,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,80.6473170731707,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,81.0112195121951,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,81.2380975609756,complete
+GBR,United Kingdom,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,81.3868536585366,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2018,present,66287000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2019,present,66628000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2020,present,66740000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2021,present,66978000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2022,present,67636000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2023,present,68526000.0,complete
+GBR,United Kingdom,SP.POP.TOTL,"Population, total",2024,present,69281000.0,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2018,present,2702929641648.74,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2019,present,2835606256558.19,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2020,present,2674851578587.27,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2021,present,3167270623260.47,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2022,present,3249938492013.47,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2023,present,3500906030644.76,complete
+IND,India,NY.GDP.MKTP.CD,GDP (current US$),2024,present,3760813470500.86,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,1966.25455171679,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,2041.42863698585,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,1907.04251637669,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,2239.61384367482,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,2279.98145719369,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,2434.44826340989,complete
+IND,India,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,2591.9916607122,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,70.415,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,70.746,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,70.156,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,67.282,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,71.698,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,72.003,complete
+IND,India,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,72.235,complete
+IND,India,SP.POP.TOTL,"Population, total",2018,present,1374659064.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2019,present,1389030312.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2020,present,1402617695.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2021,present,1414203896.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2022,present,1425423212.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2023,present,1438069596.0,complete
+IND,India,SP.POP.TOTL,"Population, total",2024,present,1450935791.0,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2018,present,5154293721629.56,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2019,present,5245755000479.03,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2020,present,5189197543645.38,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2021,present,5225933520753.1,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2022,present,4447976207314.78,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2023,present,4384854269961.93,complete
+JPN,Japan,NY.GDP.MKTP.CD,GDP (current US$),2024,present,4190008188358.57,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,40645.478086519,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,41424.8655601543,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,41098.9739004553,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,41580.739040705,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,35548.2645222433,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,35215.003535366,complete
+JPN,Japan,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,33797.1014287876,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,84.2109756097561,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,84.3563414634146,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,84.56,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,84.4456097560976,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,83.9963414634146,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,84.0412195121951,complete
+JPN,Japan,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,84.0363414634146,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2018,present,126811000.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2019,present,126633000.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2020,present,126261000.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2021,present,125681593.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2022,present,125124989.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2023,present,124516650.0,complete
+JPN,Japan,SP.POP.TOTL,"Population, total",2024,present,123975371.0,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2018,present,1256300182983.65,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2019,present,1304106204006.27,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2020,present,1121064767168.8,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2021,present,1316569466833.94,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2022,present,1466934724243.38,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2023,present,1794410347718.25,complete
+MEX,Mexico,NY.GDP.MKTP.CD,GDP (current US$),2024,present,1830489311088.89,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,10084.7937570364,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,10369.5553593527,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,8841.27074929751,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,10314.0506733708,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,11405.7940469896,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,13830.843848864,complete
+MEX,Mexico,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,13988.0423745241,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,74.301,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,74.53,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,70.449,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,69.75,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,73.973,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,75.069,complete
+MEX,Mexico,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,75.264,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2018,present,124573711.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2019,present,125762982.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2020,present,126799054.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2021,present,127648148.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2022,present,128613117.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2023,present,129739759.0,complete
+MEX,Mexico,SP.POP.TOTL,"Population, total",2024,present,130861007.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2018,present,20656516000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2019,present,21539982000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2020,present,21375281000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2021,present,23725645000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2022,present,26054614000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2023,present,27811517000000.0,complete
+USA,United States,NY.GDP.MKTP.CD,GDP (current US$),2024,present,29298013000000.0,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,62875.6661382728,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,65227.9565911038,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,64465.2971415748,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,71441.2319805947,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,78008.6895811877,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,82586.7847707894,complete
+USA,United States,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,86169.6641581917,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,78.6390243902439,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,78.7878048780488,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,76.9804878048781,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,76.3292682926829,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,77.4341463414634,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,78.3853658536585,complete
+USA,United States,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,78.890243902439,complete
+USA,United States,SP.POP.TOTL,"Population, total",2018,present,328529577.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2019,present,330226227.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2020,present,331578104.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2021,present,332100166.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2022,present,333996304.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2023,present,336755052.0,complete
+USA,United States,SP.POP.TOTL,"Population, total",2024,present,340003797.0,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2018,present,405260723892.517,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2019,present,389330032224.269,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2020,present,337974655408.055,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2021,present,419986284375.368,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2022,present,407596043067.885,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2023,present,381440724491.232,complete
+ZAF,South Africa,NY.GDP.MKTP.CD,GDP (current US$),2024,present,401144998373.585,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,present,6914.1780318076,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,present,6533.71121032856,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,present,5580.60383075189,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,present,6828.75624590017,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,present,6534.24867783397,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,present,6034.27208964673,complete
+ZAF,South Africa,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,present,6267.186814093,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,present,65.726,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,present,66.071,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,present,65.15,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,present,62.01,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,present,65.454,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,present,66.139,complete
+ZAF,South Africa,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,present,66.312,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2018,present,58613001.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2019,present,59587885.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2020,present,60562381.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2021,present,61502603.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2022,present,62378410.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2023,present,63212384.0,complete
+ZAF,South Africa,SP.POP.TOTL,"Population, total",2024,present,64007187.0,complete

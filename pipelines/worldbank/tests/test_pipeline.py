@@ -30,11 +30,9 @@ DBT_PROJECT = Path(__file__).parents[1] / "dbt"
 DBT = Path(sys.executable).parent / "dbt"
 T0 = datetime(2026, 11, 24, tzinfo=UTC)
 REPORTS = {
-    "rpt_completeness_by_cell",
-    "rpt_completeness_by_series",
+    "rpt_completeness",
     "rpt_year_over_year",
-    "rpt_latest_year_by_country",
-    "rpt_latest_common_year",
+    "rpt_latest_year",
     "rpt_income_group_by_year",
 }
 
@@ -114,7 +112,7 @@ def test_recorded_runs_build_and_publish(
     assert counts == (expected, expected, len(scope.countries))
     assert not (tmp_path / "warehouse" / "worldbank.next.duckdb").exists()
     assert set(reports) == REPORTS
-    assert len(reports["rpt_completeness_by_cell"]) == expected
+    assert len(reports["rpt_completeness"]) == expected
 
 
 def test_rerunning_with_unchanged_data_gives_identical_reports(
@@ -150,7 +148,7 @@ def test_nulls_gaps_zeros_and_revisions_reach_the_reports(
 
     reports = build_publish_export(tmp_path)
 
-    cells, series = reports["rpt_completeness_by_cell"], reports["rpt_completeness_by_series"]
+    cells = reports["rpt_completeness"]
     changes, groups = reports["rpt_year_over_year"], reports["rpt_income_group_by_year"]
     assert one(cells, country_id="BRA", indicator_id=POP, observation_year=2020)[
         "value_status"
@@ -158,7 +156,9 @@ def test_nulls_gaps_zeros_and_revisions_reach_the_reports(
     assert one(cells, country_id="IND", indicator_id=GDP, observation_year=2019)[
         "value_status"
     ] == ("missing_row")
-    assert one(series, country_id="BRA", indicator_id=POP)["series_status"] == "incomplete"
+    assert one(cells, country_id="BRA", indicator_id=POP, observation_year=2024)[
+        "series_status"
+    ] == ("incomplete")
     reasons = {
         (country, indicator, year): one(
             changes, country_id=country, indicator_id=indicator, observation_year=year
@@ -211,10 +211,10 @@ def test_adding_a_country_and_an_indicator_is_configuration_only(
     reports = build_publish_export(tmp_path)
 
     years = len(wider.scope.years.as_range())
-    cells = reports["rpt_completeness_by_cell"]
+    cells = reports["rpt_completeness"]
     assert len(cells) == 3 * 3 * years
     assert {row["country_id"] for row in cells} == {"BRA", "IND", "ZAF"}
-    assert {row["indicator_id"] for row in reports["rpt_latest_year_by_country"]} == {
+    assert {row["indicator_id"] for row in reports["rpt_latest_year"]} == {
         POP,
         GDP,
         LIFE_EXPECTANCY,

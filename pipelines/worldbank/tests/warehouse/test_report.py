@@ -9,17 +9,13 @@ from worldbank.cli import app
 from worldbank.warehouse.report import NothingToReport, render_report
 
 COLUMNS = {
-    "rpt_completeness_by_cell": "country_id VARCHAR, indicator_id VARCHAR, "
-    "observation_year INTEGER, value_status VARCHAR",
-    "rpt_completeness_by_series": "country_name VARCHAR, indicator_name VARCHAR, "
-    "series_status VARCHAR, n_present INTEGER, n_expected INTEGER, n_null_value INTEGER, "
-    "n_missing_row INTEGER",
+    "rpt_completeness": "country_id VARCHAR, country_name VARCHAR, indicator_id VARCHAR, "
+    "indicator_name VARCHAR, observation_year INTEGER, value_status VARCHAR, "
+    "series_status VARCHAR",
     "rpt_year_over_year": "indicator_name VARCHAR, country_name VARCHAR, observation_year INTEGER, "
     "percent_change DOUBLE, null_change_reason VARCHAR",
-    "rpt_latest_year_by_country": "indicator_name VARCHAR, country_name VARCHAR, "
-    "rank_in_indicator INTEGER, indicator_value DOUBLE, latest_year INTEGER",
-    "rpt_latest_common_year": "indicator_name VARCHAR, country_name VARCHAR, "
-    "rank_in_indicator INTEGER, indicator_value DOUBLE, common_year INTEGER",
+    "rpt_latest_year": "indicator_name VARCHAR, country_name VARCHAR, latest_rank INTEGER, "
+    "latest_value DOUBLE, latest_year INTEGER, common_value DOUBLE, common_year INTEGER",
     "rpt_income_group_by_year": "indicator_name VARCHAR, income_group_id VARCHAR, "
     "income_group_name VARCHAR, observation_year INTEGER, group_value DOUBLE, "
     "n_countries INTEGER, n_countries_with_data INTEGER, aggregation VARCHAR",
@@ -40,14 +36,10 @@ def warehouse(path: Path, tables: dict[str, list[tuple[Any, ...]]]) -> Path:
 
 
 WITH_GAPS: dict[str, list[tuple[Any, ...]]] = {
-    "rpt_completeness_by_cell": [
-        ("BRA", "GDP", 2023, "present"),
-        ("BRA", "GDP", 2024, "null_value"),
-        ("IND", "GDP", 2024, "missing_row"),
-    ],
-    "rpt_completeness_by_series": [
-        ("Brazil", "GDP", "incomplete", 1, 2, 1, 0),
-        ("<Côte & co>", "GDP", "missing", 0, 2, 1, 1),
+    "rpt_completeness": [
+        ("BRA", "Brazil", "GDP", "GDP", 2023, "present", "incomplete"),
+        ("BRA", "Brazil", "GDP", "GDP", 2024, "null_value", "incomplete"),
+        ("IND", "<Côte & co>", "GDP", "GDP", 2024, "missing_row", "missing"),
     ],
     "rpt_year_over_year": [
         ("GDP", "Brazil", 2021, None, "prior_out_of_scope"),
@@ -59,13 +51,9 @@ WITH_GAPS: dict[str, list[tuple[Any, ...]]] = {
         ("GDP", "<Côte & co>", 2023, None, "prior_missing"),
         ("GDP", "<Côte & co>", 2024, None, "a_new_reason"),
     ],
-    "rpt_latest_year_by_country": [
-        ("GDP", "Brazil", 1, 2.5e12, 2023),
-        ("GDP", "<Côte & co>", None, None, None),
-    ],
-    "rpt_latest_common_year": [
-        ("GDP", "Brazil", None, None, None),
-        ("GDP", "<Côte & co>", None, None, None),
+    "rpt_latest_year": [
+        ("GDP", "Brazil", 1, 2.5e12, 2023, None, None),
+        ("GDP", "<Côte & co>", None, None, None, None, None),
     ],
     "rpt_income_group_by_year": [
         ("Population", "HIC", "High income", 2023, 3.2e9, 5, 5, "sum"),
@@ -104,11 +92,9 @@ def test_a_complete_dataset_says_so_and_compares_on_the_common_year(tmp_path: Pa
     source = warehouse(
         tmp_path / "wh.duckdb",
         {
-            "rpt_completeness_by_cell": [("BRA", "GDP", 2024, "present")],
-            "rpt_completeness_by_series": [("Brazil", "GDP", "complete", 1, 1, 0, 0)],
+            "rpt_completeness": [("BRA", "Brazil", "GDP", "GDP", 2024, "present", "complete")],
             "rpt_year_over_year": [("GDP", "Brazil", 2024, None, "prior_out_of_scope")],
-            "rpt_latest_year_by_country": [("GDP", "Brazil", 1, 10.0, 2024)],
-            "rpt_latest_common_year": [("GDP", "Brazil", 1, 10.0, 2024)],
+            "rpt_latest_year": [("GDP", "Brazil", 1, 10.0, 2024, 10.0, 2024)],
             "rpt_income_group_by_year": [("GDP", "HIC", "High income", 2024, 10.0, 1, 1, "sum")],
         },
     )
