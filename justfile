@@ -6,10 +6,11 @@ default:
 export:
     uv run worldbank export
 
-# Fetch from the API, then rebuild and publish the warehouse (calls the live API).
+# The whole pipeline: fetch from the API, rebuild and publish the warehouse, export the reports.
 run:
     uv run worldbank extract
     just build
+    just export
 
 # Rebuild the warehouse from landed runs (offline); publish only if every dbt test passes (ADR-0022).
 build:
@@ -21,8 +22,7 @@ build:
 test:
     uv run pytest
 
-# Python and SQL lint, format check, type check, and tests with coverage: the definition of done
-# (ADR-0013, ADR-0025). The tests include one end-to-end run of the chain, dbt build included.
+# Definition of done (ADR-0013, ADR-0025): Python and SQL lint, types, tests incl. dbt end to end.
 check:
     uv run ruff check .
     uv run ruff format --check .
