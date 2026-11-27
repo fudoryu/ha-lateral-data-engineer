@@ -1,0 +1,38 @@
+version: 2
+
+# The answers to the brief's questions (FR-ANA-1 to FR-ANA-4), ready for analysts and exported as
+# CSV. They read only the marts (ADR-0027); each states the question it answers and its grain.
+
+models:
+  - name: rpt_completeness_by_cell
+    description: >
+      FR-ANA-1, cell level: every expected country × indicator × year with its status: present,
+      null_value (the API returned the row with a null) or missing_row (no row at all). Grain:
+      one country × indicator × year (ADR-0008).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id, observation_year]
+    columns:
+      - name: value_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [present, null_value, missing_row]
+
+  - name: rpt_completeness_by_series
+    description: >
+      FR-ANA-1, series level: each country × indicator over the reporting years is complete
+      (every year present), incomplete (some) or missing (none), with `n_present` of
+      `n_expected` and how the gaps split between null values and missing rows. Grain: one
+      country × indicator (ADR-0008).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id]
+    columns:
+      - name: series_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [complete, incomplete, missing]

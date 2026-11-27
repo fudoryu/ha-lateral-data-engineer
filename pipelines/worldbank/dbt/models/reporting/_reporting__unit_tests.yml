@@ -1,0 +1,33 @@
+version: 2
+
+unit_tests:
+  - name: series_are_complete_incomplete_or_missing
+    description: >
+      All years present is complete, some is incomplete, none is missing; null values and
+      missing rows both count as gaps (ADR-0008).
+    model: rpt_completeness_by_series
+    given:
+      - input: ref('fct_country_indicator_values')
+        rows:
+          - {country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2023, value_status: present}
+          - {country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2024, value_status: present}
+          - {country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2023, value_status: present}
+          - {country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2024, value_status: null_value}
+          - {country_id: ZAF, indicator_id: SP.POP.TOTL, observation_year: 2023, value_status: missing_row}
+          - {country_id: ZAF, indicator_id: SP.POP.TOTL, observation_year: 2024, value_status: null_value}
+      - input: ref('dim_countries')
+        rows:
+          - {country_id: BRA, country_name: Brazil}
+          - {country_id: IND, country_name: India}
+          - {country_id: ZAF, country_name: South Africa}
+      - input: ref('dim_indicators')
+        rows:
+          - {indicator_id: SP.POP.TOTL, indicator_name: "Population, total"}
+    expect:
+      rows:
+        - {country_id: BRA, series_status: complete, n_present: 2, n_expected: 2,
+           n_null_value: 0, n_missing_row: 0}
+        - {country_id: IND, series_status: incomplete, n_present: 1, n_expected: 2,
+           n_null_value: 1, n_missing_row: 0}
+        - {country_id: ZAF, series_status: missing, n_present: 0, n_expected: 2,
+           n_null_value: 1, n_missing_row: 1}
