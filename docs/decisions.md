@@ -29,6 +29,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0021](#adr-0021-code-layout-source-storage-and-warehouse) | Code layout: source, storage and warehouse | Decision | Accepted |
 | [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted (amended by ADR-0023) |
 | [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
+| [ADR-0024](#adr-0024-structured-logging-with-the-standard-library) | Structured logging with the standard library | Decision | Accepted |
 
 ---
 
@@ -784,3 +785,41 @@ Under ADR-0022, `just build` runs load, `dbt build` and publish, and stops at th
 ### Consequences
 - Running `worldbank publish` by hand after skipping dbt is possible and documented as unsupported; the residual risk is accepted.
 - A half-built warehouse file can never be published, by the chain or by hand.
+
+---
+
+## ADR-0024: Structured logging with the standard library
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ING-4, FR-DQ-1, NFR-1 · **Builds on:** ADR-0001 (standard-library `logging`), ADR-0022
+
+### Context
+The pipeline retries requests, refetches torn pages, skips incomplete runs, warns about new API fields and refuses unsafe publishes, but none of it was visible while it ran: a run that needed four retries looked like a clean one. Errors were printed ad hoc by the CLI. Whoever operates the pipeline, locally or from an orchestrator, needs to see what happened and why, in a form both people and log tools can read.
+
+### Decision
+- **Standard library only:** `logging`, no logging dependency. Every module logs through `logging.getLogger(__name__)`, so logger names follow the package layout (`worldbank.source.client`, …).
+- **Only the CLI configures logging.** Library code never adds handlers, sets levels or prints. The CLI attaches one handler to the `worldbank` logger, writing to **stderr**; **stdout** is reserved for each command's one-line result, so output can be piped.
+- **Two formats:** `text` (default, for people) and `json` (one object per line, for orchestrators and log tools). Both carry a UTC ISO 8601 timestamp, the level, the logger name, the message and the event's fields.
+- **Structured fields, not formatted strings:** context goes in `extra={...}` with stable snake_case names (`run_id`, `endpoint`, `key`, `page`, `status`, `duration_ms`, `attempt`, …), rendered as `key=value` in text and as keys in JSON. Messages are short, lowercase event descriptions.
+- **Levels mean the same thing everywhere:**
+
+  | Level | For |
+  |---|---|
+  | DEBUG | per-file and per-attempt detail: each page written or verified |
+  | INFO | milestones and per-request results: run started and committed, request fetched, load and publish done |
+  | WARNING | handled but notable: retries, refetched pages, unknown API fields, skipped incomplete runs |
+  | ERROR | a command failed: logged once, at the command boundary, without a stack trace for expected errors |
+
+- **Errors are logged once,** where they're handled (the CLI), not where they're raised. Unexpected exceptions keep their traceback.
+- **Never logged:** response bodies or payloads (they're in the landing zone), and anything secret (there's nothing secret today; the rule stands).
+- **Options:** `worldbank --log-level {DEBUG,INFO,WARNING,ERROR} --log-format {text,json}`, also settable as `WORLDBANK_LOG_LEVEL` and `WORLDBANK_LOG_FORMAT`; defaults are INFO and text.
+
+### Alternatives considered
+- **structlog or loguru:** nicer APIs and processors, but a dependency for what a 30-line formatter does; ADR-0001 already chose the standard library.
+- **JSON only:** best for machines, harder to read in a terminal during development; both formats share the same fields.
+- **Printing with `typer.echo`:** what the CLI did; no levels, no fields, no way for an orchestrator to filter or parse.
+
+### Consequences
+- A run's log tells its story: what was requested, how long each request took, what was retried and why, what was committed, loaded and published.
+- In production the JSON format goes straight to a log platform (CloudWatch, Datadog) with fields ready to filter on; the README's production note says so.
+- Tests assert on important log events (retries, skipped runs, failures), so they're part of the behavior, not decoration.
