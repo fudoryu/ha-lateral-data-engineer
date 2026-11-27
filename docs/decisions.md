@@ -43,11 +43,12 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
-| [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Accepted |
+| [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Superseded by ADR-0043 (the aggregation; the removed metadata stays removed) |
 | [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040; `country_iso2` restored by ADR-0041) |
 | [ADR-0040](#adr-0040-income-groups-get-their-own-dimension) | Income groups get their own dimension | Decision | Accepted |
 | [ADR-0041](#adr-0041-dim_countries-keeps-the-iso-alpha-2-code) | dim_countries keeps the ISO alpha-2 code | Decision | Accepted |
 | [ADR-0042](#adr-0042-lineage-only-on-the-fact) | Lineage only on the fact | Decision | Accepted |
+| [ADR-0043](#adr-0043-income-group-aggregates-written-out-in-the-report) | Income-group aggregates written out in the report | Decision | Accepted |
 
 ---
 
@@ -1274,3 +1275,26 @@ ADR-0039 dropped `country_iso2` from `dim_countries` as an alternate identifier 
 ### Consequences
 - Every mart column except the fact's `source_response_id` is a business attribute.
 - `trace_value.sql` is unchanged: it starts from the fact's history and the landed pages.
+
+---
+
+## ADR-0043: Income-group aggregates written out in the report
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-4 · **Supersedes:** ADR-0038's average · **Restores:** ADR-0009's aggregation (Q4)
+
+### Context
+ADR-0038 replaced per-indicator aggregation with the average of a group's countries, to remove the aggregation metadata from the marts. The live run showed the cost: an average population per country (lower middle income, India alone, at 1.45 B against 132 M for high income) answers no one's question; an average of countries' GDP per capita is the average-of-ratios error ADR-0009 avoided; an unweighted life expectancy counts Canada like the United States. The problem was never the aggregation rules but where they were stored.
+
+### Decision
+- **`rpt_income_group_by_year` writes the aggregate of each of the brief's four indicators out in SQL:** population and GDP summed; GDP per capita as Σ GDP ÷ Σ population; life expectancy weighted by population. Each row says how its value was computed (`aggregation`) and how many countries contributed (`n_countries_with_data` of `n_countries`): only countries with everything their formula needs. A group without data has a null value, never 0.
+- **The marts stay as they are:** no aggregation metadata, no seed (ADR-0038's removals stand).
+- An indicator outside the four, or one whose inputs are out of scope, gets no row or a null value with zero coverage.
+
+### Alternatives considered
+- **The average of countries (ADR-0038):** one rule for any indicator, but wrong or weak for all four of the brief's.
+- **Per-indicator recipes in a seed (ADR-0009):** extends to new indicators, at the cost of metadata in the marts and a seed row per indicator.
+
+### Consequences
+- The income-group comparison is economically correct for the brief's indicators, and each formula can be read and checked at a glance.
+- **NFR-4 exception:** a new indicator extends every other report through configuration alone, but appears in this one only once its aggregate is written into the report. The README states it.
