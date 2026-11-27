@@ -1,21 +1,16 @@
 """Pipeline configuration: reads `config.yml` into validated settings (NFR-4).
 
-The settings models themselves belong to the source they describe (`worldbank.source.settings`).
+The settings models belong to the source they describe (`worldbank.source.settings`); this module
+only loads them, so nothing in `source/` depends on the top level.
 """
 
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict
 
-from worldbank.source.settings import Api, Scope
+from worldbank.source.settings import Config
 
-
-class Config(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    api: Api
-    scope: Scope
+__all__ = ["Config", "load_config"]
 
 
 def load_config(path: Path) -> Config:

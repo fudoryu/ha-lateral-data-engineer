@@ -70,3 +70,10 @@ class Scope(_Model):
     countries: Annotated[list[CountryCode], Field(min_length=1), AfterValidator(_unique)]
     indicators: Annotated[list[IndicatorCode], Field(min_length=1), AfterValidator(_unique)]
     years: Years
+
+
+class Config(_Model):
+    """The pipeline's whole configuration (`config.yml`): how to call the API and what to fetch."""
+
+    api: Api
+    scope: Scope

@@ -1,6 +1,8 @@
 """Package boundaries (ADR-0021): only `source` knows the World Bank.
 
-`storage` imports nothing from the project; `warehouse` imports only `storage`.
+`storage` imports nothing from the project; `warehouse` imports only `storage`; `source` imports
+only `storage` (to land runs), never the top-level `config` or `cli`. Any package may read the
+package version from `worldbank` itself.
 """
 
 import ast
@@ -11,9 +13,11 @@ import pytest
 PACKAGE = Path(__file__).parents[1] / "src" / "worldbank"
 
 ALLOWED = {
+    "source": {"worldbank.source", "worldbank.storage"},
     "storage": {"worldbank.storage"},
     "warehouse": {"worldbank.storage", "worldbank.warehouse"},
 }
+PACKAGE_ROOT = "worldbank"  # `from worldbank import __version__` is allowed everywhere
 
 
 def project_imports(module: Path) -> set[str]:
@@ -27,14 +31,15 @@ def project_imports(module: Path) -> set[str]:
 
 
 @pytest.mark.parametrize("package", sorted(ALLOWED))
-def test_generic_packages_only_import_what_they_may(package: str) -> None:
+def test_packages_only_import_what_they_may(package: str) -> None:
     modules = sorted((PACKAGE / package).glob("*.py"))
     assert modules, f"no modules found in {package}"
     violations = {
         f"{module.name}: {name}"
         for module in modules
         for name in project_imports(module)
-        if not any(
+        if name != PACKAGE_ROOT
+        and not any(
             name == allowed or name.startswith(allowed + ".") for allowed in ALLOWED[package]
         )
     }
