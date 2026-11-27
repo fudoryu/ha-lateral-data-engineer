@@ -1,4 +1,6 @@
-"""dbt layer dependencies (ADR-0026): a model reads only its own layer and the one below.
+"""dbt layer dependencies (ADR-0026, ADR-0027): a model reads only the layer directly below.
+
+Only intermediate models may also read their own layer, so shared logic is written once.
 
 A model's layer is the folder it lives in under `models/`. Reads are its `ref()` and `source()`
 calls; refs to seeds are allowed where the table below says so.
@@ -14,9 +16,9 @@ SEEDS = Path(__file__).parents[1] / "dbt" / "seeds"
 
 MAY_READ = {
     "staging": {"source"},
-    "intermediate": {"staging", "intermediate"},
-    "marts": {"intermediate", "marts", "seed"},
-    "reporting": {"marts", "reporting"},
+    "intermediate": {"staging", "intermediate", "seed"},
+    "marts": {"intermediate"},
+    "reporting": {"marts"},
 }
 
 REF = re.compile(r"""\bref\(\s*['"]([\w.]+)['"]\s*\)""")
@@ -47,7 +49,7 @@ def test_every_model_sits_in_a_known_layer() -> None:
 
 
 @pytest.mark.parametrize("model", sorted(MODELS.rglob("*.sql")), ids=lambda path: path.stem)
-def test_models_read_only_their_own_layer_and_the_one_below(model: Path) -> None:
+def test_models_read_only_what_their_layer_allows(model: Path) -> None:
     allowed = MAY_READ[layer_of(model)]
 
     assert reads(model) <= allowed, f"{model.stem} ({layer_of(model)}) may read only {allowed}"
@@ -63,3 +65,13 @@ def test_a_mart_reading_staging_is_caught(tmp_path: Path) -> None:
 
     assert reads(mart, models) == {"staging"}
     assert not reads(mart, models) <= MAY_READ["marts"]
+
+
+def test_a_mart_reading_another_mart_is_caught(tmp_path: Path) -> None:
+    models = tmp_path / "models"
+    (models / "marts").mkdir(parents=True)
+    (models / "marts" / "dim_x.sql").write_text("SELECT 1")
+    fact = models / "marts" / "fct_x.sql"
+    fact.write_text("SELECT * FROM {{ ref('dim_x') }}")
+
+    assert not reads(fact, models) <= MAY_READ["marts"]
