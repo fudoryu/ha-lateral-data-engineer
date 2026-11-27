@@ -1,5 +1,5 @@
--- One row per configured indicator, from the latest run, with how it aggregates across an income
--- group (ADR-0009).
+-- One row per configured indicator, from the latest run: its metadata, the World Bank release its
+-- current values come from, and how it aggregates across an income group (ADR-0009).
 WITH
 
 indicators AS (
@@ -15,6 +15,7 @@ final AS (
         source_name,
         definition,
         source_organization,
+        source_lastupdated,
         aggregation_method,
         numerator_indicator_id,
         denominator_indicator_id,

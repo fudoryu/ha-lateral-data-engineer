@@ -17,8 +17,7 @@ final AS (
         unit,
         obs_status,
         decimals,
-        source_response_id,
-        source_lastupdated
+        source_response_id
     FROM cells
 )
 

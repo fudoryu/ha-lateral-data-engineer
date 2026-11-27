@@ -19,11 +19,16 @@ models:
 
   - name: dim_indicator
     description: >
-      Grain: one configured indicator, latest run. Key: `indicator_id`. Includes how it aggregates
-      across an income group: `aggregation_method` and the indicators it combines (ADR-0009).
+      Grain: one configured indicator, latest run. Key: `indicator_id`. Includes the World Bank
+      release its current values come from (`source_lastupdated`) and how it aggregates across an
+      income group: `aggregation_method` and the indicators it combines (ADR-0009).
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]
+      - name: source_lastupdated
+        description: >
+          The World Bank's release date for this indicator's current values ("data as of"), from
+          the latest run's observation pages.
       - name: aggregation_method
         data_tests: [not_null]
 

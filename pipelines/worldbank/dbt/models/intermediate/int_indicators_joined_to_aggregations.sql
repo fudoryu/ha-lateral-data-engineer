@@ -3,7 +3,7 @@
 WITH
 
 indicators AS (
-    SELECT * FROM {{ ref('int_indicators_filtered_to_latest_run') }}
+    SELECT * FROM {{ ref('int_indicators_joined_to_releases') }}
 ),
 
 aggregations AS (
@@ -19,6 +19,7 @@ final AS (
         indicators.source_name,
         indicators.definition,
         indicators.source_organization,
+        indicators.source_lastupdated,
         aggregations.aggregation_method,
         aggregations.numerator_indicator_id,
         aggregations.denominator_indicator_id,

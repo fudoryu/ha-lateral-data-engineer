@@ -209,7 +209,7 @@ unit_tests:
   - name: indicators_get_their_aggregation_method
     model: int_indicators_joined_to_aggregations
     given:
-      - input: ref('int_indicators_filtered_to_latest_run')
+      - input: ref('int_indicators_joined_to_releases')
         rows:
           - {indicator_id: NY.GDP.PCAP.CD}
           - {indicator_id: NEW.INDICATOR}
@@ -251,3 +251,28 @@ unit_tests:
            classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
         - {country_iso3: IND, observation_year: 2019, income_level_id: LMC,
            classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
+
+  - name: indicators_get_the_release_of_their_latest_observations
+    description: >
+      The date comes from the latest run's observation pages only: not from metadata pages, not
+      from older runs. An indicator without observation pages has none.
+    model: int_indicators_joined_to_releases
+    given:
+      - input: ref('int_indicators_filtered_to_latest_run')
+        rows:
+          - {indicator_id: SP.POP.TOTL}
+          - {indicator_id: NEW.INDICATOR}
+      - input: ref('int_responses_joined_to_runs')
+        rows:
+          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: true,
+             source_lastupdated: 2026-11-11}
+          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: true,
+             source_lastupdated: 2026-11-11}
+          - {request_key: SP.POP.TOTL, endpoint: observations, is_latest_run: false,
+             source_lastupdated: 2026-07-01}
+          - {request_key: NEW.INDICATOR, endpoint: indicators, is_latest_run: true,
+             source_lastupdated: null}
+    expect:
+      rows:
+        - {indicator_id: SP.POP.TOTL, source_lastupdated: 2026-11-11}
+        - {indicator_id: NEW.INDICATOR, source_lastupdated: null}
