@@ -41,6 +41,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
 | [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export) | Report tables are exported to CSV by `worldbank export` | Decision | Accepted |
 | [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
+| [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 
 ---
 
@@ -1112,3 +1113,26 @@ Exploring a different scope (all economies and indicators, a shorter year range)
 ### Consequences
 - A run's scope is always the one in its manifest, which may differ from `config.yml`; the latest run's scope drives current state.
 - Exploratory runs belong in their own data folder (`--data-dir`), so they don't become the latest run of the main landing zone.
+
+---
+
+## ADR-0036: An HTML report rendered from the reporting tables
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-5 (optional), FR-ANA-1 to FR-ANA-4 · **Builds on:** ADR-0034
+
+### Context
+The CSV exports answer the brief's questions but are tables to open one by one. The brief's optional extra asks for a view or dashboard; a reviewer benefits from one page that shows all four answers.
+
+### Decision
+- **`worldbank report` (just `report`) renders the published warehouse's six `rpt_*` tables as one self-contained HTML page,** `reports/report.html` at the repository root (`--output` overrides it). It's a serving step like `export`: it reads only the published warehouse and refuses if nothing is published.
+- **Self-contained and safe:** inline CSS and SVG charts, no scripts, no external files, no new dependency; every value from the warehouse is HTML-escaped. The page is deterministic (no timestamp), so re-rendering the same warehouse gives the same bytes.
+- **One section per question:** a completeness grid with any gaps listed; year-over-year changes, coloured, with the reason for each null; rankings at each country's latest year with the like-for-like column; income-group lines and coverage per indicator. `just run` ends with it, and the rendered page is committed.
+
+### Alternatives considered
+- **A BI tool or notebook:** richer interaction, but an account, a server or a dependency, against NFR-5's local, credential-free setup.
+- **A Jinja template:** cleaner separation for a bigger page; for one page, the standard library keeps the dependency list unchanged.
+
+### Consequences
+- A reviewer opens one file in a browser and sees every answer.
+- The page shows what the reporting tables hold; changing a report means changing its dbt model, then re-rendering.
