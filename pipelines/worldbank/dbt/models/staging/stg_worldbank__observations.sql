@@ -1,39 +1,39 @@
 -- One row per observation the API returned: run x country x indicator x year.
 -- Values are never coerced: a JSON null stays null (NFR-3).
-with
+WITH
 
-responses as (
-    select * from {{ source('worldbank', 'api_responses') }}
-    where endpoint = 'observations'
+responses AS (
+    SELECT * FROM {{ source('worldbank', 'api_responses') }}
+    WHERE endpoint = 'observations'
 ),
 
-flattened as (
-    select
+flattened AS (
+    SELECT
         responses.response_id,
         responses.run_id,
         responses.url,
         responses.fetched_at,
-        responses.payload -> '$[0]' ->> 'lastupdated' as lastupdated,
-        unnest(responses.payload -> '$[1][*]') as row
-    from responses
+        responses.payload -> '$[0]' ->> 'lastupdated' AS lastupdated,
+        unnest(responses.payload -> '$[1][*]') AS item
+    FROM responses
 ),
 
-final as (
-    select
+final AS (
+    SELECT
         run_id,
-        row ->> 'countryiso3code' as country_iso3,
-        row -> 'indicator' ->> 'id' as indicator_id,
-        (row ->> 'date')::integer as observation_year,
-        (row ->> 'value')::double as indicator_value,
-        nullif(row ->> 'unit', '') as unit,
-        nullif(row ->> 'obs_status', '') as obs_status,
-        (row ->> 'decimal')::integer as decimals,
-        row -> 'country' ->> 'id' as country_iso2,
-        response_id as source_response_id,
-        url as source_url,
+        item ->> 'countryiso3code' AS country_iso3,
+        item -> 'indicator' ->> 'id' AS indicator_id,
+        (item ->> 'date')::INTEGER AS observation_year,
+        (item ->> 'value')::DOUBLE AS indicator_value,
+        nullif(item ->> 'unit', '') AS unit,
+        nullif(item ->> 'obs_status', '') AS obs_status,
+        (item ->> 'decimal')::INTEGER AS decimals,
+        item -> 'country' ->> 'id' AS country_iso2,
+        response_id AS source_response_id,
+        url AS source_url,
         fetched_at,
-        lastupdated::date as source_lastupdated
-    from flattened
+        lastupdated::DATE AS source_lastupdated
+    FROM flattened
 )
 
-select * from final
+SELECT * FROM final

@@ -2,11 +2,11 @@
     models whose key spans several columns (ADR-0016: no dbt packages). -#}
 {% test unique_combination(model, columns) %}
 
-select
+SELECT
     {{ columns | join(', ') }},
-    count(*) as n_rows
-from {{ model }}
-group by {{ columns | join(', ') }}
-having count(*) > 1
+    count(*) AS n_rows
+FROM {{ model }}
+GROUP BY {{ columns | join(', ') }}
+HAVING count(*) > 1
 
 {% endtest %}

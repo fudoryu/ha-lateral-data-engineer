@@ -1,35 +1,35 @@
 -- One row per run x indicator, as returned by the indicator endpoint.
-with
+WITH
 
-responses as (
-    select * from {{ source('worldbank', 'api_responses') }}
-    where endpoint = 'indicators'
+responses AS (
+    SELECT * FROM {{ source('worldbank', 'api_responses') }}
+    WHERE endpoint = 'indicators'
 ),
 
-flattened as (
-    select
+flattened AS (
+    SELECT
         responses.response_id,
         responses.run_id,
         responses.url,
         responses.fetched_at,
-        unnest(responses.payload -> '$[1][*]') as row
-    from responses
+        unnest(responses.payload -> '$[1][*]') AS item
+    FROM responses
 ),
 
-final as (
-    select
+final AS (
+    SELECT
         run_id,
-        row ->> 'id' as indicator_id,
-        trim(row ->> 'name') as indicator_name,
-        nullif(row ->> 'unit', '') as unit,
-        row -> 'source' ->> 'id' as source_id,
-        trim(row -> 'source' ->> 'value') as source_name,
-        nullif(trim(row ->> 'sourceNote'), '') as definition,
-        nullif(trim(row ->> 'sourceOrganization'), '') as source_organization,
-        response_id as source_response_id,
-        url as source_url,
+        item ->> 'id' AS indicator_id,
+        trim(item ->> 'name') AS indicator_name,
+        nullif(item ->> 'unit', '') AS unit,
+        item -> 'source' ->> 'id' AS source_id,
+        trim(item -> 'source' ->> 'value') AS source_name,
+        nullif(trim(item ->> 'sourceNote'), '') AS definition,
+        nullif(trim(item ->> 'sourceOrganization'), '') AS source_organization,
+        response_id AS source_response_id,
+        url AS source_url,
         fetched_at
-    from flattened
+    FROM flattened
 )
 
-select * from final
+SELECT * FROM final

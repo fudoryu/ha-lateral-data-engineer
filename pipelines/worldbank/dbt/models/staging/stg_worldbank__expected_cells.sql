@@ -1,46 +1,46 @@
 -- The expected set of each run: its configured countries x indicators x years (ADR-0008),
 -- taken from the configuration recorded with the run (ADR-0016).
-with
+WITH
 
-landing_runs as (
-    select * from {{ source('worldbank', 'landing_runs') }}
+landing_runs AS (
+    SELECT * FROM {{ source('worldbank', 'landing_runs') }}
 ),
 
-countries as (
-    select
+countries AS (
+    SELECT
         run_id,
-        unnest(from_json(config -> '$.scope.countries', '["varchar"]')) as country_iso3
-    from landing_runs
+        unnest(from_json(config -> '$.scope.countries', '["varchar"]')) AS country_iso3
+    FROM landing_runs
 ),
 
-indicators as (
-    select
+indicators AS (
+    SELECT
         run_id,
-        unnest(from_json(config -> '$.scope.indicators', '["varchar"]')) as indicator_id
-    from landing_runs
+        unnest(from_json(config -> '$.scope.indicators', '["varchar"]')) AS indicator_id
+    FROM landing_runs
 ),
 
-years as (
-    select
+years AS (
+    SELECT
         run_id,
         unnest(
             generate_series(
-                (config -> '$.scope.years' ->> 'start')::integer,
-                (config -> '$.scope.years' ->> 'end')::integer
+                (config -> '$.scope.years' ->> 'start')::INTEGER,
+                (config -> '$.scope.years' ->> 'end')::INTEGER
             )
-        )::integer as observation_year
-    from landing_runs
+        )::INTEGER AS observation_year
+    FROM landing_runs
 ),
 
-final as (
-    select
+final AS (
+    SELECT
         countries.run_id,
         countries.country_iso3,
         indicators.indicator_id,
         years.observation_year
-    from countries
-    inner join indicators on countries.run_id = indicators.run_id
-    inner join years on countries.run_id = years.run_id
+    FROM countries
+    INNER JOIN indicators ON countries.run_id = indicators.run_id
+    INNER JOIN years ON countries.run_id = years.run_id
 )
 
-select * from final
+SELECT * FROM final

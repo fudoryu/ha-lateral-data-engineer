@@ -1,36 +1,36 @@
 -- One row per run x country, as returned by the country endpoint. Names are trimmed: the API
 -- returns some region names with trailing spaces (source-system §2).
-with
+WITH
 
-responses as (
-    select * from {{ source('worldbank', 'api_responses') }}
-    where endpoint = 'countries'
+responses AS (
+    SELECT * FROM {{ source('worldbank', 'api_responses') }}
+    WHERE endpoint = 'countries'
 ),
 
-flattened as (
-    select
+flattened AS (
+    SELECT
         responses.response_id,
         responses.run_id,
         responses.url,
         responses.fetched_at,
-        unnest(responses.payload -> '$[1][*]') as row
-    from responses
+        unnest(responses.payload -> '$[1][*]') AS item
+    FROM responses
 ),
 
-final as (
-    select
+final AS (
+    SELECT
         run_id,
-        row ->> 'id' as country_iso3,
-        row ->> 'iso2Code' as country_iso2,
-        trim(row ->> 'name') as country_name,
-        row -> 'region' ->> 'id' as region_id,
-        trim(row -> 'region' ->> 'value') as region_name,
-        row -> 'incomeLevel' ->> 'id' as income_level_id,
-        trim(row -> 'incomeLevel' ->> 'value') as income_level_name,
-        response_id as source_response_id,
-        url as source_url,
+        item ->> 'id' AS country_iso3,
+        item ->> 'iso2Code' AS country_iso2,
+        trim(item ->> 'name') AS country_name,
+        item -> 'region' ->> 'id' AS region_id,
+        trim(item -> 'region' ->> 'value') AS region_name,
+        item -> 'incomeLevel' ->> 'id' AS income_level_id,
+        trim(item -> 'incomeLevel' ->> 'value') AS income_level_name,
+        response_id AS source_response_id,
+        url AS source_url,
         fetched_at
-    from flattened
+    FROM flattened
 )
 
-select * from final
+SELECT * FROM final

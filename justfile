@@ -17,10 +17,12 @@ build:
 test:
     uv run pytest
 
-# Lint, format check, type check, and tests with coverage: the definition of done (ADR-0013).
+# Python and SQL lint, format check, type check, and tests with coverage: the definition of done
+# (ADR-0013, ADR-0025). The tests include one end-to-end run of the chain, dbt build included.
 check:
     uv run ruff check .
     uv run ruff format --check .
+    uv run sqlfluff lint pipelines
     uv run mypy
     uv run pytest --cov --cov-report=term
 

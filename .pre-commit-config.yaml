@@ -38,6 +38,15 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  # --- SQL (ADR-0025): the locked SQLFluff, with the config in pyproject.toml ------
+  - repo: local
+    hooks:
+      - id: sqlfluff-lint
+        name: sqlfluff lint
+        entry: uv run sqlfluff lint
+        language: system
+        types: [sql]
+
   # Keep uv.lock in sync with pyproject.toml (runs only when either changes).
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.13.8

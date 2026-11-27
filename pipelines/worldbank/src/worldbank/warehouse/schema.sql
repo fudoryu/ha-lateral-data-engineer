@@ -3,36 +3,36 @@
 -- Timestamps are UTC. dbt declares these tables as sources in
 -- pipelines/worldbank/dbt/models/staging/_worldbank__sources.yml: keep the two in step.
 
-create schema raw;
+CREATE SCHEMA raw;
 
-create table raw.landing_runs (
-    run_id varchar primary key,
-    started_at timestamp not null,
-    committed_at timestamp not null,
-    pipeline_version varchar not null,
-    git_sha varchar,
-    config_hash varchar not null,
-    config json not null,
-    warnings json not null
+CREATE TABLE raw.landing_runs (
+    run_id VARCHAR PRIMARY KEY,
+    started_at TIMESTAMP NOT NULL,
+    committed_at TIMESTAMP NOT NULL,
+    pipeline_version VARCHAR NOT NULL,
+    git_sha VARCHAR,
+    config_hash VARCHAR NOT NULL,
+    config JSON NOT NULL,
+    warnings JSON NOT NULL
 );
 
-create table raw.api_requests (
-    run_id varchar not null,
-    endpoint varchar not null,
-    key varchar,
-    pages integer not null,
-    total integer not null,
-    lastupdated date
+CREATE TABLE raw.api_requests (
+    run_id VARCHAR NOT NULL,
+    endpoint VARCHAR NOT NULL,
+    request_key VARCHAR,  -- the request's key, e.g. the indicator code; null for countries
+    pages INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    lastupdated DATE
 );
 
-create table raw.api_responses (
-    response_id varchar primary key,
-    run_id varchar not null,
-    endpoint varchar not null,
-    key varchar,
-    page integer not null,
-    url varchar not null,
-    fetched_at timestamp not null,
-    sha256 varchar not null,
-    payload json not null
+CREATE TABLE raw.api_responses (
+    response_id VARCHAR PRIMARY KEY,
+    run_id VARCHAR NOT NULL,
+    endpoint VARCHAR NOT NULL,
+    request_key VARCHAR,  -- the request's key, e.g. the indicator code; null for countries
+    page INTEGER NOT NULL,
+    url VARCHAR NOT NULL,
+    fetched_at TIMESTAMP NOT NULL,
+    sha256 VARCHAR NOT NULL,
+    payload JSON NOT NULL
 );

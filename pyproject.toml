@@ -17,6 +17,7 @@ dev = [
     "pytest-cov>=7",
     "responses>=0.26",
     "ruff>=0.17",
+    "sqlfluff>=4.5.0",
     "types-pyyaml>=6.0.12.20261122",
     "types-requests>=2.33.0.20261030",
 ]
@@ -59,3 +60,31 @@ branch = true
 fail_under = 95
 show_missing = true
 skip_covered = true
+
+[tool.sqlfluff.core]
+dialect = "duckdb"
+templater = "jinja"
+max_line_length = 100
+# ST06 wants simple columns before computed ones; our models order columns as grain, attributes,
+# lineage instead, which is a deliberate convention (see the staging models).
+exclude_rules = "ST06"
+
+[tool.sqlfluff.templater.jinja]
+apply_dbt_builtins = true  # ref(), source(), config() and friends, offline (no database)
+load_macros_from_path = "pipelines/worldbank/dbt/macros"
+
+# Keywords, types and keyword literals (NULL, TRUE) in upper case; identifiers and functions lower.
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = "upper"
+
+[tool.sqlfluff.rules.capitalisation.identifiers]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.functions]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.rules.capitalisation.literals]
+capitalisation_policy = "upper"
+
+[tool.sqlfluff.rules.capitalisation.types]
+extended_capitalisation_policy = "upper"

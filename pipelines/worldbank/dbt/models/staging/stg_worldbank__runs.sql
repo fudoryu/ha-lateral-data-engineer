@@ -1,19 +1,19 @@
 -- One row per committed landing run.
-with
+WITH
 
-landing_runs as (
-    select * from {{ source('worldbank', 'landing_runs') }}
+landing_runs AS (
+    SELECT * FROM {{ source('worldbank', 'landing_runs') }}
 ),
 
-final as (
-    select
+final AS (
+    SELECT
         run_id,
         pipeline_version,
         git_sha,
         config_hash,
         started_at,
         committed_at
-    from landing_runs
+    FROM landing_runs
 )
 
-select * from final
+SELECT * FROM final

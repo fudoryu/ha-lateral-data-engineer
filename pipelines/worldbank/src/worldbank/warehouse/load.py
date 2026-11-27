@@ -95,17 +95,17 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
         stale.unlink(missing_ok=True)
     warehouse.parent.mkdir(parents=True, exist_ok=True)
     with duckdb.connect(str(loading)) as con:
-        con.execute("set TimeZone = 'UTC'")
+        con.execute("SET TimeZone = 'UTC'")
         con.execute(SCHEMA)
         con.execute(
-            "create temp table landed_manifest as"
-            " select content::json as manifest from read_text($files)",
+            "CREATE TEMP TABLE landed_manifest AS"
+            " SELECT content::JSON AS manifest FROM read_text($files)",
             {"files": manifests},
         )
         con.execute(
-            "create temp table landed_page as"
-            " select substr(filename, length($root) + 2) as response_id, content"
-            " from read_text($files)",
+            "CREATE TEMP TABLE landed_page AS"
+            " SELECT substr(filename, length($root) + 2) AS response_id, content"
+            " FROM read_text($files)",
             {"files": pages, "root": str(landing_root.resolve())},
         )
         try:

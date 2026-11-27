@@ -23,7 +23,7 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 | n/a | `uv run worldbank load --as-of <run_id>` | rebuild as of an earlier run, into a file of its own (never published) |
 | `just test` | `uv run pytest` | tests (offline) |
 | `just record-fixtures` | `uv run python pipelines/worldbank/scripts/record_fixtures.py` | re-record live API responses as test fixtures (commit separately) |
-| `just check` | see the `justfile` | lint + format check + type check + tests with a 95% line-and-branch coverage gate: **the definition of done** (ADR-0013) |
+| `just check` | see the `justfile` | Python and SQL lint + format check + type check + tests with a 95% line-and-branch coverage gate: **the definition of done** (ADR-0013, ADR-0025) |
 
 One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has its own command, for example `uv run worldbank --help` (ADR-0014).
 
@@ -41,6 +41,7 @@ One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has
 **Stack** (ADR-0001)
 - Python 3.14 managed by uv; run everything through `uv run`.
 - Dialect-specific SQL only in the staging layer and the raw loader; everything above staging stays portable.
+- SQL style (ADR-0025): keywords, types and `NULL`/`TRUE` in upper case, identifiers and functions in lower case, explicit `AS`, no keywords as names. SQLFluff enforces it on `.sql` files (`uv run sqlfluff fix <file>`); keep SQL in `.sql` files, and match the style by hand in the rare SQL string in Python.
 
 **Logging** (ADR-0024)
 - Log with the standard library: `log = logging.getLogger(__name__)` at the top of each module; no logging dependencies.

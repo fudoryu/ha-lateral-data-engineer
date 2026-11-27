@@ -6,38 +6,38 @@
 -- Nothing is reshaped: payloads are copied as received. The session time zone is UTC, so
 -- timestamps with any offset are stored as UTC.
 
-insert into raw.landing_runs by name
-select
-    manifest ->> 'run_id' as run_id,
-    (manifest ->> 'started_at')::timestamptz::timestamp as started_at,
-    (manifest ->> 'committed_at')::timestamptz::timestamp as committed_at,
-    manifest ->> 'pipeline_version' as pipeline_version,
-    manifest ->> 'git_sha' as git_sha,
-    manifest ->> 'config_hash' as config_hash,
-    manifest -> 'config' as config,
-    manifest -> 'warnings' as warnings
-from landed_manifest;
+INSERT INTO raw.landing_runs BY NAME
+SELECT
+    manifest ->> 'run_id' AS run_id,
+    (manifest ->> 'started_at')::TIMESTAMPTZ::TIMESTAMP AS started_at,
+    (manifest ->> 'committed_at')::TIMESTAMPTZ::TIMESTAMP AS committed_at,
+    manifest ->> 'pipeline_version' AS pipeline_version,
+    manifest ->> 'git_sha' AS git_sha,
+    manifest ->> 'config_hash' AS config_hash,
+    manifest -> 'config' AS config,
+    manifest -> 'warnings' AS warnings
+FROM landed_manifest;
 
-insert into raw.api_requests by name
-select
-    manifest ->> 'run_id' as run_id,
-    request ->> 'endpoint' as endpoint,
-    request ->> 'key' as key,
-    (request ->> 'pages')::integer as pages,
-    (request ->> 'total')::integer as total,
-    (request ->> 'lastupdated')::date as lastupdated
-from landed_manifest, unnest(manifest -> '$.requests[*]') as requests (request);
+INSERT INTO raw.api_requests BY NAME
+SELECT
+    manifest ->> 'run_id' AS run_id,
+    request ->> 'endpoint' AS endpoint,
+    request ->> 'key' AS request_key,
+    (request ->> 'pages')::INTEGER AS pages,
+    (request ->> 'total')::INTEGER AS total,
+    (request ->> 'lastupdated')::DATE AS lastupdated
+FROM landed_manifest, unnest(manifest -> '$.requests[*]') AS requests (request);
 
-insert into raw.api_responses by name
-select
-    file ->> 'response_id' as response_id,
-    manifest ->> 'run_id' as run_id,
-    file ->> 'endpoint' as endpoint,
-    file ->> 'key' as key,
-    (file ->> 'page')::integer as page,
-    file ->> 'url' as url,
-    (file ->> 'fetched_at')::timestamptz::timestamp as fetched_at,
-    file ->> 'sha256' as sha256,
-    landed_page.content as payload
-from landed_manifest, unnest(manifest -> '$.files[*]') as files (file)
-inner join landed_page on landed_page.response_id = file ->> 'response_id';
+INSERT INTO raw.api_responses BY NAME
+SELECT
+    files.listed_file ->> 'response_id' AS response_id,
+    landed_manifest.manifest ->> 'run_id' AS run_id,
+    files.listed_file ->> 'endpoint' AS endpoint,
+    files.listed_file ->> 'key' AS request_key,
+    (files.listed_file ->> 'page')::INTEGER AS page,
+    files.listed_file ->> 'url' AS url,
+    (files.listed_file ->> 'fetched_at')::TIMESTAMPTZ::TIMESTAMP AS fetched_at,
+    files.listed_file ->> 'sha256' AS sha256,
+    landed_page.content AS payload
+FROM landed_manifest, unnest(landed_manifest.manifest -> '$.files[*]') AS files (listed_file)
+INNER JOIN landed_page ON landed_page.response_id = files.listed_file ->> 'response_id';
