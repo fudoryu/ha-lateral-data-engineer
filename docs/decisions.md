@@ -33,7 +33,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
 | [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted (amended by ADR-0027) |
 | [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
-| [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
+| [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029; dimension lineage moved to intermediate by ADR-0042) |
 | [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Superseded by ADR-0030 |
 | [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted (a dimension of its own and no sort order, ADR-0040) |
 | [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted (pluralized by ADR-0032) |
@@ -47,6 +47,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040; `country_iso2` restored by ADR-0041) |
 | [ADR-0040](#adr-0040-income-groups-get-their-own-dimension) | Income groups get their own dimension | Decision | Accepted |
 | [ADR-0041](#adr-0041-dim_countries-keeps-the-iso-alpha-2-code) | dim_countries keeps the ISO alpha-2 code | Decision | Accepted |
+| [ADR-0042](#adr-0042-lineage-only-on-the-fact) | Lineage only on the fact | Decision | Accepted |
 
 ---
 
@@ -1252,3 +1253,24 @@ ADR-0039 dropped `country_iso2` from `dim_countries` as an alternate identifier 
 
 ### Consequences
 - Analysts can join external data keyed by either ISO code without a mapping table.
+
+---
+
+## ADR-0042: Lineage only on the fact
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-1, FR-MOD-2 · **Amends:** ADR-0028
+
+### Context
+`dim_countries` and `dim_indicators` carried `source_response_id`, the landed metadata page each row came from, while `dim_regions` and `dim_income_groups` couldn't, being derived from several countries. NFR-1 asks that every output value be traceable, and the values are in the fact.
+
+### Decision
+- **Only the fact carries `source_response_id`.** The dimensions hold business attributes only.
+- A dimension attribute (a country's name, an indicator's definition) is traced through `int_countries_filtered_to_latest_run` and `int_indicators_filtered_to_latest_run`, which keep `run_id` and `source_response_id`, like runs, pages and history (ADR-0028).
+
+### Alternatives considered
+- **Lineage on every dimension that can have it:** one column fewer to look up for an engineer, at the cost of a technical column in analyst tables and an inconsistency with the derived dimensions.
+
+### Consequences
+- Every mart column except the fact's `source_response_id` is a business attribute.
+- `trace_value.sql` is unchanged: it starts from the fact's history and the landed pages.
