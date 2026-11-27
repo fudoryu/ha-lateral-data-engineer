@@ -154,7 +154,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
 | NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/write.py`; the raw layer keeps them per response; committed runs are read only through sha256-verified reads (`src/worldbank/storage/read.py`) | `tests/storage/test_write.py`, `tests/storage/test_read.py`, `tests/warehouse/test_load.py` |
 | NFR-2 | Partial: `worldbank load` rebuilds a fresh warehouse file from every committed run, never the live one; `--as-of` rebuilds as of an earlier run (`src/worldbank/warehouse/load.py`) | `tests/warehouse/test_load.py` |
-| NFR-3 | Partial: API values never coerced (`src/worldbank/source/contracts.py`) | `tests/source/test_contracts.py` |
+| NFR-3 | Partial: API values never coerced (`src/worldbank/source/contracts.py`); staging keeps JSON nulls null (`dbt/models/staging/stg_worldbank__observations.sql`) | `tests/source/test_contracts.py`, dbt unit test `observations_keep_null_values_null_and_blank_units_null` |
 | NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` and `src/worldbank/source/config.py` | `tests/test_config.py` |
 | NFR-5 | TBD | TBD |
 | NFR-6 | TBD | TBD |

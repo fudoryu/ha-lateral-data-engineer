@@ -1,0 +1,89 @@
+version: 2
+
+# Unit tests for the staging logic: small hand-written inputs, exact expected outputs. They run
+# inside `dbt build`, before the models they test, so `just build` and `just check` run them.
+
+unit_tests:
+  - name: expected_cells_cover_every_configured_country_indicator_and_year
+    description: The expected set is the full cross product of the run's recorded scope (ADR-0008).
+    model: stg_worldbank__expected_cells
+    given:
+      - input: source('worldbank', 'landing_runs')
+        rows:
+          - run_id: run-1
+            config: >-
+              {"scope": {"countries": ["BRA", "IND"], "indicators": ["SP.POP.TOTL"],
+              "years": {"start": 2018, "end": 2019}}}
+    expect:
+      rows:
+        - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2018}
+        - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2019}
+        - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2018}
+        - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019}
+
+  - name: observations_keep_null_values_null_and_blank_units_null
+    description: >
+      A JSON null value stays null, never 0 (NFR-3); blank units become null; the source's
+      lastupdated comes from the page metadata.
+    model: stg_worldbank__observations
+    given:
+      - input: source('worldbank', 'api_responses')
+        rows:
+          - response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
+            run_id: run-1
+            endpoint: observations
+            url: https://api.worldbank.org/v2/x
+            fetched_at: 2026-11-24 18:30:00
+            payload: >-
+              [{"page": 1, "pages": 1, "per_page": 50, "total": 2, "lastupdated": "2026-11-11"},
+              [{"indicator": {"id": "SP.POP.TOTL", "value": "Population, total"},
+                "country": {"id": "BR", "value": "Brazil"}, "countryiso3code": "BRA",
+                "date": "2024", "value": null, "unit": "", "obs_status": "", "decimal": 0},
+               {"indicator": {"id": "SP.POP.TOTL", "value": "Population, total"},
+                "country": {"id": "BR", "value": "Brazil"}, "countryiso3code": "BRA",
+                "date": "2023", "value": 211.5, "unit": "", "obs_status": "", "decimal": 1}]]
+          - response_id: run-1/endpoint=countries/page=1.json
+            run_id: run-1
+            endpoint: countries
+            payload: '[{"page": 1, "pages": 1, "per_page": 50, "total": 0}, []]'
+    expect:
+      rows:
+        - country_iso3: BRA
+          indicator_id: SP.POP.TOTL
+          observation_year: 2024
+          indicator_value: null
+          unit: null
+          obs_status: null
+          source_response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
+          source_lastupdated: 2026-11-11
+        - country_iso3: BRA
+          indicator_id: SP.POP.TOTL
+          observation_year: 2023
+          indicator_value: 211.5
+          unit: null
+          obs_status: null
+          source_response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
+          source_lastupdated: 2026-11-11
+
+  - name: countries_have_trimmed_names
+    description: The API returns some names with trailing spaces (source-system §2).
+    model: stg_worldbank__countries
+    given:
+      - input: source('worldbank', 'api_responses')
+        rows:
+          - response_id: run-1/endpoint=countries/page=1.json
+            run_id: run-1
+            endpoint: countries
+            payload: >-
+              [{"page": 1, "pages": 1, "per_page": 50, "total": 1},
+              [{"id": "BRA", "iso2Code": "BR", "name": "Brazil ",
+                "region": {"id": "LCN", "iso2code": "ZJ", "value": "Latin America & Caribbean "},
+                "incomeLevel": {"id": "UMC", "iso2code": "XT", "value": "Upper middle income "}}]]
+    expect:
+      rows:
+        - country_iso3: BRA
+          country_name: Brazil
+          region_id: LCN
+          region_name: Latin America & Caribbean
+          income_level_id: UMC
+          income_level_name: Upper middle income

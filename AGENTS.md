@@ -61,6 +61,7 @@ One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has
 ## Guardrails
 
 - **Never call the live API in tests** (FR-DQ-3).
+- **Every dbt model with logic gets dbt unit tests** (`unit_tests:` in the layer's `_*__unit_tests.yml`) for its cases, including the ones live data doesn't show (`null_value`, `missing_row`, revisions), plus data tests for its grain and relationships.
 - **Never hand-edit recorded API responses** (`tests/fixtures/recorded/`); re-record them deliberately instead (ADR-0012).
 - **Never modify or delete committed landing runs**; current state comes from the latest committed run (ADR-0006).
 - **Never edit `docs/references/`.**
