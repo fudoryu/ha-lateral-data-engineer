@@ -21,7 +21,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted (recipe names amended by ADR-0018) |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
-| [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
+| [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted (mart names pluralized by ADR-0032) |
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028) |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
@@ -36,7 +36,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
 | [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Superseded by ADR-0030 |
 | [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted |
-| [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted |
+| [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted (pluralized by ADR-0032) |
+| [ADR-0032](#adr-0032-every-table-name-is-plural) | Every table name is plural | Decision | Accepted |
 
 ---
 
@@ -1016,3 +1017,24 @@ The current-state fact `fct_indicator_value` is renamed **`fct_country_indicator
 ### Alternatives considered
 - **`fct_indicator_value`:** shorter and conventional for indicator data, but leaves the country implicit.
 - **`fct_country_indicator`:** names two dimensions and no measurement, which reads as a bridge or factless table.
+
+---
+
+## ADR-0032: Every table name is plural
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2, FR-MOD-3 · **Amends:** ADR-0016 (mart naming), ADR-0031 (the fact's name)
+
+### Context
+ADR-0016 names staging and intermediate models after plural entities (`stg_worldbank__countries`, `int_runs_ranked`) but marts after singular ones (`dim_<entity>`), so the layers disagreed. dbt Labs' style guide pluralizes model names, keeping the plural with `dim_`/`fct_` prefixes (`dim_customers`, `fct_orders`); the Kimball tradition uses singular names. Both are accepted; mixing them isn't.
+
+### Decision
+- **Every table name is plural, in every layer:** `dim_countries`, `dim_indicators`, `fct_country_indicator_values`, and the seed `income_groups` (formerly `income_group_order`), with `int_countries_joined_to_income_groups` following it.
+- ADR-0016's mart pattern becomes `dim_<entities>` and `fct_<process, plural>`; queries read naturally (`FROM dim_countries`).
+- Earlier ADRs keep the names as written; this entry is the mapping.
+
+### Alternatives considered
+- **Singular marts, justified as Kimball style:** defensible, but the marts would differ from staging and intermediate for no reason a reader could see.
+
+### Consequences
+- One convention from staging to marts, matching the dbt guide reviewers are likely to know.
