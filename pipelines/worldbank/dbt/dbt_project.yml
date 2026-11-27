@@ -10,6 +10,10 @@ test-paths: [tests]
 macro-paths: [macros]
 clean-targets: [target, logs]
 
+# No usage pings to dbt Labs: only extract talks to the network (NFR-5, ADR-0003).
+flags:
+  send_anonymous_usage_stats: false
+
 models:
   worldbank:
     staging:
