@@ -230,11 +230,10 @@ unit_tests:
           numerator_indicator_id: null
           denominator_indicator_id: null
 
-  - name: indicators_get_the_release_and_precision_of_their_latest_observations
+  - name: indicators_get_the_release_of_their_latest_observations
     description: >
       The release date comes from the latest run's observation pages only, not from metadata
-      pages or older runs; the precision from the latest values. An indicator without
-      observations has neither.
+      pages or older runs. An indicator without observations has none.
     model: int_indicators_joined_to_latest_observations
     given:
       - input: ref('int_indicators_filtered_to_latest_run')
@@ -249,14 +248,10 @@ unit_tests:
              source_lastupdated: 2026-07-01}
           - {request_key: NEW.INDICATOR, endpoint: indicators, is_latest_run: true,
              source_lastupdated: null}
-      - input: ref('int_indicator_values_filtered_to_latest_run')
-        rows:
-          - {indicator_id: SP.DYN.LE00.IN, decimals: 1}
-          - {indicator_id: SP.DYN.LE00.IN, decimals: 1}
     expect:
       rows:
-        - {indicator_id: SP.DYN.LE00.IN, source_lastupdated: 2026-11-11, display_decimals: 1}
-        - {indicator_id: NEW.INDICATOR, source_lastupdated: null, display_decimals: null}
+        - {indicator_id: SP.DYN.LE00.IN, source_lastupdated: 2026-11-11}
+        - {indicator_id: NEW.INDICATOR, source_lastupdated: null}
 
   - name: countries_get_their_income_group_sort_order
     model: int_countries_joined_to_income_groups

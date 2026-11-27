@@ -38,8 +38,6 @@ models:
         description: >
           The World Bank's release date for this indicator's current values ("data as of"), from
           the latest run's observation pages.
-      - name: display_decimals
-        description: How many decimals the World Bank publishes this indicator's values with.
       - name: numerator_indicator_id
         description: For `ratio`, the indicator summed on top; must be a configured indicator.
         data_tests:

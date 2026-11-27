@@ -98,8 +98,8 @@ models:
 
   - name: int_indicators_joined_to_latest_observations
     description: >
-      The latest run's indicators with what their current observations say about them: the
-      release date (`source_lastupdated`) and the display precision (`display_decimals`).
+      The latest run's indicators with the World Bank release their current values come from
+      (`source_lastupdated`, from the latest run's observation pages).
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]

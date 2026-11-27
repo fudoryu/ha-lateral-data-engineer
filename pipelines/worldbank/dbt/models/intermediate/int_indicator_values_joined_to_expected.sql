@@ -25,7 +25,6 @@ final AS (
         END AS value_status,
         observations.unit,
         observations.obs_status,
-        observations.decimals,
         observations.source_response_id,
         observations.source_lastupdated
     FROM expected

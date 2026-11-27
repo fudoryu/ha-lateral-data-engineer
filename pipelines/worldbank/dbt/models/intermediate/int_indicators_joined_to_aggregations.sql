@@ -20,7 +20,6 @@ final AS (
         indicators.definition,
         indicators.source_organization,
         indicators.source_lastupdated,
-        indicators.display_decimals,
         aggregations.aggregation_method,
         aggregations.numerator_indicator_id,
         aggregations.denominator_indicator_id,

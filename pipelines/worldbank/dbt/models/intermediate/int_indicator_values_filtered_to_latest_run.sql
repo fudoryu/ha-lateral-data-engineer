@@ -20,7 +20,6 @@ final AS (
         cells.value_status,
         cells.unit,
         cells.obs_status,
-        cells.decimals,
         cells.run_id,
         cells.source_response_id,
         cells.source_lastupdated
