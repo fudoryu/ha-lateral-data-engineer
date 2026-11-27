@@ -4,12 +4,14 @@ The warehouse is a rebuildable cache, so loading always starts from an empty dat
 never the live one: it writes the next file (`<name>.next.duckdb`), which dbt then builds and
 tests, and which only `publish` makes live (ADR-0007, ADR-0022). A point-in-time load (`as_of`)
 writes a file of its own and is never published.
+
 Before anything is inserted, each landed file is checked against the sha256 in its run's manifest,
 so an edited or corrupted landing file can't silently change the data. Response contracts are
 enforced once, at extract time: a matching hash proves the bytes are the ones validated then
 (ADR-0020).
 
-Raw tables (one row per landing run, request, and response page; never deduplicated):
+Raw tables, defined in `schema.sql` (one row per landing run, request, and response page; never
+deduplicated):
     raw.landing_runs    run metadata, including the configuration the run was extracted with
     raw.api_requests    one row per API request (pages, total, lastupdated)
     raw.api_responses   one row per page, with the exact response text as JSON
@@ -19,47 +21,14 @@ Timestamps are stored in UTC.
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from importlib import resources
 from pathlib import Path
 
 import duckdb
 
 from worldbank.storage.read import CommittedRun, committed_runs
 
-DDL = """
-create schema raw;
-
-create table raw.landing_runs (
-    run_id varchar primary key,
-    started_at timestamp not null,
-    committed_at timestamp not null,
-    pipeline_version varchar not null,
-    git_sha varchar,
-    config_hash varchar not null,
-    config json not null,
-    warnings json not null
-);
-
-create table raw.api_requests (
-    run_id varchar not null,
-    endpoint varchar not null,
-    key varchar,
-    pages integer not null,
-    total integer not null,
-    lastupdated date
-);
-
-create table raw.api_responses (
-    response_id varchar primary key,
-    run_id varchar not null,
-    endpoint varchar not null,
-    key varchar,
-    page integer not null,
-    url varchar not null,
-    fetched_at timestamp not null,
-    sha256 varchar not null,
-    payload json not null
-);
-"""
+SCHEMA = resources.files("worldbank.warehouse").joinpath("schema.sql").read_text(encoding="utf-8")
 
 
 class UnknownRun(Exception):
@@ -99,7 +68,7 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
     warehouse.parent.mkdir(parents=True, exist_ok=True)
     warehouse.unlink(missing_ok=True)
     with duckdb.connect(str(warehouse)) as con:
-        con.execute(DDL)
+        con.execute(SCHEMA)
         for run in runs:
             _insert_run(con, run, bodies[run.manifest.run_id])
     return LoadSummary(runs=len(runs), responses=sum(len(b) for b in bodies.values()))

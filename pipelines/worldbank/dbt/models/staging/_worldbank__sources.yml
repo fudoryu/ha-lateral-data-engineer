@@ -4,7 +4,9 @@ sources:
   - name: worldbank
     description: >
       Raw layer written by `worldbank load` from every committed landing run (ADR-0003, ADR-0006).
-      Files are checked against their manifest sha256 and response contracts before loading.
+      Files are checked against their manifest sha256 before loading; response contracts are
+      enforced once, at extract (ADR-0020). Tables are defined in
+      src/worldbank/warehouse/schema.sql: keep the two in step.
     schema: raw
     tables:
       - name: landing_runs
