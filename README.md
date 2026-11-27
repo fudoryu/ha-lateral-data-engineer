@@ -184,6 +184,11 @@ To try a different scope once without editing the file, pass it on the command l
 
 ## Unfinished work and next steps
 
+An exploration beyond the brief's scope (50 random economies × 50 random indicators; findings in [source-system §6 and §9](docs/source-system.md#6-missing-values)) confirmed the pipeline handles real gaps correctly: 45% null values, entirely empty series and real zeros all reach the reports as defined, never as 0. It also showed where the design is strict at scale:
+
+- **A new indicator without an aggregation method blocks publishing.** That's deliberate (NFR-4), but with many indicators a `not_aggregated` method would let the income-group report say so instead of failing the build.
+- **The latest common year is rare across many countries** (3 of 50 indicators had one). A rule such as "the latest year with at least 90% coverage" would serve wide scopes better.
+- **All-or-nothing extraction is costly at scale.** Stopping an all-indicator run discarded 712 fetched indicators, and one stale code fails a run. Production would checkpoint per indicator or resume interrupted runs, keeping the manifest as the commit.
 - **Optional extras** (brief, FR-ANA-5): a dashboard or extra view.
 
 ## AI usage

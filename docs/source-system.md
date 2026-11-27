@@ -73,7 +73,23 @@ A missing observation can appear in two ways:
 - a row with `"value": null`
 - no row at all for that country and year
 
-For the brief's scope (9 countries × 4 indicators × 2018–2024), **all values were present** as of `lastupdated` 2026-11-11. Missing-data behavior can't currently be observed in live data for this scope.
+For the brief's scope (9 countries × 4 indicators × 2018–2024), **all values were present** as of `lastupdated` 2026-11-11, in all three committed runs (252 of 252). Missing-data behavior can't be observed in live data for this scope.
+
+**At a wider scope, gaps are null values, not missing rows.** Measured on 2026-11-27 with 50 random economies × 50 random World Development Indicators × 2018–2024 (17,500 cells, run through the pipeline into a scratch folder):
+
+| Measure | Result |
+|---|---|
+| Rows returned | every request returned all 350 rows (50 × 7): **0 missing rows** |
+| Null values | **45.3%** of cells (7,922); a 20-indicator sample over all 217 economies ranged from 0% to 100% per indicator |
+| Series (country × indicator) | 1,045 complete, 643 incomplete, **812 entirely null (32%)** |
+| By year | null share 39.6% (2018) to 47.3% (2023) to **56.7% (2024)**: recent years lag |
+| By indicator | 5 of 50 entirely null for 2018–2024; 3 fully populated |
+| By country | 31% null (Bolivia) to 89% (Liechtenstein); small territories are sparsest |
+| Latest common year | only 3 of 50 indicators have a year every country reports |
+| Zeros | 138 real zero values |
+| `obs_status` | never set |
+
+So `missing_row` (ADR-0008) stays a real but rare case: the API pads with null rows. The pipeline stores nulls as `null_value`, never 0, keeps entirely empty series as `missing`, and keeps real zeros as 0 (their next-year percentage change is null with `prior_zero`).
 
 ## 7. Past values are revised silently
 
@@ -115,3 +131,12 @@ The country endpoint returns `incomeLevel` (for example `{"id": "UMC", "value": 
 | High income (HIC) | CAN, DEU, GBR, JPN, USA |
 | Upper middle income (UMC) | BRA, MEX, ZAF |
 | Lower middle income (LMC) | IND |
+
+## 9. Wider scopes: codes, errors and response times
+
+Measured on 2026-11-27 while exploring all 217 economies (the country endpoint lists 296 entries; 79 are aggregates such as `WLD` or `EUU`, which aren't countries) and the 1,498 indicators of source 2.
+
+- **Indicator codes aren't uniform.** 64 of the 1,498 use underscores or lower case, some without any dot: `GD_WBL_OVL_ENF`, `SH_UHC_FH40_FURTHER`, `per_allsp.adq_pop_tot`. Configuration accepts all of them.
+- **An indicator moved out of the source returns an error body,** not an empty page: `EN.ATM.CO2E.PC` with `source=2` gives `"120 Invalid value: The provided parameter value is not valid"` (see §3). Extract treats it as a permanent failure, so one stale code fails the whole run without committing anything.
+- **Response times vary by indicator:** for all 217 economies most requests take under a second, but some take 25–32 seconds, so the read timeout is 60 seconds. Fetching all 1,498 indicators would take about 3 hours.
+- **Requests without a recognizable User-Agent are challenged.** Python's default `urllib` client got HTTP 429 with a Cloudflare "Just a moment…" HTML page; `curl` and the pipeline's client (`User-Agent: worldbank-pipeline/<version>`) were served normally.
