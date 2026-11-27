@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 
+import duckdb
 import requests
 import typer
 import yaml
@@ -39,7 +40,8 @@ EXTRACT_FAILURES = (
     FileExistsError,  # a run with the same timestamp already exists
 )
 
-LOAD_FAILURES = (IntegrityError, UnknownRun, ValidationError)  # ValidationError: corrupt manifest
+# ValidationError: a corrupt manifest; duckdb.Error: the load SQL failed
+LOAD_FAILURES = (IntegrityError, UnknownRun, ValidationError, duckdb.Error)
 PUBLISH_FAILURES = (NothingToPublish, UnsafeToPublish, OSError)
 
 app = typer.Typer(
@@ -91,14 +93,18 @@ def load(
     try:
         summary = load_raw(_landing_root(data_dir), target, as_of=as_of)
     except LOAD_FAILURES as exc:
-        typer.echo(f"load failed, nothing written: {exc}", err=True)
+        typer.echo(f"load failed, no build written: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(f"loaded {summary.runs} runs ({summary.responses} responses) into {target}")
 
 
 @app.command()
 def publish(data_dir: Path = DataDirOption) -> None:
-    """Make the audited build live: atomically replace the live warehouse with the next file."""
+    """Make the audited build live: atomically replace the live warehouse with the next file.
+
+    Run it only after a successful full `dbt build` on the next file; `just build` guarantees that
+    order (ADR-0023).
+    """
     try:
         live = publish_build(_live_warehouse(data_dir))
     except PUBLISH_FAILURES as exc:

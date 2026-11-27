@@ -202,7 +202,7 @@ def test_cli_load_reports_failures_with_exit_code_1(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 1
-    assert "load failed, nothing written: no committed run 2026-01-01T00-00-00Z" in result.stderr
+    assert "load failed, no build written: no committed run 2026-01-01T00-00-00Z" in result.stderr
 
 
 def test_timestamps_with_any_offset_are_stored_as_utc(tmp_path: Path) -> None:
@@ -220,3 +220,39 @@ def test_timestamps_with_any_offset_are_stored_as_utc(tmp_path: Path) -> None:
     assert scalar(tmp_path / "wh.duckdb", "select started_at from raw.landing_runs") == datetime(
         2026, 11, 24, 10, 0
     )
+
+
+def test_a_failed_load_removes_the_previous_build(
+    recorded_api: responses.RequestsMock, recorded_config: Config, tmp_path: Path
+) -> None:
+    extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC))
+    (tmp_path / "wh.duckdb").write_bytes(b"previous build")
+    _first_observation_page(tmp_path / "raw").write_bytes(b"tampered")
+
+    with pytest.raises(IntegrityError):
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+    assert not (tmp_path / "wh.duckdb").exists()
+
+
+def test_a_load_that_fails_midway_leaves_no_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    two_runs(tmp_path / "raw")
+    monkeypatch.setattr("worldbank.warehouse.load.LOAD", "select * from no_such_table")
+
+    with pytest.raises(duckdb.Error):
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+    assert not (tmp_path / "wh.duckdb").exists()
+    assert (tmp_path / "wh.duckdb.loading").exists()  # kept for debugging
+
+
+def test_cli_load_reports_a_failing_load_sql(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    two_runs(tmp_path / "raw" / "worldbank")
+    monkeypatch.setattr("worldbank.warehouse.load.LOAD", "select * from no_such_table")
+
+    result = CliRunner().invoke(app, ["load", "--data-dir", str(tmp_path)])
+
+    assert result.exit_code == 1
+    assert "load failed, no build written" in result.stderr

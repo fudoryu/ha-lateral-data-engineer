@@ -20,6 +20,7 @@ deduplicated):
 Timestamps are stored in UTC.
 """
 
+import os
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -62,7 +63,13 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
 
     With `as_of`, only the runs up to and including that run are loaded, so the latest run (and
     with it every mart) is as of that run (ADR-0006).
+
+    The file appears only once it's complete: any previous build at `warehouse` is removed first,
+    the load writes `<warehouse>.loading`, and a rename gives it its final name. A failed load
+    leaves no build behind, only the `.loading` file for debugging.
     """
+    for stale in (warehouse, _wal(warehouse)):
+        stale.unlink(missing_ok=True)
     runs = committed_runs(landing_root)
     if as_of is not None:
         run_ids = [run.manifest.run_id for run in runs]
@@ -72,9 +79,11 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
     manifests = [str(run.manifest_path.resolve()) for run in runs]
     pages = [str(path.resolve()) for run in runs for path in run.verified_files()]
 
+    loading = warehouse.with_name(f"{warehouse.name}.loading")
+    for stale in (loading, _wal(loading)):
+        stale.unlink(missing_ok=True)
     warehouse.parent.mkdir(parents=True, exist_ok=True)
-    warehouse.unlink(missing_ok=True)
-    with duckdb.connect(str(warehouse)) as con:
+    with duckdb.connect(str(loading)) as con:
         con.execute("set TimeZone = 'UTC'")
         con.execute(SCHEMA)
         con.execute(
@@ -89,4 +98,9 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
             {"files": pages, "root": str(landing_root.resolve())},
         )
         con.execute(LOAD)
+    os.replace(loading, warehouse)  # closing the connection checkpointed it: no .wal is left
     return LoadSummary(runs=len(runs), responses=len(pages))
+
+
+def _wal(database: Path) -> Path:
+    return database.with_name(f"{database.name}.wal")
