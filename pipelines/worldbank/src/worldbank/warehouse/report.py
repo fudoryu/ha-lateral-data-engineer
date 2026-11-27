@@ -519,7 +519,8 @@ def _tile(d: _Data, indicator: str, short: str, code: str, country: str) -> str:
         for i in range(len(years))
     )
     return f"""<article class="tile hoverable" data-cty="{d.index(code)}">
-<header class="tile-head"><p class="who-block"><b>{_e(code)}</b><span>{_e(country)}</span></p>
+<header class="tile-head"><p class="who-block"><b>{_e(code)}</b>
+<span title="{_e(country)}">{_e(country)}</span></p>
 <p class="readouts">{readouts}</p></header>
 <svg class="spark" viewBox="0 0 {_TW} 80" role="img"
  aria-label="{_e(country)}, {_e(short)}, {years[0]} to {years[-1]}">
@@ -872,10 +873,11 @@ summary:focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 .tile { padding: 12px 14px 10px; background: var(--surface); border: 1px solid var(--rule);
   border-radius: 8px; }
 .tile-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.who-block { margin: 0; display: grid; }
+.who-block { margin: 0; display: grid; min-width: 0; }
 .who-block b { font-size: 22px; line-height: 1; letter-spacing: 0.02em; }
-.who-block span { margin-top: 3px; font-size: 12px; color: var(--ink-2); }
-.readouts { margin: 0; text-align: right; }
+.who-block span { margin-top: 3px; font-size: 12px; color: var(--ink-2); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.readouts { flex: none; margin: 0; text-align: right; }
 .fig { display: block; font-size: 20px; line-height: 1.1; font-weight: 700; }
 .readouts small { display: block; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .spark { display: block; width: 100%; height: auto; margin-top: 8px; overflow: visible; }
