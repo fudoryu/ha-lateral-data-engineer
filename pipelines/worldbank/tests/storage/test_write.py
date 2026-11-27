@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 from landed import BODY, COMMITTED, STARTED, write_and_commit
 
-from worldbank.storage.write import AlreadyCommitted, RunWriter, config_hash, new_run_id
+from worldbank.storage.write import (
+    AlreadyCommitted,
+    InvalidPage,
+    RunWriter,
+    config_hash,
+    new_run_id,
+)
 
 
 def test_run_id_is_a_utc_timestamp() -> None:
@@ -90,3 +96,34 @@ def test_non_ascii_bytes_are_kept_exactly(tmp_path: Path) -> None:
 
     assert (tmp_path / landed.response_id).read_bytes() == body
     assert landed.bytes == len(body)
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "key"),
+    [("../x", None), ("countries", "a/b"), ("countries", ".."), ("a=b", None), ("", None)],
+)
+def test_unsafe_names_are_refused(tmp_path: Path, endpoint: str, key: str | None) -> None:
+    run = RunWriter.start(tmp_path, STARTED)
+
+    with pytest.raises(InvalidPage, match="safe path segment"):
+        run.write_page(endpoint=endpoint, key=key, page=1, body=BODY, url="u", fetched_at=STARTED)
+
+
+def test_page_numbers_start_at_one(tmp_path: Path) -> None:
+    run = RunWriter.start(tmp_path, STARTED)
+
+    with pytest.raises(InvalidPage, match="start at 1"):
+        run.write_page(
+            endpoint="countries", key=None, page=0, body=BODY, url="u", fetched_at=STARTED
+        )
+
+
+def test_a_page_is_written_once(tmp_path: Path) -> None:
+    run = RunWriter.start(tmp_path, STARTED)
+    run.write_page(endpoint="countries", key=None, page=1, body=BODY, url="u", fetched_at=STARTED)
+
+    with pytest.raises(InvalidPage, match="already written"):
+        run.write_page(
+            endpoint="countries", key=None, page=1, body=b"x", url="u", fetched_at=STARTED
+        )
+    assert (run.path / "endpoint=countries" / "page=1.json").read_bytes() == BODY

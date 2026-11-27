@@ -8,6 +8,7 @@ relative to the landing root, so it survives warehouse rebuilds (ADR-0006).
 import hashlib
 import json
 import os
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -20,9 +21,16 @@ from worldbank.storage.manifest import (
     RequestRecord,
 )
 
+# Endpoint names and request keys become folder names: one safe path segment each.
+SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
 
 class AlreadyCommitted(Exception):
     """A committed run is immutable: it can't be written to or committed again."""
+
+
+class InvalidPage(ValueError):
+    """A page can't be landed: unsafe name, page number below 1, or already written."""
 
 
 def new_run_id(now: datetime) -> str:
@@ -63,11 +71,18 @@ class RunWriter:
     ) -> LandedFile:
         """Write one response page, byte for byte."""
         self._ensure_open()
+        for name in (endpoint, key):
+            if name is not None and not SEGMENT.fullmatch(name):
+                raise InvalidPage(f"{name!r} is not a safe path segment")
+        if page < 1:
+            raise InvalidPage(f"page numbers start at 1, got {page}")
         relative = Path(f"endpoint={endpoint}")
         if key is not None:
             relative /= key
         relative /= f"page={page}.json"
         target = self.path / relative
+        if target.exists():
+            raise InvalidPage(f"{relative.as_posix()} was already written in this run")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(body)
         landed = LandedFile(
