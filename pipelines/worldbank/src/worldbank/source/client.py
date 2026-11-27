@@ -27,9 +27,9 @@ from tenacity import (
 )
 
 from worldbank import __version__
+from worldbank.source.config import Api
 from worldbank.source.contracts import Page, parse_page
 from worldbank.source.errors import ExtractError
-from worldbank.source.settings import Api
 
 USER_AGENT = f"worldbank-pipeline/{__version__}"
 

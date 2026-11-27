@@ -1,6 +1,6 @@
-"""Pipeline configuration: reads `config.yml` into validated settings (NFR-4).
+"""Pipeline configuration: reads `config.yml` into the validated configuration models (NFR-4).
 
-The settings models belong to the source they describe (`worldbank.source.settings`); this module
+The models belong to the source they describe (`worldbank.source.config`); this module
 only loads them, so nothing in `source/` depends on the top level.
 """
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from worldbank.source.settings import Config
+from worldbank.source.config import Config
 
 __all__ = ["Config", "load_config"]
 

@@ -12,9 +12,9 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from worldbank.source.config import Scope
 from worldbank.source.contracts import Country, Indicator, Observation
 from worldbank.source.errors import ExtractError
-from worldbank.source.settings import Scope
 
 
 class ScopeViolation(ExtractError):

@@ -1,4 +1,7 @@
-"""World Bank settings: how to talk to the API and which scope to fetch (ADR-0002, NFR-4)."""
+"""World Bank configuration models: how to call the API and what to fetch (ADR-0002, NFR-4).
+
+They describe `config.yml`; `worldbank.config.load_config` reads the file into them.
+"""
 
 from typing import Annotated, Self
 

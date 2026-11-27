@@ -15,9 +15,9 @@ from worldbank.source.client import (
     PermanentHTTPError,
     TransientHTTPError,
 )
+from worldbank.source.config import Api
 from worldbank.source.contracts import ApiErrorResponse, Observation
 from worldbank.source.errors import ExtractError
-from worldbank.source.settings import Api
 
 BASE = "https://api.worldbank.org/v2"
 PATH = "country/BRA;IND/indicator/SP.POP.TOTL"

@@ -24,8 +24,8 @@ from pydantic import BaseModel
 from worldbank import __version__
 from worldbank.source import endpoints
 from worldbank.source.client import Client, FetchResult
+from worldbank.source.config import Config
 from worldbank.source.errors import ExtractError
-from worldbank.source.settings import Config
 from worldbank.storage.manifest import Manifest, RequestRecord
 from worldbank.storage.write import RunWriter
 
