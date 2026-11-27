@@ -167,7 +167,7 @@ The evaluation side of the brief (brief §5, §6, and Notes): our definition of 
 
 - [ ] Git/GitHub repository, with commit history, containing all the deliverables below
 - [ ] One documented command runs the pipeline locally from a clean checkout, following the README (NFR-6)
-- [ ] Sample output of the reporting queries is committed (for example, CSV)
+- [x] Sample output of the reporting queries is committed (for example, CSV): `data/outputs/` (ADR-0034)
 
 ### README sections
 
