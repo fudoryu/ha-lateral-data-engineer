@@ -36,6 +36,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
 | [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Superseded by ADR-0030 |
 | [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted |
+| [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted |
 
 ---
 
@@ -1001,3 +1002,17 @@ ADR-0011 assumes the current income classification for every year, because the A
 ### Consequences
 - The analyst model is three tables, and FR-ANA-4 groups the fact by `dim_country.income_group_*` and year.
 - If a historical classification is ever allowed, the group moves to the fact at country × year, a change to the model and the income-group report.
+
+---
+
+## ADR-0031: The fact is named fct_country_indicator_value
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2 · **Amends:** the fact's name in ADR-0017, ADR-0028 and ADR-0030
+
+### Decision
+The current-state fact `fct_indicator_value` is renamed **`fct_country_indicator_value`**. It still follows ADR-0016's `fct_<process>` pattern, naming the measurement (a value), and now also reads as most of its grain (country × indicator, per year). Earlier ADRs keep the old name as written; this entry is the mapping.
+
+### Alternatives considered
+- **`fct_indicator_value`:** shorter and conventional for indicator data, but leaves the country implicit.
+- **`fct_country_indicator`:** names two dimensions and no measurement, which reads as a bridge or factless table.

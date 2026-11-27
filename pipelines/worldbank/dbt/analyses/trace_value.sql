@@ -1,7 +1,7 @@
 -- Trace one cell to everything behind it (ADR-0028, NFR-1): each version of its value across
 -- runs, the landed page it came from (URL, fetch time, sha256, the source's release date) and
 -- the run that fetched it (commit time, code version). The current version is the value
--- analysts see in fct_indicator_value; the page is also its file in the landing zone.
+-- analysts see in fct_country_indicator_value; the page is also its file in the landing zone.
 --
 -- From the repo root, against the live warehouse:
 --   WORLDBANK_WAREHOUSE=data/warehouse/worldbank.duckdb uv run dbt show \
