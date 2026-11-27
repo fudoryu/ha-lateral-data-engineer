@@ -9,6 +9,7 @@ countries AS (
 final AS (
     SELECT
         country_id,
+        country_iso2,
         country_name,
         region_id,
         income_group_id,

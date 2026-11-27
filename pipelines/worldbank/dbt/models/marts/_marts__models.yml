@@ -14,10 +14,15 @@ models:
     data_tests:
       - expression_is_true:
           arguments:
-            expression: "length(country_id) = 3 AND country_id = upper(country_id)"
+            expression: >-
+              length(country_id) = 3 AND country_id = upper(country_id)
+              AND length(country_iso2) = 2 AND country_iso2 = upper(country_iso2)
     columns:
       - name: country_id
         description: The country's ISO 3166-1 alpha-3 code, e.g. `BRA`.
+        data_tests: [unique, not_null]
+      - name: country_iso2
+        description: The country's ISO 3166-1 alpha-2 code, e.g. `BR`; an attribute, not the key.
         data_tests: [unique, not_null]
       - name: country_name
         data_tests: [not_null]

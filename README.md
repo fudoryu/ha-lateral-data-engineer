@@ -85,11 +85,11 @@ The marts are a current-state dimensional model: one fact and four dimensions at
 ```
   dim_regions             dim_countries           fct_country_indicator_values    dim_indicators
     region_id (PK)          country_id (PK)         country_id (FK)                 indicator_id (PK)
-    region_name             country_name            indicator_id (FK)               indicator_name
-                            region_id (FK)          observation_year                definition
-  dim_income_groups         income_group_id (FK)    indicator_value                 source_organization
-    income_group_id (PK)    source_response_id      value_status                    source_lastupdated
-    income_group_name                               source_response_id              source_response_id
+    region_name             country_iso2            indicator_id (FK)               indicator_name
+                            country_name            observation_year                definition
+  dim_income_groups         region_id (FK)          indicator_value                 source_organization
+    income_group_id (PK)    income_group_id (FK)    value_status                    source_lastupdated
+    income_group_name       source_response_id      source_response_id              source_response_id
 
   fct → dim_countries → dim_regions, dim_income_groups;  fct → dim_indicators
 ```
