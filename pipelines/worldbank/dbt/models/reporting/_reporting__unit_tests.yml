@@ -149,8 +149,9 @@ unit_tests:
       Two of three high-income countries have population and GDP: those are summed; GDP per
       capita is total GDP over total population (6000 / 300 = 20, not the average of the
       countries' 10 and 40, 25); life expectancy is weighted by population
-      ((80 * 200 + 70 * 100) / 300). GBR has a life expectancy but no population, so it drops out
-      of the weighted mean, and the coverage says 2 of 3.
+      ((80 * 200 + 70 * 100) / 300). GBR has a GDP and a life expectancy but no population: its
+      GDP counts in the GDP total (7000, 3 of 3) but not in GDP per capita, and it drops out of
+      the weighted mean; those two say 2 of 3.
     model: rpt_income_group_by_year
     given:
       - input: ref('fct_country_indicator_values')
@@ -160,7 +161,7 @@ unit_tests:
           - {country_id: GBR, indicator_id: SP.POP.TOTL, observation_year: 2024, indicator_value: null}
           - {country_id: USA, indicator_id: NY.GDP.MKTP.CD, observation_year: 2024, indicator_value: 2000}
           - {country_id: DEU, indicator_id: NY.GDP.MKTP.CD, observation_year: 2024, indicator_value: 4000}
-          - {country_id: GBR, indicator_id: NY.GDP.MKTP.CD, observation_year: 2024, indicator_value: null}
+          - {country_id: GBR, indicator_id: NY.GDP.MKTP.CD, observation_year: 2024, indicator_value: 1000}
           - {country_id: USA, indicator_id: NY.GDP.PCAP.CD, observation_year: 2024, indicator_value: 10}
           - {country_id: DEU, indicator_id: NY.GDP.PCAP.CD, observation_year: 2024, indicator_value: 40}
           - {country_id: GBR, indicator_id: NY.GDP.PCAP.CD, observation_year: 2024, indicator_value: null}
@@ -185,8 +186,8 @@ unit_tests:
       rows:
         - {indicator_id: SP.POP.TOTL, aggregation: sum, group_value: 300, n_countries: 3,
            n_countries_with_data: 2}
-        - {indicator_id: NY.GDP.MKTP.CD, aggregation: sum, group_value: 6000, n_countries: 3,
-           n_countries_with_data: 2}
+        - {indicator_id: NY.GDP.MKTP.CD, aggregation: sum, group_value: 7000, n_countries: 3,
+           n_countries_with_data: 3}
         - {indicator_id: NY.GDP.PCAP.CD, aggregation: total GDP / total population,
            group_value: 20, n_countries: 3, n_countries_with_data: 2}
         - {indicator_id: SP.DYN.LE00.IN, aggregation: population-weighted mean,
