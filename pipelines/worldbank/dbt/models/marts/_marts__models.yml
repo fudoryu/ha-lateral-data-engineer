@@ -85,8 +85,7 @@ models:
     description: >
       Grain: one expected country × indicator × year of the latest run (current state). Key:
       (`country_id`, `indicator_id`, `observation_year`). Relationships: → dim_countries,
-      dim_indicators. `value_status` is
-      present, null_value or missing_row; the value is null unless present, and missing rows
+      dim_indicators. `value_status` is present, null_value or missing_row; the value is null unless present, and missing rows
       have no source response (ADR-0008, NFR-3).
     data_tests:
       - unique_combination:
@@ -95,18 +94,23 @@ models:
     columns:
       - name: country_id
         data_tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_countries')
                 field: country_id
       - name: indicator_id
         data_tests:
+          - not_null
           - relationships:
               arguments:
                 to: ref('dim_indicators')
                 field: indicator_id
+      - name: observation_year
+        data_tests: [not_null]
       - name: value_status
         data_tests:
+          - not_null
           - accepted_values:
               arguments:
                 values: [present, null_value, missing_row]
