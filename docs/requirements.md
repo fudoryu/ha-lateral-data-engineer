@@ -145,12 +145,12 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/warehouse/load.py`, separate from later layers | `tests/warehouse/test_load.py` |
 | FR-MOD-2 | Partial: star schema in `dbt/models/marts/` (ADR-0017); each mart's grain, key and relationships stated in `_marts__models.yml` (README data-model section to come) | dbt key, relationship and singular tests (`unique_combination`, `relationships`, `assert_fact_*`) |
 | FR-MOD-3 | Staging flattens the JSON into typed, consistently named columns; marts expose only those (ADR-0016) | dbt unit tests on staging; `tests/test_pipeline.py` |
-| FR-ANA-1 | TBD | TBD |
-| FR-ANA-2 | TBD | TBD |
-| FR-ANA-3 | TBD | TBD |
-| FR-ANA-4 | TBD | TBD |
+| FR-ANA-1 | `dbt/models/reporting/rpt_completeness_by_cell.sql` (every expected cell's status) and `rpt_completeness_by_series.sql` (complete, incomplete or missing per series), on the expected set (ADR-0008) | dbt unit tests (cell statuses, series statuses), `assert_fact_covers_the_latest_expected_set` |
+| FR-ANA-2 | `dbt/models/reporting/rpt_year_over_year.sql`: absolute and percent change with a reason whenever either is null (ADR-0009) | dbt unit test for every reason, `assert_year_over_year_nulls_have_a_reason` |
+| FR-ANA-3 | `dbt/models/reporting/rpt_latest_year_by_country.sql` (each country's own latest year, shown) and `rpt_latest_common_year.sql` (like-for-like) (ADR-0009) | dbt unit tests (differing latest years, common year, none) |
+| FR-ANA-4 | `dbt/models/reporting/rpt_income_group_by_year.sql`: per group and year by each indicator's method (sum, ratio of sums, population-weighted mean) with coverage counts; current classification assumed (ADR-0009, ADR-0011, ADR-0030) | dbt unit tests (all methods, missing weight, empty group) |
 | FR-DQ-1 | Partial: dbt tests run on every build, before publish (`just build`, ADR-0007, ADR-0022); `just check` runs the whole chain offline, extract → load → dbt build → publish, on recorded responses | `tests/test_pipeline.py` |
-| FR-DQ-2 | TBD | TBD |
+| FR-DQ-2 | `dbt/tests/assert_ratio_indicators_match_their_parts.sql`: GDP per capita within 0.1% of GDP / population, for every ratio indicator (ADR-0010) | runs in every `dbt build`; proven to flag all 63 country-years at an impossible tolerance |
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
 | NFR-1 | Each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/write.py`; committed runs are read only through sha256-verified reads (`src/worldbank/storage/read.py`); every current value carries `source_response_id`, traced to its page and run by `dbt/analyses/trace_value.sql` (ADR-0028) | `tests/storage/test_write.py`, `tests/storage/test_read.py`, `tests/warehouse/test_load.py`, dbt `assert_fact_values_come_from_the_latest_run` and relationship tests |
 | NFR-2 | Partial: `worldbank load` rebuilds a fresh warehouse file from every committed run, never the live one; `--as-of` rebuilds as of an earlier run (`src/worldbank/warehouse/load.py`) | `tests/warehouse/test_load.py` |
