@@ -36,3 +36,21 @@ models:
           - accepted_values:
               arguments:
                 values: [complete, incomplete, missing]
+
+  - name: rpt_year_over_year
+    description: >
+      FR-ANA-2: each country × indicator × year's change from the year before, as
+      `absolute_change` and `percent_change` (in percent). When a change can't be computed it's
+      null, never 0, and `null_change_reason` says why: current_missing, prior_out_of_scope
+      (always the first reporting year), prior_missing or prior_zero (only the percentage is
+      null). Grain: one country × indicator × year (ADR-0009).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id, observation_year]
+    columns:
+      - name: null_change_reason
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [current_missing, prior_out_of_scope, prior_missing, prior_zero]

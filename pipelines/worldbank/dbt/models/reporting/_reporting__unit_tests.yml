@@ -31,3 +31,35 @@ unit_tests:
            n_null_value: 1, n_missing_row: 0}
         - {country_id: ZAF, series_status: missing, n_present: 0, n_expected: 2,
            n_null_value: 1, n_missing_row: 1}
+
+  - name: year_over_year_changes_and_every_null_reason
+    description: >
+      A normal change, the first year (prior out of scope), a missing current value, a missing
+      prior value, and a prior of zero, where only the percentage is null (ADR-0009).
+    model: rpt_year_over_year
+    given:
+      - input: ref('fct_country_indicator_values')
+        rows:
+          - {country_id: BRA, indicator_id: X, observation_year: 2018, indicator_value: 100, value_status: present}
+          - {country_id: BRA, indicator_id: X, observation_year: 2019, indicator_value: 110, value_status: present}
+          - {country_id: BRA, indicator_id: X, observation_year: 2020, indicator_value: null, value_status: missing_row}
+          - {country_id: BRA, indicator_id: X, observation_year: 2021, indicator_value: 0, value_status: present}
+          - {country_id: BRA, indicator_id: X, observation_year: 2022, indicator_value: 5, value_status: present}
+      - input: ref('dim_countries')
+        rows:
+          - {country_id: BRA, country_name: Brazil}
+      - input: ref('dim_indicators')
+        rows:
+          - {indicator_id: X, indicator_name: An indicator}
+    expect:
+      rows:
+        - {observation_year: 2018, absolute_change: null, percent_change: null,
+           null_change_reason: prior_out_of_scope}
+        - {observation_year: 2019, absolute_change: 10, percent_change: 10,
+           null_change_reason: null}
+        - {observation_year: 2020, absolute_change: null, percent_change: null,
+           null_change_reason: current_missing}
+        - {observation_year: 2021, absolute_change: null, percent_change: null,
+           null_change_reason: prior_missing}
+        - {observation_year: 2022, absolute_change: 5, percent_change: null,
+           null_change_reason: prior_zero}
