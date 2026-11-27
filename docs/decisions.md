@@ -49,6 +49,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0041](#adr-0041-dim_countries-keeps-the-iso-alpha-2-code) | dim_countries keeps the ISO alpha-2 code | Decision | Accepted |
 | [ADR-0042](#adr-0042-lineage-only-on-the-fact) | Lineage only on the fact | Decision | Accepted |
 | [ADR-0043](#adr-0043-income-group-aggregates-written-out-in-the-report) | Income-group aggregates written out in the report | Decision | Accepted |
+| [ADR-0044](#adr-0044-one-reporting-table-per-question) | One reporting table per question | Decision | Accepted |
 
 ---
 
@@ -1298,3 +1299,27 @@ ADR-0038 replaced per-indicator aggregation with the average of a group's countr
 ### Consequences
 - The income-group comparison is economically correct for the brief's indicators, and each formula can be read and checked at a glance.
 - **NFR-4 exception:** a new indicator extends every other report through configuration alone, but appears in this one only once its aggregate is written into the report. The README states it.
+
+---
+
+## ADR-0044: One reporting table per question
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-1 to FR-ANA-4 · **Amends:** ADR-0008, ADR-0009
+
+### Context
+The reporting layer had six tables for the brief's four questions, in two redundant pairs: cell-level and series-level completeness (the second a rollup of the first), and each country's own latest year next to the latest common year, at the same grain.
+
+### Decision
+**Four tables, one per question, each named for it:**
+- `rpt_completeness` (country × indicator × year): `value_status` for each cell and `series_status` for its series, so one table answers both "which combinations are missing" and "which series are incomplete".
+- `rpt_year_over_year`, unchanged.
+- `rpt_latest_year` (country × indicator): each country's own latest year, value and rank, next to the latest common year, the value in it and the rank on it.
+- `rpt_income_group_by_year`, unchanged.
+
+### Alternatives considered
+- **Keep separate tables per view:** each is simpler on its own, but analysts join two tables to see one answer, and the series counts duplicate the cells.
+
+### Consequences
+- Each question maps to one table and one CSV.
+- Per-series counts are a `GROUP BY` on `rpt_completeness` rather than a table of their own.
