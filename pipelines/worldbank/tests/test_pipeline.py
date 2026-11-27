@@ -1,4 +1,5 @@
-"""End to end, offline: extract → load → dbt build → publish, chained as in `just build`.
+"""End to end, offline: extract → load → dbt build → publish → export, as `just build` and
+`just export` chain them.
 
 The chain is ADR-0022's. Extract runs against the recorded API responses (ADR-0012), and dbt runs
 as its own process, the way the task runner calls it, with its target and log folders inside the
@@ -71,3 +72,17 @@ def test_recorded_runs_build_and_publish(
         ).fetchone()
     assert counts == (expected, expected, len(scope.countries))
     assert not (warehouse / "worldbank.next.duckdb").exists()
+
+    exported = CliRunner().invoke(app, ["export", "--data-dir", str(tmp_path)])
+    assert exported.exit_code == 0, exported.output
+    reports = {path.stem: path for path in (tmp_path / "outputs").glob("rpt_*.csv")}
+    assert set(reports) == {
+        "rpt_completeness_by_cell",
+        "rpt_completeness_by_series",
+        "rpt_year_over_year",
+        "rpt_latest_year_by_country",
+        "rpt_latest_common_year",
+        "rpt_income_group_by_year",
+    }
+    lines = reports["rpt_completeness_by_cell"].read_text(encoding="utf-8").splitlines()
+    assert len(lines) == expected + 1  # header + one row per expected cell

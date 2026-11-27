@@ -35,6 +35,8 @@ Thumbs.db
 # --- Local data (directory kept, contents never committed) -------------------
 data/*
 !data/.gitkeep
+# The report CSVs are the brief's committed sample output (ADR-0034).
+!data/outputs/
 
 # --- dbt (ADR-0016) -----------------------------------------------------------
 pipelines/*/dbt/target/

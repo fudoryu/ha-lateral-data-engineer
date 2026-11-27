@@ -2,6 +2,10 @@
 default:
     @just --list
 
+# Write every report table of the published warehouse to data/outputs/ as CSV (ADR-0034).
+export:
+    uv run worldbank export
+
 # Fetch from the API, then rebuild and publish the warehouse (calls the live API).
 run:
     uv run worldbank extract

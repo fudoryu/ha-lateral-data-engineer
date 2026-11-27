@@ -20,6 +20,7 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 |---|---|---|
 | `just run` | `uv run worldbank extract`, then the `just build` steps | fetch the configured scope, commit a landing run (calls the live API), then build |
 | `just build` | `uv run worldbank load`, `uv run dbt build --project-dir pipelines/worldbank/dbt --profiles-dir pipelines/worldbank/dbt`, `uv run worldbank publish` | rebuild the warehouse from landed runs (offline); publishes only if every dbt test passes (ADR-0022) |
+| `just export` | `uv run worldbank export` | write every report table of the published warehouse to `data/outputs/*.csv`, the committed sample output (ADR-0034) |
 | n/a | `uv run worldbank load --as-of <run_id>` | rebuild as of an earlier run, into a file of its own (never published) |
 | `just test` | `uv run pytest` | tests (offline) |
 | `just record-fixtures` | `uv run python pipelines/worldbank/scripts/record_fixtures.py` | re-record live API responses as test fixtures (commit separately) |

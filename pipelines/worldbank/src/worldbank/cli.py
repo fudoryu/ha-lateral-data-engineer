@@ -23,6 +23,7 @@ from worldbank.source.errors import ExtractError
 from worldbank.source.extract import extract as run_extract
 from worldbank.storage.errors import StorageError
 from worldbank.warehouse.errors import WarehouseError
+from worldbank.warehouse.export import export_reports
 from worldbank.warehouse.load import as_of_path, load_raw, next_path
 from worldbank.warehouse.publish import publish as publish_build
 
@@ -54,6 +55,9 @@ app = typer.Typer(
 
 ConfigOption = typer.Option(DEFAULT_CONFIG, "--config", help="Pipeline configuration file.")
 DataDirOption = typer.Option(DEFAULT_DATA_DIR, "--data-dir", help="Root of local data.")
+OutputOption = typer.Option(
+    None, "--output", help="Folder for the CSVs (default: <data-dir>/outputs)."
+)
 LogLevelOption = typer.Option(
     LogLevel.INFO, "--log-level", envvar="WORLDBANK_LOG_LEVEL", help="Lowest level logged."
 )
@@ -119,6 +123,21 @@ def publish(data_dir: Path = DataDirOption) -> None:
         log.error("publish failed, live warehouse unchanged: %s", exc)
         raise typer.Exit(code=1) from exc
     typer.echo(f"published {live}")
+
+
+@app.command()
+def export(
+    data_dir: Path = DataDirOption,
+    output: Path | None = OutputOption,
+) -> None:
+    """Write every report table of the published warehouse to CSV, one file per table."""
+    target = output if output is not None else data_dir / "outputs"
+    try:
+        reports = export_reports(_live_warehouse(data_dir), target)
+    except WarehouseError as exc:
+        log.error("export failed: %s", exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"exported {len(reports)} reports to {target}")
 
 
 def _landing_root(data_dir: Path) -> Path:
