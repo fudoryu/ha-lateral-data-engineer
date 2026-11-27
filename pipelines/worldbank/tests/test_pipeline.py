@@ -79,7 +79,7 @@ def build_publish_export(data_dir: Path) -> dict[str, Report]:
         app, ["report", "--data-dir", str(data_dir), "--output", str(report)]
     )
     assert rendered.exit_code == 0, rendered.output
-    assert "Indicators across income groups, by year" in report.read_text(encoding="utf-8")
+    assert "Missing and incomplete values" in report.read_text(encoding="utf-8")
 
     reports = {}
     for path in (data_dir / "outputs").glob("rpt_*.csv"):
