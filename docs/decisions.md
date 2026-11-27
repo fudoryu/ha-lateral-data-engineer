@@ -22,7 +22,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted (mart names pluralized by ADR-0032; staging's job clarified by ADR-0033) |
-| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028; indicator columns trimmed by ADR-0037) |
+| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028; indicator columns trimmed by ADR-0037; regions and country columns by ADR-0039) |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
@@ -44,6 +44,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
 | [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Accepted |
+| [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted |
 
 ---
 
@@ -1184,3 +1185,27 @@ ADR-0009 aggregated each indicator by its nature: population and GDP summed, GDP
 - The value describes the typical country in a group: an average population, not a total, and an average of GDP per capita, not the group's GDP per capita. The README states it as an assumption.
 - Adding an indicator is configuration only, with no seed row.
 - `dim_indicators` holds an indicator's identity, description and release, and nothing about aggregation.
+
+---
+
+## ADR-0039: Regions get their own dimension
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2 · **Amends:** ADR-0017, ADR-0028
+
+### Context
+`dim_countries` carried a country's ISO 3166-1 alpha-2 code next to its alpha-3 `country_id`, and its region's name next to the region's id, repeated for every country in the region. The fact carried `obs_status`, which the API leaves empty for every value in scope.
+
+### Decision
+- **`dim_regions`, one row per region of the latest run's countries,** keyed by the World Bank's `region_id`, with `region_name`. The API describes a region only on its countries, so `int_regions_derived_from_countries` collects the distinct ones; a region id with two names fails its uniqueness test.
+- **`dim_countries` keeps `region_id` as a foreign key** to `dim_regions` and drops `region_name` and `country_iso2`, an alternate identifier nothing uses.
+- **The fact drops `obs_status`.**
+- Staging and intermediate keep all three fields as the API sent them, so each is one model change away.
+
+### Alternatives considered
+- **Keep the region name in `dim_countries`:** one join fewer for analysts, at the cost of a repeated attribute.
+- **Move income groups to their own dimension too:** consistent, but the income group carries the analysis's own sort order and is read by a report on every query; it stays a country attribute (ADR-0030).
+
+### Consequences
+- Countries reach their region through `region_id`, a dimension-to-dimension relationship: a small snowflake on one attribute.
+- Every mart column now has a use or a documented meaning.
