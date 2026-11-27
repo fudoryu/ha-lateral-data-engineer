@@ -89,7 +89,7 @@ The marts are a current-state dimensional model: one fact and four dimensions at
                             country_name            observation_year                definition
   dim_income_groups         region_id (FK)          indicator_value                 source_organization
     income_group_id (PK)    income_group_id (FK)    value_status                    source_lastupdated
-    income_group_name       source_response_id      source_response_id              source_response_id
+    income_group_name                               source_response_id
 
   fct → dim_countries → dim_regions, dim_income_groups;  fct → dim_indicators
 ```
@@ -104,7 +104,7 @@ The marts are a current-state dimensional model: one fact and four dimensions at
 
 - **Every expected cell is a row,** including those the API didn't return. `value_status` records `present`, `null_value` or `missing_row`, and `indicator_value` is null unless the value is present. Missing is never zero (NFR-3, ADR-0008).
 - **I chose one long fact table,** so a new indicator adds rows, not columns, and every report works on any indicator without per-indicator setup.
-- **Lineage is a platform concern, not an analyst one.** Each row carries a single technical column, `source_response_id`, which names the landed page the row came from and is also its file path. Runs, pages and the history of revised values stay in intermediate for engineers, and [`trace_value.sql`](pipelines/worldbank/dbt/analyses/trace_value.sql) traces any value back to its source (NFR-1).
+- **Lineage is a platform concern, not an analyst one.** Only the fact carries a technical column, `source_response_id`, which names the landed page the value came from and is also its file path. Dimensions hold business attributes only. Runs, pages, the history of revised values and the dimensions' lineage stay in intermediate for engineers (ADR-0042), and [`trace_value.sql`](pipelines/worldbank/dbt/analyses/trace_value.sql) traces any value back to its source (NFR-1).
 - Every model's grain, key and relationships are also documented in its dbt YAML and enforced by tests.
 
 ## Data quality and testing

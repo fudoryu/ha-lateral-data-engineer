@@ -1,10 +1,10 @@
 version: 2
 
-# The final data model for analysts (ADR-0017, ADR-0028, FR-MOD-2): a current-state star schema at
-# natural keys, latest run only. Every description states the table's grain, key and
-# relationships; the tests below enforce them. Each row carries one technical lineage column,
-# `source_response_id`; runs, pages and history stay in intermediate, for engineers (see
-# analyses/trace_value.sql).
+# The final data model for analysts (ADR-0017, ADR-0028, FR-MOD-2): a current-state dimensional
+# model at natural keys, latest run only. Every description states the table's grain, key and
+# relationships; the tests below enforce them. Only the fact carries a technical column, its
+# lineage (`source_response_id`); runs, pages, history and the dimensions' lineage stay in
+# intermediate, for engineers (ADR-0042; see analyses/trace_value.sql).
 
 models:
   - name: dim_countries
@@ -47,7 +47,7 @@ models:
     description: >
       Grain: one region of the latest run's countries. Key: `region_id`, the World Bank's region
       code (ADR-0039). Derived from the countries, which are the only place the API describes a
-      region, so it has no lineage column of its own; trace it through dim_countries.
+      region; like every dimension, its lineage stays in intermediate (ADR-0042).
     columns:
       - name: region_id
         data_tests: [unique, not_null]
@@ -59,8 +59,8 @@ models:
       Grain: one income group of the latest run's countries. Key: `income_group_id`, the World
       Bank's income group code (ADR-0040). It's the current classification, which the analysis
       applies to every year (ADR-0011). Derived from the countries, which are the only place the
-      API describes an income group, so it has no lineage column of its own; trace it through
-      dim_countries.
+      API describes an income group; like every dimension, its lineage stays in intermediate
+      (ADR-0042).
     columns:
       - name: income_group_id
         data_tests: [unique, not_null]
@@ -80,11 +80,6 @@ models:
         description: >
           The World Bank's release date for this indicator's current values ("data as of"), from
           the latest run's observation pages.
-      - name: source_response_id
-        description: >
-          Technical lineage (ADR-0028): the landed metadata page this row comes from. Values, and
-          the pages their release date is read from, trace through the fact's own
-          `source_response_id`.
 
   - name: fct_country_indicator_values
     description: >

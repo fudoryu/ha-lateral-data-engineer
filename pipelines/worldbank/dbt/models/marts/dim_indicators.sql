@@ -12,8 +12,7 @@ final AS (
         indicator_name,
         definition,
         source_organization,
-        source_lastupdated,
-        source_response_id
+        source_lastupdated
     FROM indicators
 )
 

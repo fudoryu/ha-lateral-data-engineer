@@ -12,8 +12,7 @@ final AS (
         country_iso2,
         country_name,
         region_id,
-        income_group_id,
-        source_response_id
+        income_group_id
     FROM countries
 )
 
