@@ -229,6 +229,20 @@ unit_tests:
         - {indicator_id: SP.DYN.LE00.IN, source_lastupdated: 2026-11-11}
         - {indicator_id: NEW.INDICATOR, source_lastupdated: null}
 
+  - name: regions_are_collected_once_from_their_countries
+    description: Two countries in Europe & Central Asia and one in South Asia make two regions.
+    model: int_regions_derived_from_countries
+    given:
+      - input: ref('int_countries_filtered_to_latest_run')
+        rows:
+          - {country_id: DEU, region_id: ECS, region_name: Europe & Central Asia}
+          - {country_id: GBR, region_id: ECS, region_name: Europe & Central Asia}
+          - {country_id: IND, region_id: SAS, region_name: South Asia}
+    expect:
+      rows:
+        - {region_id: ECS, region_name: Europe & Central Asia}
+        - {region_id: SAS, region_name: South Asia}
+
   - name: countries_get_their_income_group_sort_order
     model: int_countries_joined_to_income_groups
     given:

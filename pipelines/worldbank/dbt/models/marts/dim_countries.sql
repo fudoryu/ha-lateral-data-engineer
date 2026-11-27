@@ -1,5 +1,6 @@
--- One row per configured country, from the latest run, with its income group: the current
--- classification, which the analysis applies to every year (ADR-0011, ADR-0030).
+-- One row per configured country, from the latest run, with its region (→ dim_regions) and its
+-- income group: the current classification, which the analysis applies to every year (ADR-0011,
+-- ADR-0030, ADR-0039).
 WITH
 
 countries AS (
@@ -9,10 +10,8 @@ countries AS (
 final AS (
     SELECT
         country_id,
-        country_iso2,
         country_name,
         region_id,
-        region_name,
         income_group_id,
         income_group_name,
         income_group_sort_order,

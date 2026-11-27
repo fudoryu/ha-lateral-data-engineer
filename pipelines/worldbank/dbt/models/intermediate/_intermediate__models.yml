@@ -93,6 +93,14 @@ models:
       - name: indicator_id
         data_tests: [unique, not_null]
 
+  - name: int_regions_derived_from_countries
+    description: >
+      The distinct regions of the latest run's countries (ADR-0039). A region id with two names
+      fails `unique`, rather than producing two regions.
+    columns:
+      - name: region_id
+        data_tests: [unique, not_null]
+
   - name: int_countries_joined_to_income_groups
     description: >
       The latest run's countries with their income group's low-to-high sort order (seed

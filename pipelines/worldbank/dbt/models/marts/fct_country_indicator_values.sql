@@ -14,7 +14,6 @@ final AS (
         observation_year,
         indicator_value,
         value_status,
-        obs_status,
         source_response_id
     FROM cells
 )

@@ -9,9 +9,10 @@ version: 2
 models:
   - name: dim_countries
     description: >
-      Grain: one configured country, latest run. Key: `country_id`. Its income group is the
-      current classification, which the analysis applies to every year (ADR-0011, ADR-0030);
-      `income_group_sort_order` lists groups from low to high income.
+      Grain: one configured country, latest run. Key: `country_id`. Relationships: →
+      dim_regions. Its income group is the current classification, which the analysis applies to
+      every year (ADR-0011, ADR-0030); `income_group_sort_order` lists groups from low to high
+      income.
     data_tests:
       - expression_is_true:
           arguments:
@@ -20,10 +21,31 @@ models:
       - name: country_id
         description: The country's ISO 3166-1 alpha-3 code, e.g. `BRA`.
         data_tests: [unique, not_null]
+      - name: country_name
+        data_tests: [not_null]
+      - name: region_id
+        description: The World Bank's region code, e.g. `LCN`.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_regions')
+                field: region_id
       - name: income_group_id
         data_tests: [not_null]
       - name: income_group_sort_order
         description: Low to high income (1 = low income). Never null, so reports always sort.
+        data_tests: [not_null]
+
+  - name: dim_regions
+    description: >
+      Grain: one region of the latest run's countries. Key: `region_id`, the World Bank's region
+      code (ADR-0039). Derived from the countries, which are the only place the API describes a
+      region, so it has no lineage column of its own; trace it through dim_countries.
+    columns:
+      - name: region_id
+        data_tests: [unique, not_null]
+      - name: region_name
         data_tests: [not_null]
 
   - name: dim_indicators
