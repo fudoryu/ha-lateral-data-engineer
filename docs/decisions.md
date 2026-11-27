@@ -31,7 +31,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
 | [ADR-0024](#adr-0024-structured-logging-with-the-standard-library) | Structured logging with the standard library | Decision | Accepted |
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
-| [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted |
+| [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted (amended by ADR-0027) |
+| [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
 
 ---
 
@@ -857,7 +858,7 @@ SQL is now half the code: dbt models, macros and tests, and the warehouse's `sch
 
 ## ADR-0026: Each dbt layer reads only its own layer and the one below
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (same-layer reads narrowed by [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer))
 - **Serves:** FR-MOD-1, FR-MOD-3 · **Amends:** ADR-0016 (layer dependencies), ADR-0017 (where mart logic lives)
 
 ### Context
@@ -885,3 +886,33 @@ ADR-0016 defines the layers (`raw`, `staging`, `intermediate`, `marts`, `reporti
 - The DAG is predictable: a model's layer says what it may depend on, and a change in staging is absorbed in intermediate before it reaches marts.
 - In Snowflake, layers become schemas, so the rule maps directly to grants: each layer's role reads only its own schema and the one below.
 - More models than the minimum, each small, single-purpose and unit-tested.
+
+---
+
+## ADR-0027: Only intermediate models read their own layer
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-1, FR-MOD-3 · **Amends:** ADR-0026
+
+### Context
+ADR-0026 let every layer read its own layer as well as the one below. Same-layer reads are what let shared logic, such as "which run is the latest", be written once; that need exists only in intermediate. In marts and reporting, same-layer reads only add hidden dependencies between tables that analysts treat as independent (a fact built from a dimension, a report built from another report).
+
+### Decision
+- **Only intermediate models may read their own layer.** Marts read intermediate only; reporting reads marts only:
+
+  | Layer | May read |
+  |---|---|
+  | staging | `source()` only |
+  | intermediate | staging, intermediate, seeds |
+  | marts | intermediate |
+  | reporting | marts |
+
+- **Seeds are read by intermediate,** like staging data: configuration such as each indicator's aggregation method (ADR-0016) is joined in intermediate and reaches marts and reports as columns (for example `dim_indicator.aggregation_method`).
+- ADR-0026's other rules stand: logic in intermediate, marts present it, no pure pass-through intermediate models, enforced by a test.
+
+### Alternatives considered
+- **Same-layer reads everywhere (ADR-0026 as written):** convenient for building a fact from its dimensions or a report from another report, but it makes marts and reports depend on each other in ways their consumers can't see.
+
+### Consequences
+- Every mart and every report can be rebuilt, understood and tested on its own, from the layer below.
+- Each indicator's aggregation method is visible in `dim_indicator`, not only inside the income-group report.
