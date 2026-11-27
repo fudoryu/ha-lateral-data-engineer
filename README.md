@@ -85,7 +85,7 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 
 ## Data model
 
-The marts are a current-state dimensional model at natural keys, holding the latest run: one fact table and four dimensions. Regions and income groups are dimensions of their own, reached through the country, which makes it a **snowflake schema** in Kimball's sense (unrelated to the Snowflake warehouse) rather than a star.
+The marts are a current-state dimensional model at natural keys, holding the latest run: one fact table and four dimensions. Regions and income groups are dimensions of their own, reached through the country, which makes it a **snowflake schema**.
 
 ```
   dim_regions             dim_countries           fct_country_indicator_values    dim_indicators
