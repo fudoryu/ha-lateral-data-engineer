@@ -10,7 +10,7 @@ from worldbank.source.client import Client
 from worldbank.source.extract import extract
 from worldbank.storage.manifest import Manifest
 from worldbank.storage.runs import IntegrityError, RunWriter
-from worldbank.warehouse.raw import load_raw
+from worldbank.warehouse.load import load_raw
 
 
 def extract_recorded(config: Config, root: Path, at: datetime) -> Manifest:
