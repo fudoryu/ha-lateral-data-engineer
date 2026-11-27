@@ -54,3 +54,24 @@ models:
           - accepted_values:
               arguments:
                 values: [current_missing, prior_out_of_scope, prior_missing, prior_zero]
+
+  - name: rpt_latest_year_by_country
+    description: >
+      FR-ANA-3, main view: each country at its own latest year with a value, per indicator;
+      `latest_year` shows which year, since it can differ by country. `rank_in_indicator`
+      ranks countries by that value (1 = highest). A country with no value keeps its row, with
+      nulls. Grain: one country × indicator (ADR-0009).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id]
+
+  - name: rpt_latest_common_year
+    description: >
+      FR-ANA-3, like-for-like view: per indicator, every country at `common_year`, the latest
+      year all countries have a value for, ranked by that value (1 = highest). Grain: one
+      country × indicator (ADR-0009).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id]
