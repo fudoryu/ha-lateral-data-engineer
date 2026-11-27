@@ -31,9 +31,9 @@ class _Model(BaseModel):
 
 
 class Meta(_Model):
-    page: int  # lax on purpose: per_page is "50" on some endpoints, 50 on others
+    page: int
     pages: int
-    per_page: int
+    per_page: int  # lax on purpose: "50" on some endpoints, 50 on others
     total: int
     sourceid: str | None = None
     lastupdated: date | None = None

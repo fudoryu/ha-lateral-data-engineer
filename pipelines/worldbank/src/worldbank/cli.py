@@ -80,7 +80,8 @@ def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None
     settings = _load_config_or_exit(config)
     landing_root = _landing_root(data_dir)
     try:
-        manifest = run_extract(settings, Client(settings.api), landing_root, git_sha=_git_sha())
+        with Client(settings.api) as client:
+            manifest = run_extract(settings, client, landing_root, git_sha=_git_sha())
     except ExtractError as exc:
         log.error("extract failed, nothing committed: %s", exc)
         raise typer.Exit(code=1) from exc

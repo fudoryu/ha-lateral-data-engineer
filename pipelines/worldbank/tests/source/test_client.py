@@ -365,3 +365,36 @@ def test_an_unreadable_retry_after_falls_back_to_the_backoff() -> None:
 
     [slept] = sleeps.calls
     assert 1.0 <= slept <= 2.0  # first exponential step with jitter
+
+
+@responses.activate
+def test_fetch_times_come_from_the_injected_clock() -> None:
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+    moment = datetime(2026, 11, 24, 18, 30, tzinfo=UTC)
+
+    result = Client(api(), sleep=Sleeps(), clock=lambda: moment).fetch(
+        PATH, Observation, {"source": 2}
+    )
+
+    assert [page.fetched_at for page in result.pages] == [moment]
+
+
+def test_the_client_closes_the_session_it_created(monkeypatch: pytest.MonkeyPatch) -> None:
+    closed: list[bool] = []
+    monkeypatch.setattr(requests.Session, "close", lambda self: closed.append(True))
+
+    with Client(api()):
+        pass
+
+    assert closed == [True]
+
+
+def test_the_client_leaves_a_session_it_was_given_open() -> None:
+    session = requests.Session()
+    closed: list[bool] = []
+    session.close = lambda: closed.append(True)  # type: ignore[method-assign]
+
+    with Client(api(), session=session):
+        pass
+
+    assert closed == []

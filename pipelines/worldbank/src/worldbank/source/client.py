@@ -14,7 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
-from typing import Any
+from typing import Any, Self
 
 import requests
 from pydantic import BaseModel
@@ -83,16 +83,35 @@ class FetchResult[T: BaseModel]:
 
 
 class Client:
+    """Fetches World Bank requests page by page. Use it as a context manager, or call `close`.
+
+    `sleep` and `clock` are injectable so tests can skip waits and fix fetch times.
+    """
+
     def __init__(
         self,
         api: Api,
         session: requests.Session | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._api = api
+        self._owns_session = session is None
         self._session = session or requests.Session()
         self._session.headers["User-Agent"] = USER_AGENT
         self._sleep = sleep
+        self._clock = clock
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Close the HTTP session, unless the caller passed one in and still owns it."""
+        if self._owns_session:
+            self._session.close()
 
     def fetch[T: BaseModel](
         self, path: str, item_model: type[T], params: dict[str, Any] | None = None
@@ -152,7 +171,7 @@ class Client:
             url=response.url,
             page_number=page_number,
             body=response.content,
-            fetched_at=datetime.now(UTC),
+            fetched_at=self._clock(),
             parsed=parse_page(response.content, item_model),  # error bodies raise, never retried
         )
 

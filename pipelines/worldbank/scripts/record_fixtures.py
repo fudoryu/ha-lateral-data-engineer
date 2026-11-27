@@ -29,7 +29,8 @@ def main() -> None:
         update={"api": config.api.model_copy(update={"per_page": RECORDING_PAGE_SIZE})}
     )
     with tempfile.TemporaryDirectory() as tmp:
-        manifest = extract(config, Client(config.api), Path(tmp))
+        with Client(config.api) as client:
+            manifest = extract(config, client, Path(tmp))
         run_dir = Path(tmp) / f"run_id={manifest.run_id}"
         if TARGET.exists():
             shutil.rmtree(TARGET)
