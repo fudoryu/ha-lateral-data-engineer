@@ -24,3 +24,4 @@ The pipeline already produces the signals; production adds collection, storage a
   | Warn | retries above a threshold; new API fields; a spike in revisions; a drop in coverage between runs |
 
 - **Investigating a failure:** nothing is lost on failure. Landed runs are immutable and the failed `.next` build is kept, so the same state can be rebuilt anywhere with `worldbank load --as-of <run_id>` and `dbt build`.
+- **Tracing a value:** analysts see current values only; lineage is for engineers (ADR-0028). The dbt analysis `analyses/trace_value.sql` takes a country, indicator and year and returns every version of the value across runs, with the landed page it came from (URL, fetch time, sha256, release date) and the run that fetched it (commit time, git SHA).
