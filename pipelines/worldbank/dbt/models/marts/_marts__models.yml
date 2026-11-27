@@ -40,6 +40,27 @@ models:
           the latest run's observation pages.
       - name: display_decimals
         description: How many decimals the World Bank publishes this indicator's values with.
+      - name: numerator_indicator_id
+        description: For `ratio`, the indicator summed on top; must be a configured indicator.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_indicator')
+                field: indicator_id
+      - name: denominator_indicator_id
+        description: For `ratio`, the indicator summed below; must be a configured indicator.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_indicator')
+                field: indicator_id
+      - name: weight_indicator_id
+        description: For `weighted_mean`, the indicator that weights each country; must be a configured indicator.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_indicator')
+                field: indicator_id
       - name: aggregation_method
         data_tests: [not_null]
 
