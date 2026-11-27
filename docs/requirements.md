@@ -149,7 +149,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ANA-2 | TBD | TBD |
 | FR-ANA-3 | TBD | TBD |
 | FR-ANA-4 | TBD | TBD |
-| FR-DQ-1 | TBD | TBD |
+| FR-DQ-1 | Partial: dbt tests run on every build, before publish (`just build`, ADR-0007, ADR-0022); `just check` runs the whole chain offline, extract → load → dbt build → publish, on recorded responses | `tests/test_pipeline.py` |
 | FR-DQ-2 | TBD | TBD |
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
 | NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/write.py`; the raw layer keeps them per response; committed runs are read only through sha256-verified reads (`src/worldbank/storage/read.py`) | `tests/storage/test_write.py`, `tests/storage/test_read.py`, `tests/warehouse/test_load.py` |
