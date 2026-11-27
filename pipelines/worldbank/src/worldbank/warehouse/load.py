@@ -96,11 +96,13 @@ def _insert_run(
             json.dumps(m.warnings),
         ],
     )
-    con.executemany(
+    _insert_many(
+        con,
         "insert into raw.api_requests values (?, ?, ?, ?, ?, ?)",
         [[m.run_id, r.endpoint, r.key, r.pages, r.total, r.lastupdated] for r in m.requests],
     )
-    con.executemany(
+    _insert_many(
+        con,
         "insert into raw.api_responses values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             [
@@ -117,6 +119,11 @@ def _insert_run(
             for f in m.files
         ],
     )
+
+
+def _insert_many(con: duckdb.DuckDBPyConnection, sql: str, rows: list[list[object]]) -> None:
+    if rows:  # DuckDB rejects executemany with no rows; a run may have no requests or files
+        con.executemany(sql, rows)
 
 
 def _utc(moment: datetime) -> datetime:

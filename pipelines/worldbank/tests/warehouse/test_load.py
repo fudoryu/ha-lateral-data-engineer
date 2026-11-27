@@ -113,3 +113,17 @@ def test_a_missing_landing_file_fails_the_load(
 
     with pytest.raises(IntegrityError, match="missing"):
         load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+
+
+def test_a_run_without_requests_or_files_loads(tmp_path: Path) -> None:
+    RunWriter.start(tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC)).commit(
+        committed_at=datetime(2026, 11, 24, 0, 1, tzinfo=UTC),
+        pipeline_version="0.1.0",
+        git_sha=None,
+        config={},
+        warnings=[],
+    )
+
+    summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+
+    assert (summary.runs, summary.responses) == (1, 0)
