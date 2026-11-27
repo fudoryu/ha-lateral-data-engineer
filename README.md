@@ -1,5 +1,9 @@
 # ha-lateral-data-engineer
 
+## Assumptions
+
+- **Income groups are the World Bank's current classification, applied to every year** (ADR-0011, ADR-0030). The API publishes only today's classification, and the brief allows no other source, so the income-group comparison by year (FR-ANA-4) groups each country by where it stands now. If a country changed group during 2018–2024, its earlier years are grouped with hindsight. Whether any of the nine countries did can't be verified through the API.
+
 ## Production design note
 
 ### Monitoring, alerting and data-quality failures
