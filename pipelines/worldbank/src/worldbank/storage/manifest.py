@@ -11,14 +11,19 @@ Layout under a source's landing root (for example `data/raw/worldbank/`):
 The manifest lists every request and every landed file with its sha256, plus the configuration
 and code version the run was made with. It's source-agnostic: endpoints, keys and pages are
 plain strings here.
+
+Every manifest carries `manifest_version`. Committed runs are never rewritten, so the format can
+only evolve by adding a version that readers learn to handle; a reader refuses versions it
+doesn't know instead of guessing. Manifests written before the field existed are version 1.
 """
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
 MANIFEST = "manifest.json"
+MANIFEST_VERSION: Literal[1] = 1
 RUN_PREFIX = "run_id="
 
 
@@ -46,6 +51,7 @@ class RequestRecord(_Model):
 
 
 class Manifest(_Model):
+    manifest_version: Literal[1] = MANIFEST_VERSION
     run_id: str
     started_at: datetime
     committed_at: datetime

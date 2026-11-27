@@ -30,6 +30,7 @@ def test_manifest_records_files_requests_and_config(tmp_path: Path) -> None:
     run = write_and_commit(tmp_path)
 
     manifest = json.loads((run.path / "manifest.json").read_text())
+    assert manifest["manifest_version"] == 1
     [landed] = manifest["files"]
     assert (
         landed["response_id"]

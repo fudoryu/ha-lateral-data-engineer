@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from landed import BODY, STARTED, write_and_commit
+from pydantic import ValidationError
 
 from worldbank.storage.read import IntegrityError, committed_runs
 from worldbank.storage.write import RunWriter
@@ -110,3 +111,26 @@ def test_a_file_listed_outside_its_run_fails_the_read(tmp_path: Path) -> None:
 
     with pytest.raises(IntegrityError, match="outside its run"):
         run.verified_files()
+
+
+def test_manifests_from_before_versioning_read_as_version_1(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    manifest = run_writer.path / "manifest.json"
+    data = json.loads(manifest.read_text())
+    del data["manifest_version"]
+    manifest.write_text(json.dumps(data))
+
+    (run,) = committed_runs(tmp_path)
+
+    assert run.manifest.manifest_version == 1
+
+
+def test_an_unknown_manifest_version_is_refused(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    manifest = run_writer.path / "manifest.json"
+    data = json.loads(manifest.read_text())
+    data["manifest_version"] = 2
+    manifest.write_text(json.dumps(data))
+
+    with pytest.raises(ValidationError, match="manifest_version"):
+        committed_runs(tmp_path)
