@@ -44,12 +44,12 @@ def land(config: Config, data_dir: Path, at: datetime = T0) -> None:
     extract(config, client, data_dir / "raw" / "worldbank", now=lambda: at)
 
 
-def build_publish_export(data_dir: Path) -> dict[str, Report]:
-    """Run load, dbt build, publish and export on `data_dir`; return each exported report."""
+def load_and_build(data_dir: Path) -> subprocess.CompletedProcess[str]:
+    """Run load, then dbt build on the next file, as `just build` does before it publishes."""
     loaded = CliRunner().invoke(app, ["load", "--data-dir", str(data_dir)])
     assert loaded.exit_code == 0, loaded.output
 
-    built = subprocess.run(
+    return subprocess.run(
         [
             str(DBT),
             "build",
@@ -69,6 +69,11 @@ def build_publish_export(data_dir: Path) -> dict[str, Report]:
         text=True,
         check=False,
     )
+
+
+def build_publish_export(data_dir: Path) -> dict[str, Report]:
+    """Run load, dbt build, publish and export on `data_dir`; return each exported report."""
+    built = load_and_build(data_dir)
     assert built.returncode == 0, built.stdout[-3000:]
 
     for command in ("publish", "export"):
@@ -225,3 +230,26 @@ def test_adding_a_country_and_an_indicator_is_configuration_only(
     assert life_by_group and all(
         r["aggregation"] == "population-weighted mean" and r["group_value"] for r in life_by_group
     )
+
+
+def test_an_indicator_without_an_income_group_rule_fails_the_build(
+    recorded_config: Config, tmp_path: Path
+) -> None:
+    """ADR-0046: the one manual step a new indicator needs can't be forgotten silently."""
+    without_rule = "NY.GDP.MKTP.KD"  # GDP in constant US$: in scope, with no income-group rule
+    config = recorded_config.model_copy(
+        update={
+            "scope": recorded_config.scope.model_copy(
+                update={"countries": ["BRA", "IND"], "indicators": [POP, GDP, without_rule]}
+            )
+        }
+    )
+    with fake_world_bank(str(config.api.base_url).rstrip("/")):
+        land(config, tmp_path)
+
+    built = load_and_build(tmp_path)
+
+    assert built.returncode != 0
+    failures = [line for line in built.stdout.splitlines() if " FAIL " in line]
+    assert len(failures) == 1, built.stdout[-3000:]
+    assert "assert_every_indicator_has_an_income_group_formula" in failures[0]
