@@ -178,6 +178,85 @@ def test_unknown_fields_are_recorded_as_warnings(tmp_path: Path) -> None:
 
 
 @responses.activate
+def test_cli_scope_overrides_replace_the_configured_scope(tmp_path: Path) -> None:
+    mock_api()
+    other_scope = {
+        **RAW,
+        "scope": {
+            "countries": ["MEX"],
+            "indicators": ["NY.GDP.MKTP.CD"],
+            "years": {"start": 2018, "end": 2020},
+        },
+    }
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(yaml.safe_dump(other_scope))
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "extract",
+            *("--config", str(config_path), "--data-dir", str(tmp_path / "data")),
+            *("--countries", "BRA, IND", "--indicators", "SP.POP.TOTL", "--years", "2023:2024"),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    [committed] = committed_runs(tmp_path / "data" / "raw" / "worldbank")
+    scope = committed.manifest.config["scope"]
+    assert (scope["countries"], scope["indicators"]) == (["BRA", "IND"], ["SP.POP.TOTL"])
+    assert scope["years"] == {"start": 2023, "end": 2024}
+
+
+@responses.activate
+def test_cli_a_partial_override_keeps_the_rest_of_the_configured_scope(tmp_path: Path) -> None:
+    mock_api(observations=[observation("SP.POP.TOTL", c, 2024) for c in ("BRA", "IND")])
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(yaml.safe_dump(RAW))
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "extract",
+            "--config",
+            str(config_path),
+            "--data-dir",
+            str(tmp_path),
+            "--years",
+            "2024:2024",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    [committed] = committed_runs(tmp_path / "raw" / "worldbank")
+    assert committed.manifest.config["scope"]["countries"] == ["BRA", "IND"]
+    assert committed.manifest.config["scope"]["years"] == {"start": 2024, "end": 2024}
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        ["--countries", "bra"],
+        ["--indicators", "SP/POP"],
+        ["--years", "2024:2018"],
+        ["--years", "2024"],
+    ],
+)
+def test_cli_invalid_scope_overrides_are_refused_before_any_request(
+    tmp_path: Path, override: list[str]
+) -> None:
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(yaml.safe_dump(RAW))
+
+    result = CliRunner().invoke(
+        app, ["extract", "--config", str(config_path), "--data-dir", str(tmp_path), *override]
+    )
+
+    assert result.exit_code == 2
+    assert "invalid scope override" in result.output
+    assert committed_runs(tmp_path / "raw" / "worldbank") == []
+
+
+@responses.activate
 def test_cli_extract_reports_the_committed_run(tmp_path: Path) -> None:
     mock_api()
     config_path = tmp_path / "config.yml"

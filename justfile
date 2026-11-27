@@ -6,11 +6,15 @@ default:
 export:
     uv run worldbank export
 
-# The whole pipeline: fetch from the API, rebuild and publish the warehouse, export the reports.
-run:
-    uv run worldbank extract
+# The whole pipeline (fetch, build, publish, export); args override the scope: --years 2020:2024.
+run *args:
+    uv run worldbank extract {{args}}
     just build
     just export
+
+# Fetch from the API and commit a landing run; arguments override the scope, as for `run`.
+extract *args:
+    uv run worldbank extract {{args}}
 
 # Rebuild the warehouse from landed runs (offline); publish only if every dbt test passes (ADR-0022).
 build:

@@ -55,6 +55,19 @@ app = typer.Typer(
 
 ConfigOption = typer.Option(DEFAULT_CONFIG, "--config", help="Pipeline configuration file.")
 DataDirOption = typer.Option(DEFAULT_DATA_DIR, "--data-dir", help="Root of local data.")
+CountriesOption = typer.Option(
+    None,
+    "--countries",
+    help="Override the configured countries, e.g. BRA,IND (ISO3, comma-separated).",
+)
+IndicatorsOption = typer.Option(
+    None,
+    "--indicators",
+    help="Override the configured indicators, e.g. SP.POP.TOTL,NY.GDP.MKTP.CD.",
+)
+YearsOption = typer.Option(
+    None, "--years", help="Override the configured years, as START:END, e.g. 2018:2024."
+)
 OutputOption = typer.Option(
     None, "--output", help="Folder for the CSVs (default: <data-dir>/outputs)."
 )
@@ -79,9 +92,21 @@ def version() -> None:
 
 
 @app.command()
-def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None:
-    """Fetch the configured scope from the API and commit it as a landing run."""
-    settings = _load_config_or_exit(config)
+def extract(
+    config: Path = ConfigOption,
+    data_dir: Path = DataDirOption,
+    countries: str | None = CountriesOption,
+    indicators: str | None = IndicatorsOption,
+    years: str | None = YearsOption,
+) -> None:
+    """Fetch the configured scope from the API and commit it as a landing run.
+
+    --countries, --indicators and --years override that part of the configured scope for this run
+    only; the effective scope is validated like the file and recorded in the run's manifest.
+    """
+    settings = _with_scope_overrides(
+        _load_config_or_exit(config), countries=countries, indicators=indicators, years=years
+    )
     landing_root = _landing_root(data_dir)
     try:
         with Client(settings.api) as client:
@@ -154,6 +179,29 @@ def _load_config_or_exit(path: Path) -> Config:
     except (OSError, yaml.YAMLError, ValidationError) as exc:
         log.error("invalid configuration %s: %s", path, exc)
         raise typer.Exit(code=2) from exc
+
+
+def _with_scope_overrides(
+    settings: Config, *, countries: str | None, indicators: str | None, years: str | None
+) -> Config:
+    """`settings` with the scope parts given on the command line replaced, validated as a whole."""
+    raw = settings.model_dump(mode="json")
+    if countries is not None:
+        raw["scope"]["countries"] = _codes(countries)
+    if indicators is not None:
+        raw["scope"]["indicators"] = _codes(indicators)
+    if years is not None:
+        start, _, end = years.partition(":")
+        raw["scope"]["years"] = {"start": start.strip(), "end": end.strip()}
+    try:
+        return Config.model_validate(raw)
+    except ValidationError as exc:
+        log.error("invalid scope override: %s", exc)
+        raise typer.Exit(code=2) from exc
+
+
+def _codes(values: str) -> list[str]:
+    return [value.strip() for value in values.split(",") if value.strip()]
 
 
 def _git_sha() -> str | None:
