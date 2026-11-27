@@ -31,6 +31,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
 | [ADR-0024](#adr-0024-structured-logging-with-the-standard-library) | Structured logging with the standard library | Decision | Accepted |
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
+| [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted |
 
 ---
 
@@ -851,3 +852,36 @@ SQL is now half the code: dbt models, macros and tests, and the warehouse's `sch
 - `just check` and the commit hook fail on SQL style violations, as they do for Python.
 - `sqlfluff fix` applies most fixes automatically.
 - Macro bodies render to nothing when linted, so their SQL is kept in style by hand.
+
+---
+
+## ADR-0026: Each dbt layer reads only its own layer and the one below
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-1, FR-MOD-3 · **Amends:** ADR-0016 (layer dependencies), ADR-0017 (where mart logic lives)
+
+### Context
+ADR-0016 defines the layers (`raw`, `staging`, `intermediate`, `marts`, `reporting`) and treats intermediate as optional, as dbt Labs' guide does: a mart may read staging directly when nothing sits in between. That leaves each mart free to depend on any layer below it, so the DAG's shape depends on each model's author, and logic such as "which run is the latest" would be repeated in every mart that needs it.
+
+### Decision
+- **A model reads only models in its own layer or the layer directly below:**
+
+  | Layer | May read |
+  |---|---|
+  | staging | `source()` only: raw, written by the loader |
+  | intermediate | staging and intermediate |
+  | marts | intermediate and marts, plus seeds |
+  | reporting | marts and reporting |
+
+- **Logic lives in intermediate; marts present it.** Ranking runs, filtering to the latest run, joining the expected set, versioning and spreading income groups over years happen in intermediate models, written once and unit-tested there. Marts select, name and document columns.
+- **No pure pass-through models.** Every intermediate model does one named thing, and its name says what (`int_<entities>_<verb>`, ADR-0016).
+- **Enforced by a test** that reads each model's `ref()` and `source()` calls and fails on any read outside these rules.
+
+### Alternatives considered
+- **dbt Labs' default (skip intermediate when there's no logic):** fewer models, but any mart may depend on staging, the DAG's shape varies by author, and shared logic tends to be repeated across marts.
+- **Strict adjacency without same-layer reads:** a purer DAG, but "which run is the latest" would be computed again in every intermediate model that needs it.
+
+### Consequences
+- The DAG is predictable: a model's layer says what it may depend on, and a change in staging is absorbed in intermediate before it reaches marts.
+- In Snowflake, layers become schemas, so the rule maps directly to grants: each layer's role reads only its own schema and the one below.
+- More models than the minimum, each small, single-purpose and unit-tested.
