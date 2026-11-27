@@ -1,7 +1,10 @@
 """Write a run into the landing zone, committed by a manifest written last (ADR-0004).
 
 Every page is written byte for byte as it arrives. Nothing in the run counts until `commit`
-writes the manifest, atomically; after that the run is immutable. A response's ID is its path
+writes the manifest, atomically; after that the run is immutable. Commits are also durable: every
+page, the run's folders and the manifest are flushed to disk (fsync) before the rename that
+commits the run, so a crash or power loss can't leave a committed manifest pointing at pages
+that never reached the disk. A response's ID is its path
 relative to the landing root, so it survives warehouse rebuilds (ADR-0006).
 """
 
@@ -84,7 +87,7 @@ class RunWriter:
         if target.exists():
             raise InvalidPage(f"{relative.as_posix()} was already written in this run")
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(body)
+        _write_durably(target, body)
         landed = LandedFile(
             response_id=(Path(self.path.name) / relative).as_posix(),
             endpoint=endpoint,
@@ -124,11 +127,30 @@ class RunWriter:
             files=self._files,
             warnings=sorted(set(warnings)),
         )
+        for directory in [*self.path.rglob("*/"), self.path]:  # make the pages' entries durable
+            _sync_directory(directory)
         temporary = self.path / f"{MANIFEST}.tmp"
-        temporary.write_text(manifest.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        _write_durably(temporary, (manifest.model_dump_json(indent=2) + "\n").encode())
         os.replace(temporary, self.path / MANIFEST)
+        _sync_directory(self.path)  # make the commit itself durable
+        _sync_directory(self.landing_root)
         return manifest
 
     def _ensure_open(self) -> None:
         if (self.path / MANIFEST).exists():
             raise AlreadyCommitted(f"{self.path.name} is committed and immutable")
+
+
+def _write_durably(path: Path, data: bytes) -> None:
+    with path.open("wb") as file:
+        file.write(data)
+        file.flush()
+        os.fsync(file.fileno())
+
+
+def _sync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)

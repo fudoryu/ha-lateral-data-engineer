@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -128,3 +129,28 @@ def test_a_page_is_written_once(tmp_path: Path) -> None:
             endpoint="countries", key=None, page=1, body=b"x", url="u", fetched_at=STARTED
         )
     assert (run.path / "endpoint=countries" / "page=1.json").read_bytes() == BODY
+
+
+def test_a_commit_is_flushed_to_disk_before_and_after_the_rename(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    events: list[str] = []
+    fsync, replace = os.fsync, os.replace
+
+    def spy_fsync(descriptor: int) -> None:
+        events.append("fsync")
+        fsync(descriptor)
+
+    def spy_replace(source: Path, target: Path) -> None:
+        events.append("replace")
+        replace(source, target)
+
+    monkeypatch.setattr(os, "fsync", spy_fsync)
+    monkeypatch.setattr(os, "replace", spy_replace)
+    write_and_commit(tmp_path)
+
+    committed = events.index("replace")
+    # Before: the page, its three folders (run, endpoint, key) and the temporary manifest.
+    assert events[:committed].count("fsync") == 5
+    # After: the run folder and the landing root, so the rename itself survives a crash.
+    assert events[committed + 1 :] == ["fsync", "fsync"]
