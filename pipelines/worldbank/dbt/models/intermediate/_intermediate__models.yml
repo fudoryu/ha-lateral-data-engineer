@@ -71,3 +71,16 @@ models:
     columns:
       - name: run_id
         data_tests: [not_null]
+
+  - name: int_indicator_values_versioned
+    description: >
+      One row per version of each cell's value across runs: a new version starts when the value
+      or status changes; valid from `valid_from_run_id` until `valid_to_run_id` (exclusive, null
+      while open); `is_current` marks the version the latest run holds (ADR-0006, ADR-0017).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_iso3, indicator_id, observation_year, valid_from_run_id]
+    columns:
+      - name: is_current
+        data_tests: [not_null]

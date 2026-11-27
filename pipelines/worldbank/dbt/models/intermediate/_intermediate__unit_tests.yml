@@ -133,3 +133,75 @@ unit_tests:
     expect:
       rows:
         - {country_iso3: IND, observation_year: 2019, indicator_value: 1405.7, run_id: run-new}
+
+  - name: an_unchanged_value_is_one_current_version
+    model: int_indicator_values_versioned
+    given:
+      - input: ref('int_indicator_values_joined_to_expected')
+        rows:
+          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
+          - {run_id: run-2, committed_at: 2026-11-02 00:00:00, is_latest: false}
+          - {run_id: run-3, committed_at: 2026-11-03 00:00:00, is_latest: true}
+    expect:
+      rows:
+        - {valid_from_run_id: run-1, valid_to_run_id: null, indicator_value: 1405.7, is_current: true}
+
+  - name: a_revision_closes_the_old_version_and_opens_a_new_one
+    description: The source revised India's 2019 population silently (source-system §7).
+    model: int_indicator_values_versioned
+    given:
+      - input: ref('int_indicator_values_joined_to_expected')
+        rows:
+          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1383.1, value_status: present}
+          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
+          - {run_id: run-2, committed_at: 2026-11-02 00:00:00, is_latest: false}
+          - {run_id: run-3, committed_at: 2026-11-03 00:00:00, is_latest: true}
+    expect:
+      rows:
+        - {valid_from_run_id: run-1, valid_to_run_id: run-2, indicator_value: 1383.1, is_current: false}
+        - {valid_from_run_id: run-2, valid_to_run_id: null, indicator_value: 1405.7, is_current: true}
+
+  - name: a_change_of_status_is_a_new_version
+    description: A null value that later gets a number, then goes missing, is three versions.
+    model: int_indicator_values_versioned
+    given:
+      - input: ref('int_indicator_values_joined_to_expected')
+        rows:
+          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: null_value}
+          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: missing_row}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
+          - {run_id: run-2, committed_at: 2026-11-02 00:00:00, is_latest: false}
+          - {run_id: run-3, committed_at: 2026-11-03 00:00:00, is_latest: true}
+    expect:
+      rows:
+        - {valid_from_run_id: run-1, valid_to_run_id: run-2, value_status: null_value, is_current: false}
+        - {valid_from_run_id: run-2, valid_to_run_id: run-3, value_status: present, is_current: false}
+        - {valid_from_run_id: run-3, valid_to_run_id: null, value_status: missing_row, is_current: true}
+
+  - name: a_cell_dropped_from_the_scope_keeps_its_history_without_a_current_version
+    model: int_indicator_values_versioned
+    given:
+      - input: ref('int_indicator_values_joined_to_expected')
+        rows:
+          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
+          - {run_id: run-2, committed_at: 2026-11-02 00:00:00, is_latest: false}
+          - {run_id: run-3, committed_at: 2026-11-03 00:00:00, is_latest: true}
+    expect:
+      rows:
+        - {valid_from_run_id: run-1, valid_to_run_id: null, indicator_value: 1405.7, is_current: false}
