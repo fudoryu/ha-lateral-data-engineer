@@ -65,8 +65,10 @@ unit_tests:
           source_response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
           source_lastupdated: 2026-11-11
 
-  - name: countries_have_trimmed_names
-    description: The API returns some names with trailing spaces (source-system §2).
+  - name: countries_have_normalized_names
+    description: >
+      Names are trimmed, internal runs of whitespace (double spaces, tabs) become one space, and
+      an empty name becomes null (source-system §2, ADR-0033).
     model: stg_worldbank__countries
     given:
       - input: source('worldbank', 'api_responses')
@@ -77,14 +79,23 @@ unit_tests:
             payload: >-
               [{"page": 1, "pages": 1, "per_page": 50, "total": 1},
               [{"id": "BRA", "iso2Code": "BR", "name": "Brazil ",
-                "region": {"id": "LCN", "iso2code": "ZJ", "value": "Latin America & Caribbean "},
-                "incomeLevel": {"id": "UMC", "iso2code": "XT", "value": "Upper middle income "}}]]
+                "region": {"id": "LCN", "iso2code": "ZJ", "value": " Latin  America &\tCaribbean "},
+                "incomeLevel": {"id": "UMC", "iso2code": "XT", "value": "Upper middle income "}},
+               {"id": "XKX", "iso2Code": "XK", "name": "   ",
+                "region": {"id": "ECS", "iso2code": "Z7", "value": "Europe & Central Asia"},
+                "incomeLevel": {"id": "UMC", "iso2code": "XT", "value": "Upper middle income"}}]]
     expect:
       rows:
         - country_id: BRA
           country_name: Brazil
           region_id: LCN
           region_name: Latin America & Caribbean
+          income_group_id: UMC
+          income_group_name: Upper middle income
+        - country_id: XKX
+          country_name: null
+          region_id: ECS
+          region_name: Europe & Central Asia
           income_group_id: UMC
           income_group_name: Upper middle income
 

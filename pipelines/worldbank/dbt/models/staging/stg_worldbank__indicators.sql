@@ -20,12 +20,12 @@ final AS (
     SELECT
         run_id,
         item ->> 'id' AS indicator_id,
-        trim(item ->> 'name') AS indicator_name,
-        nullif(item ->> 'unit', '') AS unit,
+        {{ normalize_text("item ->> 'name'") }} AS indicator_name,
+        {{ normalize_text("item ->> 'unit'") }} AS unit,
         item -> 'source' ->> 'id' AS source_id,
-        trim(item -> 'source' ->> 'value') AS source_name,
-        nullif(trim(item ->> 'sourceNote'), '') AS definition,
-        nullif(trim(item ->> 'sourceOrganization'), '') AS source_organization,
+        {{ normalize_text("item -> 'source' ->> 'value'") }} AS source_name,
+        {{ normalize_text("item ->> 'sourceNote'") }} AS definition,
+        {{ normalize_text("item ->> 'sourceOrganization'") }} AS source_organization,
         response_id AS source_response_id,
         url AS source_url,
         fetched_at

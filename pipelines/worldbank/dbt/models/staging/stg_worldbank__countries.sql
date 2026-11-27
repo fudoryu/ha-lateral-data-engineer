@@ -1,5 +1,5 @@
--- One row per run x country, as returned by the country endpoint. Names are trimmed: the API
--- returns some region names with trailing spaces (source-system §2).
+-- One row per run x country, as returned by the country endpoint. Text is normalized
+-- (normalize_text): the API returns some region names with trailing spaces (source-system §2).
 WITH
 
 responses AS (
@@ -22,11 +22,11 @@ final AS (
         run_id,
         item ->> 'id' AS country_id,
         item ->> 'iso2Code' AS country_iso2,
-        trim(item ->> 'name') AS country_name,
+        {{ normalize_text("item ->> 'name'") }} AS country_name,
         item -> 'region' ->> 'id' AS region_id,
-        trim(item -> 'region' ->> 'value') AS region_name,
+        {{ normalize_text("item -> 'region' ->> 'value'") }} AS region_name,
         item -> 'incomeLevel' ->> 'id' AS income_group_id,
-        trim(item -> 'incomeLevel' ->> 'value') AS income_group_name,
+        {{ normalize_text("item -> 'incomeLevel' ->> 'value'") }} AS income_group_name,
         response_id AS source_response_id,
         url AS source_url,
         fetched_at
