@@ -4,7 +4,7 @@ Reads only the published warehouse's `reporting` schema, so the page shows audit
 (ADR-0036). It's one self-contained, deterministic file: inline CSS and SVG, no external files,
 no timestamp. The filters are native radio buttons and checkboxes, and CSS (`:has()`) shows the
 selected indicator and countries, so filtering works without scripts; one small static script only
-adds "all" and "none" buttons (ADR-0038). Every value from the warehouse is HTML-escaped, and none
+adds "all" and "none" buttons (ADR-0045). Every value from the warehouse is HTML-escaped, and none
 reaches the script.
 """
 

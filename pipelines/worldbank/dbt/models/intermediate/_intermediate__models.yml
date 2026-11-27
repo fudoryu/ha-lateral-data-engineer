@@ -76,7 +76,9 @@ models:
     description: >
       One row per version of each cell's value across runs: a new version starts when the value
       or status changes; valid from `valid_from_run_id` until `valid_to_run_id` (exclusive, null
-      while open); `is_current` marks the version the latest run holds (ADR-0006, ADR-0017).
+      while open); `is_current` marks the version the latest run holds (ADR-0006, ADR-0017) Known
+      limitation: versions are compared only across the runs that contain the cell, so a cell that
+      leaves the scope for a run and returns with the same value keeps one version across the gap.
     data_tests:
       - unique_combination:
           arguments:
