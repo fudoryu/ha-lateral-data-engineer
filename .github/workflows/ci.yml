@@ -9,8 +9,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # the full history, to check every pushed commit's message
       - uses: astral-sh/setup-uv@v6
       - name: Install just
         run: uv tool install rust-just
+
+      # The same hooks that run on every local commit (.pre-commit-config.yaml): secrets
+      # (gitleaks), file hygiene, YAML/TOML/JSON, ruff, SQLFluff and the uv.lock sync.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml', 'uv.lock') }}
+      - name: Run pre-commit hooks on all files
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
+      # Conventional Commits, checked on each new commit's message (the commit-msg hook).
+      - name: Check commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            commits=$(git rev-list -1 HEAD)
+          else
+            commits=$(git rev-list "$BASE..HEAD")
+          fi
+          for sha in $commits; do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/message"
+            echo "checking $(git log -1 --format='%h %s' "$sha")"
+            uv run pre-commit run conventional-pre-commit --hook-stage commit-msg \
+              --commit-msg-filename "$RUNNER_TEMP/message"
+          done
+
       - name: Run checks (offline)
         run: just check
