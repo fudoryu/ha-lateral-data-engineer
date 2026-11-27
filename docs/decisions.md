@@ -11,7 +11,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted (command name amended by ADR-0018) |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted (path amended by ADR-0014) |
 | [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted (load-time re-validation removed by ADR-0020) |
-| [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
+| [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted (§7's audience amended by ADR-0028) |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
 | [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
@@ -22,7 +22,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
-| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
+| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028) |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
@@ -33,6 +33,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
 | [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted (amended by ADR-0027) |
 | [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
+| [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted |
 
 ---
 
@@ -198,7 +199,7 @@ Validation never alters the response bytes. The landing zone always holds exactl
 
 ## ADR-0006: Fetch the full scope every run, keep every run, latest run wins
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (§7's audience amended by [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts))
 - **Serves:** NFR-1, NFR-2, FR-DQ-1 · **Resolves:** Q7
 
 ### Context
@@ -540,7 +541,7 @@ ADR-0001 chose dbt-core and dbt-duckdb for transformation. Before writing models
 
 ## ADR-0017: Marts data model: grain, keys, relationships and lineage
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (table list and lineage keys amended by [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts))
 - **Serves:** FR-MOD-2, FR-MOD-3, NFR-1, NFR-2, NFR-3, FR-ANA-1, FR-ANA-4
 
 ### Context
@@ -916,3 +917,37 @@ ADR-0026 let every layer read its own layer as well as the one below. Same-layer
 ### Consequences
 - Every mart and every report can be rebuilt, understood and tested on its own, from the layer below.
 - Each indicator's aggregation method is visible in `dim_indicator`, not only inside the income-group report.
+
+---
+
+## ADR-0028: Marts are a current-state star schema for analysts
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2, FR-MOD-3, NFR-1 · **Amends:** ADR-0017 (table list, lineage keys), ADR-0006 §7 (who sees revisions)
+
+### Context
+ADR-0017 put run-level detail in the marts: `dim_run`, `dim_source_response` (every page of every run), `fct_indicator_value_versions` (history across runs) and a `run_id` on the current-state fact. Runs are a technical detail of how the pipeline fetches data: analysts need current values, and traceability (NFR-1) is a property of the platform, not something analysts consume. Every lineage detail already exists below the marts: `int_runs_ranked`, `int_responses_joined_to_runs` and `stg_worldbank__responses` in the warehouse, and the landed files with their manifests.
+
+### Decision
+- **The marts are the analysts' view: a current-state star schema, latest run only.**
+
+  | Mart | Grain | Key |
+  |---|---|---|
+  | `fct_indicator_value` | country × indicator × year | (`country_iso3`, `indicator_id`, `observation_year`) |
+  | `dim_country` | country | `country_iso3` |
+  | `dim_indicator` | indicator | `indicator_id` |
+  | `dim_country_income_group_by_year` | country × year | (`country_iso3`, `observation_year`) |
+
+- **Lineage enters the marts as one technical column:** `fct_indicator_value.source_response_id`, the landed page's path. It's documented as lineage, not for analysis, and it's the entry point that makes NFR-1 checkable from any final value. `run_id` leaves the fact: in a current-state table it's the same on every row, and the response path already contains it.
+- **Run-level detail stays below the marts,** for engineers: runs in `int_runs_ranked`, pages in `int_responses_joined_to_runs`, value history in `int_indicator_values_versioned` (revisions are recorded and visible to engineers; ADR-0006 §7's "visible to analysts" no longer holds). A dbt analysis, `analyses/trace_value.sql`, traces any cell from its final value to its page, run and history in one query.
+- **Audiences map to schemas:** analysts read `marts` and `reporting`; engineers read every schema. In Snowflake those are the roles' grants.
+
+### Alternatives considered
+- **Keep lineage and history as marts (ADR-0017 as written):** everything in one place, but analysts see runs, pages and versions they don't need, and the star schema stops being about indicators.
+- **A separate `audit` group of marts for run-level tables:** keeps them out of the analysts' star, but duplicates what intermediate already holds and tests, for an audience that can read intermediate anyway.
+- **No lineage column on the fact:** the purest analyst view, but tracing a value would mean re-deriving its run and joining back through intermediate on keys; one column makes NFR-1 directly demonstrable.
+
+### Consequences
+- Analysts get four tables that answer every question; the reports build on them.
+- Engineers trace through intermediate, staging, the landed files and the logs, documented in `analyses/trace_value.sql` and the production note.
+- ADR-0017's invariant "a fact's run matches its response's run" becomes "every fact row's response belongs to the latest run".
