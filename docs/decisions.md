@@ -26,6 +26,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Accepted |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
+| [ADR-0021](#adr-0021-code-layout-source-storage-and-warehouse) | Code layout: source, storage and warehouse | Decision | Accepted |
 
 ---
 
@@ -684,3 +685,39 @@ ADR-0005 validates every response during extract, before a run can be committed,
 - The loader needs nothing from the source package, so it can stay source-agnostic (see the code layout decision that follows).
 - A landing file edited together with its manifest hash is no longer caught at load. Committed runs are immutable by rule (AGENTS.md guardrails, ADR-0006), and staging tests still check the modelled values.
 - A contract change in code doesn't re-check old runs on load. If that's ever needed, it's a deliberate backfill check, not part of every build.
+
+---
+
+## ADR-0021: Code layout: source, storage and warehouse
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-4, NFR-6 · **Builds on:** ADR-0003, ADR-0014, ADR-0020
+
+### Context
+The pipeline package grew as flat modules, then as folders mixing kinds of names (`api/` a system, `storage/` a category, `steps/` a list of actions). The real seams in the code are two: what knows the World Bank versus what would serve any source, and the three systems data passes through (the API, the landing zone, the warehouse). Since load no longer re-validates contracts (ADR-0020), these seams coincide: only the extract side needs World Bank knowledge.
+
+### Decision
+Only `cli.py` and `config.py` stay top-level. Everything else lives in three packages:
+
+| Package | Holds | Knows the World Bank |
+|---|---|---|
+| `source/` | settings (`Api`, `Scope`), HTTP client with paging and retries, response contracts, the extract run plan and scope checks | **yes**: the only package that does |
+| `storage/` | the landing zone, the system of record: manifest schema, writing and committing runs, listing committed runs, verified reads (listed files only, sha256) | no |
+| `warehouse/` | the rebuildable cache: raw tables loaded from committed runs, and next, the build (dbt, write-audit-publish, export) | no |
+
+- **Dependency rule:** `storage/` imports nothing from the project; `warehouse/` imports only `storage/`; `source/` may import `storage/` (extract writes runs); nothing imports `source/` except `cli.py`, `config.py` and tests. A test enforces the rule for `storage/` and `warehouse/`.
+- **"Landing zone" stays the name of the data area** (`data/raw/<source>/`) in docs and ADRs; `storage` is the package that owns its rules.
+- **Outside Python, World Bank knowledge lives in exactly two more places:** `config.yml` (values) and the dbt staging models (interpretation). Everything between `source/` and staging is source-agnostic: the landing zone format, the raw tables and the build.
+- Tests mirror the packages; the fixture recorder lives in `scripts/` because it calls the live API.
+
+### Alternatives considered
+- **Flat modules per concept:** fewest files, but boundaries such as "only this code touches the network" stay a convention.
+- **By ELT stage (`extract/`, `load/`, `transform/`):** familiar, but splits the landing zone's write and read rules across two packages, and the Python `transform/` would hold a single dbt call.
+- **By system with commands inside (`api/`, `landing_zone/`, `warehouse/`):** close to this one, but doesn't make the source-specific boundary explicit.
+- **A shared workspace package for `storage/` now:** it's generic in its protocol, but its schema still carries paged-API fields (`endpoint`, `key`, `page`, `total`, `lastupdated`). Extracting it from one example would freeze those as the platform standard. Deferred, per ADR-0014.
+- **Hexagonal (domain, ports, adapters):** one implementation per interface, and more indirection than about 1,300 lines need.
+- **A `core/` package for the generic side:** an umbrella name that says nothing about its contents; `storage/` and `warehouse/` say what they are.
+
+### Consequences
+- A second source writes its own `source/` package and dbt staging, and reuses `storage/` and `warehouse/`.
+- **When a second source arrives,** `storage/` and `warehouse/` move into a shared workspace project, and the manifest splits into a generic part (run identity, versions, configuration, files with hashes, warnings) and typed source metadata (for the World Bank: endpoint, key, page, total, `lastupdated`). The raw tables follow the same split.
