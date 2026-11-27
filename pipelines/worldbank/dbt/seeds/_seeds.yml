@@ -1,0 +1,25 @@
+version: 2
+
+seeds:
+  - name: indicator_aggregations
+    description: >
+      How each indicator is aggregated across an income group's countries (ADR-0009, ADR-0016):
+      `sum`; `ratio` of the sums of two other indicators (GDP per capita = Σ GDP ÷ Σ population,
+      not an average of ratios); or `weighted_mean`, weighted by another indicator. Adding an
+      indicator means one `config.yml` entry and one row here (NFR-4).
+    config:
+      column_types:
+        indicator_id: varchar
+        aggregation_method: varchar
+        numerator_indicator_id: varchar
+        denominator_indicator_id: varchar
+        weight_indicator_id: varchar
+    columns:
+      - name: indicator_id
+        data_tests: [unique, not_null]
+      - name: aggregation_method
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sum, ratio, weighted_mean]

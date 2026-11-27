@@ -28,3 +28,7 @@ models:
     reporting:
       +schema: reporting
       +materialized: table
+
+seeds:
+  worldbank:
+    +schema: seeds  # reference data in its own schema, read by intermediate only (ADR-0027)
