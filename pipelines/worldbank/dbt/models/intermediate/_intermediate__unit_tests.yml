@@ -230,28 +230,6 @@ unit_tests:
           numerator_indicator_id: null
           denominator_indicator_id: null
 
-  - name: the_current_income_group_applies_to_every_reporting_year
-    model: int_income_groups_spread_over_years
-    given:
-      - input: ref('int_countries_filtered_to_latest_run')
-        rows:
-          - {country_id: IND, income_group_id: LMC}
-      - input: ref('int_indicator_values_filtered_to_latest_run')
-        rows:
-          - {observation_year: 2018}
-          - {observation_year: 2019}
-          - {observation_year: 2019}
-      - input: ref('int_runs_ranked')
-        rows:
-          - {committed_at: 2026-11-25 01:51:43, is_latest: true}
-          - {committed_at: 2026-11-24 10:00:00, is_latest: false}
-    expect:
-      rows:
-        - {country_id: IND, observation_year: 2018, income_group_id: LMC,
-           classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
-        - {country_id: IND, observation_year: 2019, income_group_id: LMC,
-           classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
-
   - name: indicators_get_the_release_and_precision_of_their_latest_observations
     description: >
       The release date comes from the latest run's observation pages only, not from metadata
@@ -280,40 +258,18 @@ unit_tests:
         - {indicator_id: SP.DYN.LE00.IN, source_lastupdated: 2026-11-11, display_decimals: 1}
         - {indicator_id: NEW.INDICATOR, source_lastupdated: null, display_decimals: null}
 
-  - name: income_groups_are_ordered_low_to_high
-    model: int_income_groups_joined_to_order
+  - name: countries_get_their_income_group_sort_order
+    model: int_countries_joined_to_income_group_order
     given:
       - input: ref('int_countries_filtered_to_latest_run')
         rows:
-          - {country_id: USA, income_group_id: HIC, income_group_name: High income}
-          - {country_id: DEU, income_group_id: HIC, income_group_name: High income}
-          - {country_id: IND, income_group_id: LMC, income_group_name: Lower middle income}
+          - {country_id: USA, income_group_id: HIC}
+          - {country_id: IND, income_group_id: LMC}
       - input: ref('income_group_order')
         rows:
           - {income_group_id: LMC, sort_order: 2}
           - {income_group_id: HIC, sort_order: 4}
-      - input: ref('int_runs_ranked')
-        rows:
-          - {committed_at: 2026-11-25 01:51:43, is_latest: true}
     expect:
       rows:
-        - {income_group_id: HIC, sort_order: 4, classification_basis: current_applied_to_all_years,
-           classified_as_of: 2026-11-25}
-        - {income_group_id: LMC, sort_order: 2, classification_basis: current_applied_to_all_years,
-           classified_as_of: 2026-11-25}
-
-  - name: each_cell_gets_the_income_group_of_its_country_and_year
-    model: int_indicator_values_joined_to_income_groups
-    given:
-      - input: ref('int_indicator_values_filtered_to_latest_run')
-        rows:
-          - {country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2018}
-          - {country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019}
-      - input: ref('int_income_groups_spread_over_years')
-        rows:
-          - {country_id: IND, observation_year: 2018, income_group_id: LIC}
-          - {country_id: IND, observation_year: 2019, income_group_id: LMC}
-    expect:
-      rows:
-        - {country_id: IND, observation_year: 2018, income_group_id: LIC}
-        - {country_id: IND, observation_year: 2019, income_group_id: LMC}
+        - {country_id: USA, income_group_id: HIC, income_group_sort_order: 4}
+        - {country_id: IND, income_group_id: LMC, income_group_sort_order: 2}

@@ -1,9 +1,9 @@
--- One row per configured country, from the latest run. Its current income group is named as such;
--- the group that applied in a given year is on fct_indicator_value (ADR-0011, ADR-0029).
+-- One row per configured country, from the latest run, with its income group: the current
+-- classification, which the analysis applies to every year (ADR-0011, ADR-0030).
 WITH
 
 countries AS (
-    SELECT * FROM {{ ref('int_countries_filtered_to_latest_run') }}
+    SELECT * FROM {{ ref('int_countries_joined_to_income_group_order') }}
 ),
 
 final AS (
@@ -13,8 +13,9 @@ final AS (
         country_name,
         region_id,
         region_name,
-        income_group_id AS current_income_group_id,
-        income_group_name AS current_income_group_name,
+        income_group_id,
+        income_group_name,
+        income_group_sort_order,
         source_response_id
     FROM countries
 )

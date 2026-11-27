@@ -96,23 +96,6 @@ models:
         description: sum, ratio or weighted_mean; never null, so no indicator is left unaggregated.
         data_tests: [not_null]
 
-  - name: int_income_groups_spread_over_years
-    description: >
-      Each country's income group for every reporting year: the current classification applied
-      to all years (`classification_basis`), as of the latest run's date (ADR-0011).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_id, observation_year]
-    columns:
-      - name: income_group_id
-        data_tests: [not_null]
-      - name: classification_basis
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [current_applied_to_all_years]
-
   - name: int_indicators_joined_to_latest_observations
     description: >
       The latest run's indicators with what their current observations say about them: the
@@ -121,23 +104,13 @@ models:
       - name: indicator_id
         data_tests: [unique, not_null]
 
-  - name: int_income_groups_joined_to_order
+  - name: int_countries_joined_to_income_group_order
     description: >
-      Each income group of the latest run's countries, with its low-to-high sort order (seed
-      income_group_order) and how today's classification was made (ADR-0011, ADR-0029).
+      The latest run's countries with their income group's low-to-high sort order (seed
+      income_group_order; ADR-0030).
     columns:
-      - name: income_group_id
+      - name: country_id
         data_tests: [unique, not_null]
-      - name: sort_order
+      - name: income_group_sort_order
         description: A group missing from the seed fails the build, so a new group isn't unsorted.
-        data_tests: [not_null]
-
-  - name: int_indicator_values_joined_to_income_groups
-    description: The latest run's cells with the income group that applied that year (ADR-0029).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_id, indicator_id, observation_year]
-    columns:
-      - name: income_group_id
         data_tests: [not_null]
