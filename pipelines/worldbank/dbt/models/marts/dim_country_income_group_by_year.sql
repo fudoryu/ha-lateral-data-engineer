@@ -14,7 +14,6 @@ final AS (
         income_level_name,
         classification_basis,
         classified_as_of,
-        run_id,
         source_response_id
     FROM income_groups
 )

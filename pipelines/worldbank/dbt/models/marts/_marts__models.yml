@@ -2,8 +2,9 @@ version: 2
 
 # The final data model for analysts (ADR-0017, ADR-0028, FR-MOD-2): a current-state star schema at
 # natural keys, latest run only. Every description states the table's grain, key and
-# relationships; the tests below enforce them. Run-level lineage and history stay in
-# intermediate, for engineers (see analyses/trace_value.sql).
+# relationships; the tests below enforce them. Each row carries one technical lineage column,
+# `source_response_id`; runs, pages and history stay in intermediate, for engineers (see
+# analyses/trace_value.sql).
 
 models:
   - name: dim_country

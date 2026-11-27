@@ -15,7 +15,6 @@ final AS (
         region_name,
         income_level_id,
         income_level_name,
-        run_id,
         source_response_id
     FROM countries
 )

@@ -19,7 +19,6 @@ final AS (
         numerator_indicator_id,
         denominator_indicator_id,
         weight_indicator_id,
-        run_id,
         source_response_id
     FROM indicators
 )
