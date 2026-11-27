@@ -23,10 +23,11 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted |
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
-| [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Accepted |
+| [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
 | [ADR-0021](#adr-0021-code-layout-source-storage-and-warehouse) | Code layout: source, storage and warehouse | Decision | Accepted |
+| [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted |
 
 ---
 
@@ -600,7 +601,7 @@ FR-MOD-2 asks for the grain, business keys and relationships of the final tables
 
 ## ADR-0018: Pipeline commands: extract, build, run
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Superseded by [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates)
 - **Serves:** NFR-2, NFR-6, FR-DQ-1 · **Amends:** ADR-0003 (the `replay` command), ADR-0013 (the `run` and `replay` recipes)
 
 ### Context
@@ -721,3 +722,42 @@ Only `cli.py` and `config.py` stay top-level. Everything else lives in three pac
 ### Consequences
 - A second source writes its own `source/` package and dbt staging, and reuses `storage/` and `warehouse/`.
 - **When a second source arrives,** `storage/` and `warehouse/` move into a shared workspace project, and the manifest splits into a generic part (run identity, versions, configuration, files with hashes, warnings) and typed source metadata (for the World Bank: endpoint, key, page, total, `lastupdated`). The raw tables follow the same split.
+
+---
+
+## ADR-0022: Python stops at load; the task runner orchestrates
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-2, NFR-6, FR-DQ-1 · **Supersedes:** ADR-0018 · **Builds on:** ADR-0003, ADR-0007, ADR-0020, ADR-0021
+
+### Context
+ADR-0018 gave the pipeline a `build` command that loads `raw`, calls dbt, and publishes, so the Python package would also orchestrate and depend on dbt's Python API. Write-audit-publish (ADR-0007) needs *something* to run load, then `dbt build`, then publish only if dbt passed, but that something doesn't have to be the pipeline package. ADR-0018 rejected a standalone `load` because it would write to the live warehouse before the audit; that objection disappears if load always writes a new file and only publish touches the live one.
+
+### Decision
+**Each tool does one ELT job:**
+
+| Phase | Done by | Command |
+|---|---|---|
+| Extract | Python (`source/`, `storage/`) | `worldbank extract` |
+| Load | Python (`warehouse/`): committed runs → `raw` tables in a **new** file, `data/warehouse/worldbank.next.duckdb` | `worldbank load` |
+| Transform and audit | dbt, run directly, against the new file (`WORLDBANK_WAREHOUSE` points at it) | `dbt build` |
+| Publish | Python (`warehouse/`): atomically rename the new file over the live one, `data/warehouse/worldbank.duckdb` | `worldbank publish` |
+
+- **The task runner orchestrates locally:** `just build` runs load, `dbt build` and publish, chained with `&&`, so publish never runs unless every model and test passed (ADR-0007). `just run` runs `worldbank extract` and then `just build`. Without `just`, the README documents the same commands with `uv run` (ADR-0013).
+- **The Python package never calls dbt.** It has no `build` or `run` command.
+- **`load` never writes the live warehouse,** so running it alone is always safe. Running load and `dbt build` without publish is the audit-only path; the new file stays for inspection.
+- **`publish` refuses to run** if there's no new file to publish.
+- **Point-in-time rebuilds:** `worldbank load --as-of <run_id>` loads the committed runs up to that run, into a file of its own. The recipe for it never publishes.
+- **Report exports are dbt's job,** written next to the new warehouse file and published together with it. The mechanism is decided with the reporting models.
+- **Code:** `warehouse/load.py` (renamed from `raw.py`) and `warehouse/publish.py`. There's no `build.py`.
+- **Production:** the same four phases become tasks in an orchestrator DAG (Airflow or Dagster): extract job → `COPY INTO` or Snowpipe → `dbt build` → schema swap.
+
+### Alternatives considered
+- **Python orchestrates (ADR-0018's `build`):** one command, and the sequence is tested Python, but the pipeline package becomes an orchestrator and depends on dbt, blurring E and L in Python versus T in dbt.
+- **An orchestrator (Dagster, Airflow) locally:** the production shape, but heavy for one linear pipeline (ADR-0001).
+- **Write-audit-publish inside dbt (build into side schemas, then swap):** keeps everything in dbt, but DuckDB has no atomic schema swap, and the published file would still need a step outside dbt.
+
+### Consequences
+- The local commands and the production DAG match one to one.
+- The ordering lives in three lines of the `justfile`, not in tested Python. The steps themselves (`load`, `publish`) are tested Python, and `&&` carries the only rule that matters: no publish after a failure.
+- `just` becomes the convenient way to run a full build; the `uv run` fallback is three commands.
