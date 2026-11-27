@@ -44,8 +44,9 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
 | [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Accepted |
-| [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040) |
+| [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040; `country_iso2` restored by ADR-0041) |
 | [ADR-0040](#adr-0040-income-groups-get-their-own-dimension) | Income groups get their own dimension | Decision | Accepted |
+| [ADR-0041](#adr-0041-dim_countries-keeps-the-iso-alpha-2-code) | dim_countries keeps the ISO alpha-2 code | Decision | Accepted |
 
 ---
 
@@ -1234,3 +1235,20 @@ ADR-0039 gave regions their own dimension but kept the income group's name and s
 - Regions and income groups are modeled the same way: a dimension each, with an id and a name, reached from `dim_countries`.
 - The project has no seeds left.
 - A new income group would appear in the HTML report after the known ones, until the report's display order lists it.
+
+---
+
+## ADR-0041: dim_countries keeps the ISO alpha-2 code
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2 · **Amends:** ADR-0039
+
+### Context
+ADR-0039 dropped `country_iso2` from `dim_countries` as an alternate identifier nothing used. But it's an attribute of the country, not a duplicate of another column: other datasets analysts join to are often keyed by the alpha-2 code.
+
+### Decision
+- **`dim_countries` keeps `country_iso2`,** the ISO 3166-1 alpha-2 code, as an attribute. `country_id` (alpha-3) stays the key.
+- It's tested as unique, not null and two upper-case letters.
+
+### Consequences
+- Analysts can join external data keyed by either ISO code without a mapping table.
