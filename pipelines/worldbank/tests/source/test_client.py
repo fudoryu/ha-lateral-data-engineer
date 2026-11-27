@@ -1,5 +1,6 @@
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 from typing import Any
 
 import pytest
@@ -316,3 +317,51 @@ def test_warnings_are_collected_across_pages_without_duplicates() -> None:
     result = client().fetch(PATH, Observation, {"source": 2})
 
     assert result.warnings == ["unknown field in response: Observation.footnote"]
+
+
+def add_rate_limit(retry_after: str) -> None:
+    responses.add(
+        responses.GET, URL, body="slow down", status=429, headers={"Retry-After": retry_after}
+    )
+
+
+@pytest.mark.parametrize(
+    ("retry_after", "expected"),
+    [("3", 3.0), ("60", 4.0)],  # honoured, but never beyond max_backoff_seconds (4)
+)
+@responses.activate
+def test_retry_after_seconds_are_honoured_up_to_the_maximum(
+    retry_after: str, expected: float
+) -> None:
+    add_rate_limit(retry_after)
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+    sleeps = Sleeps()
+
+    client(sleeps).fetch(PATH, Observation, {"source": 2})
+
+    assert sleeps.calls == [expected]
+
+
+@responses.activate
+def test_retry_after_as_an_http_date_is_honoured() -> None:
+    in_three_seconds = datetime.now(UTC) + timedelta(seconds=3)
+    add_rate_limit(format_datetime(in_three_seconds, usegmt=True))
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+    sleeps = Sleeps()
+
+    client(sleeps).fetch(PATH, Observation, {"source": 2})
+
+    [slept] = sleeps.calls
+    assert 2.0 <= slept <= 3.0
+
+
+@responses.activate
+def test_an_unreadable_retry_after_falls_back_to_the_backoff() -> None:
+    add_rate_limit("soon")
+    add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
+    sleeps = Sleeps()
+
+    client(sleeps).fetch(PATH, Observation, {"source": 2})
+
+    [slept] = sleeps.calls
+    assert 1.0 <= slept <= 2.0  # first exponential step with jitter

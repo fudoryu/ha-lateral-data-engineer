@@ -1,6 +1,8 @@
 """HTTP client for the World Bank API: timeouts, retries, and paging (ADR-0002, ADR-0005, ADR-0007).
 
-Only transient failures are retried (timeouts, connection errors, HTTP 429 and 5xx). Error bodies,
+Only transient failures are retried (timeouts, connection errors, HTTP 429 and 5xx), with
+exponential backoff and jitter; when the server sends `Retry-After`, the client waits at least
+that long, capped by the configured maximum backoff so a run stays bounded. Error bodies,
 other HTTP errors, and contract violations fail immediately. Every request is followed through all
 of its pages; if pages disagree on `lastupdated` or `total` (the source changed mid-request), the
 whole request is fetched again once and fails if it still disagrees.
@@ -11,6 +13,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import requests
@@ -38,7 +41,11 @@ class NetworkError(ExtractError):
 
 
 class TransientHTTPError(ExtractError):
-    """A failure worth retrying: HTTP 429 or 5xx."""
+    """A failure worth retrying: HTTP 429 or 5xx, with the server's `Retry-After` if it sent one."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class PermanentHTTPError(ExtractError):
@@ -153,8 +160,11 @@ class Client:
         retry = self._api.retry
         retrying = Retrying(
             stop=stop_after_attempt(retry.attempts),
-            wait=wait_exponential_jitter(
-                multiplier=retry.initial_backoff_seconds, max=retry.max_backoff_seconds
+            wait=_wait_honouring_retry_after(
+                wait_exponential_jitter(
+                    multiplier=retry.initial_backoff_seconds, max=retry.max_backoff_seconds
+                ),
+                retry.max_backoff_seconds,
             ),
             retry=retry_if_exception_type(
                 (TransientHTTPError, requests.ConnectionError, requests.Timeout)
@@ -172,7 +182,10 @@ class Client:
         timeout = (self._api.timeout.connect_seconds, self._api.timeout.read_seconds)
         response = self._session.get(url, params=params, timeout=timeout)
         if response.status_code == 429 or response.status_code >= 500:
-            raise TransientHTTPError(f"HTTP {response.status_code} from {response.url}")
+            raise TransientHTTPError(
+                f"HTTP {response.status_code} from {response.url}",
+                retry_after=_retry_after_seconds(response.headers.get("Retry-After")),
+            )
         if response.status_code >= 400:
             raise PermanentHTTPError(f"HTTP {response.status_code} from {response.url}")
         return response
@@ -198,3 +211,29 @@ def _log_retry(state: RetryCallState) -> None:
 
 def _elapsed_ms(started: float) -> int:
     return round((time.monotonic() - started) * 1000)
+
+
+def _wait_honouring_retry_after(
+    backoff: Callable[[RetryCallState], float], maximum: float
+) -> Callable[[RetryCallState], float]:
+    """Wait the backoff, or longer if the server asked to with `Retry-After`, up to `maximum`."""
+
+    def wait(state: RetryCallState) -> float:
+        failure = state.outcome.exception() if state.outcome else None
+        asked = failure.retry_after if isinstance(failure, TransientHTTPError) else None
+        return min(max(backoff(state), asked or 0.0), maximum)
+
+    return wait
+
+
+def _retry_after_seconds(header: str | None) -> float | None:
+    """`Retry-After` as seconds: either a number of seconds or an HTTP date (RFC 9110)."""
+    if header is None:
+        return None
+    if header.strip().isdigit():
+        return float(header)
+    try:
+        moment = parsedate_to_datetime(header)
+    except TypeError, ValueError:
+        return None  # unparseable: fall back to the backoff
+    return max((moment - datetime.now(UTC)).total_seconds(), 0.0)
