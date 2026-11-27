@@ -75,3 +75,20 @@ models:
       - unique_combination:
           arguments:
             columns: [country_id, indicator_id]
+
+  - name: rpt_income_group_by_year
+    description: >
+      FR-ANA-4: each indicator per income group and year. `group_value` follows the indicator's
+      `aggregation_method`: sum; ratio of sums (GDP per capita = Σ GDP ÷ Σ population); or
+      population-weighted mean (life expectancy). Only countries with everything their method
+      needs contribute: `n_countries_with_data` of `n_countries`; with none, the value is null,
+      never 0. Income groups are the current classification applied to every year (ADR-0011,
+      ADR-0030; see the README's assumptions). Grain: one income group × indicator × year
+      (ADR-0009).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [income_group_id, indicator_id, observation_year]
+    columns:
+      - name: n_countries_with_data
+        data_tests: [not_null]
