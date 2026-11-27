@@ -34,10 +34,17 @@ models:
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]
+      - name: source_organization
+        description: The organizations the World Bank cites as producing this indicator's data.
       - name: source_lastupdated
         description: >
           The World Bank's release date for this indicator's current values ("data as of"), from
           the latest run's observation pages.
+      - name: source_response_id
+        description: >
+          Technical lineage (ADR-0028): the landed metadata page this row comes from. Values, and
+          the pages their release date is read from, trace through the fact's own
+          `source_response_id`.
       - name: numerator_indicator_id
         description: For `ratio`, the indicator summed on top; must be a configured indicator.
         data_tests:

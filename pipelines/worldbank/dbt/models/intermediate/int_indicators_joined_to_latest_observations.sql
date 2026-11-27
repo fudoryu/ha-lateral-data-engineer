@@ -19,9 +19,6 @@ final AS (
     SELECT
         indicators.indicator_id,
         indicators.indicator_name,
-        indicators.unit,
-        indicators.source_id,
-        indicators.source_name,
         indicators.definition,
         indicators.source_organization,
         releases.source_lastupdated,

@@ -23,7 +23,6 @@ final AS (
             WHEN observations.indicator_value IS NULL THEN 'null_value'
             ELSE 'present'
         END AS value_status,
-        observations.unit,
         observations.obs_status,
         observations.source_response_id,
         observations.source_lastupdated

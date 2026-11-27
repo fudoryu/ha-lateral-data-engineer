@@ -18,7 +18,6 @@ final AS (
         cells.observation_year,
         cells.indicator_value,
         cells.value_status,
-        cells.unit,
         cells.obs_status,
         cells.run_id,
         cells.source_response_id,

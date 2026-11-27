@@ -10,9 +10,6 @@ final AS (
     SELECT
         indicator_id,
         indicator_name,
-        unit,
-        source_id,
-        source_name,
         definition,
         source_organization,
         source_lastupdated,

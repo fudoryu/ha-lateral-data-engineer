@@ -85,9 +85,9 @@ The marts are a current-state star schema: one fact and two dimensions, at natur
 ```
 dim_countries ──────────── fct_country_indicator_values ──────────── dim_indicators
   country_id (PK)            country_id (FK)                          indicator_id (PK)
-  country_iso2, name         indicator_id (FK)                        name, unit, source, definition
-  region_id, region_name     observation_year                         source_lastupdated ("data as of")
-  income_group_id, _name     indicator_value
+  country_iso2, name         indicator_id (FK)                        name, definition
+  region_id, region_name     observation_year                         source_organization
+  income_group_id, _name     indicator_value                          source_lastupdated ("data as of")
   income_group_sort_order    value_status                             aggregation_method and its
                              obs_status                               numerator, denominator and
                              source_response_id (lineage)             weight indicators (FK → itself)
