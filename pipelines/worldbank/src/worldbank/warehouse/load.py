@@ -20,7 +20,9 @@ deduplicated):
 Timestamps are stored in UTC.
 """
 
+import logging
 import os
+import time
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -29,6 +31,8 @@ import duckdb
 
 from worldbank.storage.read import committed_runs
 from worldbank.warehouse.errors import WarehouseError
+
+log = logging.getLogger(__name__)
 
 
 def _sql(name: str) -> str:
@@ -81,6 +85,8 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
         if as_of not in run_ids:
             raise UnknownRun(f"no committed run {as_of} under {landing_root}")
         runs = runs[: run_ids.index(as_of) + 1]
+    started = time.monotonic()
+    log.info("load started", extra={"runs": len(runs), "as_of": as_of, "target": str(warehouse)})
     manifests = [str(run.manifest_path.resolve()) for run in runs]
     pages = [str(path.resolve()) for run in runs for path in run.verified_files()]
 
@@ -107,6 +113,15 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
         except duckdb.Error as exc:
             raise LoadFailed(f"loading {warehouse.name} failed: {exc}") from exc
     os.replace(loading, warehouse)  # closing the connection checkpointed it: no .wal is left
+    log.info(
+        "load finished",
+        extra={
+            "runs": len(runs),
+            "responses": len(pages),
+            "target": str(warehouse),
+            "duration_ms": round((time.monotonic() - started) * 1000),
+        },
+    )
     return LoadSummary(runs=len(runs), responses=len(pages))
 
 

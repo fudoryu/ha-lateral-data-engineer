@@ -50,6 +50,7 @@ def test_unrelated_entries_in_the_landing_root_are_ignored(tmp_path: Path) -> No
     write_and_commit(tmp_path)
     (tmp_path / "notes.txt").write_text("hello")
     (tmp_path / "scratch").mkdir()
+    (tmp_path / "run_id=stray-file").write_text("not a run folder")
 
     assert len(committed_runs(tmp_path)) == 1
 

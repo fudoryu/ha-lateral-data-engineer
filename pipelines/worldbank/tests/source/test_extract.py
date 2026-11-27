@@ -277,7 +277,7 @@ def test_manifest_records_the_resolved_config(tmp_path: Path) -> None:
 
 
 @responses.activate
-def test_cli_prints_warnings_to_stderr(tmp_path: Path) -> None:
+def test_cli_logs_warnings_to_stderr(tmp_path: Path) -> None:
     mock_api(observation_meta=meta(4, brand_new="x"))
     config_path = tmp_path / "config.yml"
     config_path.write_text(yaml.safe_dump(RAW))
@@ -287,7 +287,9 @@ def test_cli_prints_warnings_to_stderr(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0
-    assert "warning: unknown field in response: Meta.brand_new" in result.stderr
+    assert "WARNING worldbank.source.extract unknown field in response: Meta.brand_new" in (
+        result.stderr
+    )
 
 
 def test_git_sha_is_none_without_git(monkeypatch: pytest.MonkeyPatch) -> None:

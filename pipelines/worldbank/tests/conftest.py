@@ -1,6 +1,7 @@
 """Shared test fixtures: serve recorded API responses offline (ADR-0012)."""
 
 import json
+import logging
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -52,3 +53,13 @@ def recorded_api(recorded_index: dict[str, Any]) -> Iterator[responses.RequestsM
 def api(recorded_dir: Path, recorded_index: dict[str, Any]) -> RecordedApi:
     """A fresh, editable copy of the recorded API for crafted scenarios."""
     return RecordedApi(recorded_dir, recorded_index)
+
+
+@pytest.fixture(autouse=True)
+def reset_worldbank_logging() -> Iterator[None]:
+    """The CLI configures the `worldbank` logger per invocation; undo it after every test."""
+    yield
+    logger = logging.getLogger("worldbank")
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+    logger.setLevel(logging.NOTSET)

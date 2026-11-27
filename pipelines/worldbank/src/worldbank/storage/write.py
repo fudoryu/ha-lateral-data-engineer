@@ -10,6 +10,7 @@ relative to the landing root, so it survives warehouse rebuilds (ADR-0006).
 
 import hashlib
 import json
+import logging
 import os
 import re
 from datetime import UTC, datetime
@@ -24,6 +25,8 @@ from worldbank.storage.manifest import (
     Manifest,
     RequestRecord,
 )
+
+log = logging.getLogger(__name__)
 
 # Endpoint names and request keys become folder names: one safe path segment each.
 SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -100,6 +103,7 @@ class RunWriter:
             bytes=len(body),
         )
         self._files.append(landed)
+        log.debug("page written", extra={"response_id": landed.response_id, "bytes": landed.bytes})
         return landed
 
     def record_request(self, record: RequestRecord) -> None:
@@ -135,6 +139,7 @@ class RunWriter:
         os.replace(temporary, self.path / MANIFEST)
         _sync_directory(self.path)  # make the commit itself durable
         _sync_directory(self.landing_root)
+        log.debug("manifest written", extra={"run_id": self.run_id, "path": str(self.path)})
         return manifest
 
     def _ensure_open(self) -> None:

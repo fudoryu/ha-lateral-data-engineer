@@ -11,6 +11,8 @@ Every page is landed as it arrives. The manifest is written only if everything s
 failed extract never produces a committed run (ADR-0007).
 """
 
+import logging
+import time
 from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -25,6 +27,8 @@ from worldbank.source.contracts import Country, Indicator, Observation
 from worldbank.source.errors import ExtractError
 from worldbank.storage.manifest import Manifest, RequestRecord
 from worldbank.storage.write import RunWriter
+
+log = logging.getLogger(__name__)
 
 
 class ScopeViolation(ExtractError):
@@ -48,6 +52,16 @@ def extract(
         run = RunWriter.start(landing_root, now())
     except FileExistsError as exc:
         raise RunAlreadyExists(f"a run with this timestamp already exists: {exc.filename}") from exc
+    started = time.monotonic()
+    log.info(
+        "extract started",
+        extra={
+            "run_id": run.run_id,
+            "countries": len(scope.countries),
+            "indicators": len(scope.indicators),
+            "years": f"{scope.years.start}-{scope.years.end}",
+        },
+    )
     warnings: list[str] = []
     countries = ";".join(scope.countries)
 
@@ -77,13 +91,26 @@ def extract(
         _land(run, "observations", code, fetched, warnings)
         _check_observations(code, fetched.items, set(scope.countries), set(years.as_range()))
 
-    return run.commit(
+    manifest = run.commit(
         committed_at=now(),
         pipeline_version=__version__,
         git_sha=git_sha,
         config=config.model_dump(mode="json"),
         warnings=warnings,
     )
+    for warning in manifest.warnings:
+        log.warning(warning, extra={"run_id": manifest.run_id})
+    log.info(
+        "run committed",
+        extra={
+            "run_id": manifest.run_id,
+            "requests": len(manifest.requests),
+            "files": len(manifest.files),
+            "warnings": len(manifest.warnings),
+            "duration_ms": round((time.monotonic() - started) * 1000),
+        },
+    )
+    return manifest
 
 
 def _land[T: BaseModel](

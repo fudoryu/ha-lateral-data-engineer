@@ -6,6 +6,7 @@ of its pages; if pages disagree on `lastupdated` or `total` (the source changed 
 whole request is fetched again once and fails if it still disagrees.
 """
 
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -14,7 +15,13 @@ from typing import Any
 
 import requests
 from pydantic import BaseModel
-from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
+from tenacity import (
+    RetryCallState,
+    Retrying,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 from worldbank import __version__
 from worldbank.source.contracts import Page, parse_page
@@ -22,6 +29,8 @@ from worldbank.source.errors import ExtractError
 from worldbank.source.settings import Api
 
 USER_AGENT = f"worldbank-pipeline/{__version__}"
+
+log = logging.getLogger(__name__)
 
 
 class NetworkError(ExtractError):
@@ -82,8 +91,10 @@ class Client:
         self, path: str, item_model: type[T], params: dict[str, Any] | None = None
     ) -> FetchResult[T]:
         """Fetch every page of `path`, retrying transient failures and checking consistency."""
+        started = time.monotonic()
         result = self._fetch_all_pages(path, item_model, params or {})
         if not _consistent(result):
+            log.warning("pages disagree, refetching the request", extra={"path": path})
             result = self._fetch_all_pages(path, item_model, params or {})
             if not _consistent(result):
                 raise InconsistentPages(f"pages of {path} disagree on lastupdated or total")
@@ -92,6 +103,16 @@ class Client:
         received = len(result.items)
         if received != expected:
             raise InconsistentPages(f"{path}: received {received} rows, API reported {expected}")
+        log.info(
+            "request fetched",
+            extra={
+                "path": path,
+                "pages": len(result.pages),
+                "rows": received,
+                "lastupdated": result.pages[0].parsed.meta.lastupdated,
+                "duration_ms": _elapsed_ms(started),
+            },
+        )
         return result
 
     def _fetch_all_pages[T: BaseModel](
@@ -108,7 +129,18 @@ class Client:
     ) -> FetchedPage[T]:
         query = {**params, "format": "json", "per_page": self._api.per_page, "page": page_number}
         url = f"{str(self._api.base_url).rstrip('/')}/{path.lstrip('/')}"
+        started = time.monotonic()
         response = self._get_with_retries(url, query)
+        log.debug(
+            "page fetched",
+            extra={
+                "url": response.url,
+                "page": page_number,
+                "status": response.status_code,
+                "bytes": len(response.content),
+                "duration_ms": _elapsed_ms(started),
+            },
+        )
         return FetchedPage(
             url=response.url,
             page_number=page_number,
@@ -128,6 +160,7 @@ class Client:
                 (TransientHTTPError, requests.ConnectionError, requests.Timeout)
             ),
             sleep=self._sleep,
+            before_sleep=_log_retry,
             reraise=True,
         )
         try:
@@ -148,3 +181,20 @@ class Client:
 def _consistent(result: FetchResult[Any]) -> bool:
     metas = [page.parsed.meta for page in result.pages]
     return len({(m.lastupdated, m.total) for m in metas}) == 1
+
+
+def _log_retry(state: RetryCallState) -> None:
+    failure = state.outcome.exception() if state.outcome else None
+    log.warning(
+        "retrying request",
+        extra={
+            "url": state.args[0],
+            "attempt": state.attempt_number,
+            "wait_seconds": round(state.next_action.sleep, 2) if state.next_action else None,
+            "reason": str(failure),
+        },
+    )
+
+
+def _elapsed_ms(started: float) -> int:
+    return round((time.monotonic() - started) * 1000)

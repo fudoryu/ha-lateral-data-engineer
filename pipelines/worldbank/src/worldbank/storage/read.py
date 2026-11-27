@@ -8,6 +8,7 @@ edited, missing, moved or corrupted file stops every reader.
 """
 
 import hashlib
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from pydantic import ValidationError
 
 from worldbank.storage.errors import StorageError
 from worldbank.storage.manifest import MANIFEST, RUN_PREFIX, Manifest
+
+log = logging.getLogger(__name__)
 
 
 class IntegrityError(StorageError):
@@ -46,6 +49,7 @@ class CommittedRun:
             if _sha256(path) != landed.sha256:
                 raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
             files.append(path)
+        log.debug("files verified", extra={"run_id": self.manifest.run_id, "files": len(files)})
         return files
 
 
@@ -56,14 +60,18 @@ def committed_runs(landing_root: Path) -> list[CommittedRun]:
     runs = []
     for path in sorted(landing_root.glob(f"{RUN_PREFIX}*")):
         manifest_file = path / MANIFEST
-        if path.is_dir() and manifest_file.is_file():
-            try:
-                manifest = Manifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
-            except ValidationError as exc:
-                raise IntegrityError(f"{path.name}: unreadable manifest: {exc}") from exc
-            if f"{RUN_PREFIX}{manifest.run_id}" != path.name:
-                raise IntegrityError(f"{path.name}: its manifest is for run {manifest.run_id}")
-            runs.append(CommittedRun(path=path, manifest=manifest))
+        if not path.is_dir():
+            continue
+        if not manifest_file.is_file():
+            log.warning("skipping incomplete run: no manifest", extra={"run": path.name})
+            continue
+        try:
+            manifest = Manifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
+        except ValidationError as exc:
+            raise IntegrityError(f"{path.name}: unreadable manifest: {exc}") from exc
+        if f"{RUN_PREFIX}{manifest.run_id}" != path.name:
+            raise IntegrityError(f"{path.name}: its manifest is for run {manifest.run_id}")
+        runs.append(CommittedRun(path=path, manifest=manifest))
     return runs
 
 

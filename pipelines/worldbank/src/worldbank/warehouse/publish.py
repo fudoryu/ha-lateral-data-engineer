@@ -9,11 +9,14 @@ connection is still open or a write didn't finish; a WAL next to the live file w
 against the new file. Either way publishing is refused.
 """
 
+import logging
 import os
 from pathlib import Path
 
 from worldbank.warehouse.errors import WarehouseError
 from worldbank.warehouse.load import next_path
+
+log = logging.getLogger(__name__)
 
 
 class NothingToPublish(WarehouseError):
@@ -34,4 +37,5 @@ def publish(live: Path) -> Path:
         if wal.exists():
             raise UnsafeToPublish(f"{wal} exists: close open connections, then rebuild")
     os.replace(build, live)  # atomic within one directory
+    log.info("build published", extra={"live": str(live)})
     return live

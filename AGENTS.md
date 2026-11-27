@@ -42,6 +42,16 @@ One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has
 - Python 3.14 managed by uv; run everything through `uv run`.
 - Dialect-specific SQL only in the staging layer and the raw loader; everything above staging stays portable.
 
+**Logging** (ADR-0024)
+- Log with the standard library: `log = logging.getLogger(__name__)` at the top of each module; no logging dependencies.
+- Only `cli.py` configures logging (handler, level, format). Library code never adds handlers, sets levels, or calls `print`/`typer.echo` for diagnostics.
+- Logs go to stderr; stdout is only each command's one-line result.
+- Put context in structured fields, not in the message: `log.info("request fetched", extra={"path": ..., "rows": ..., "duration_ms": ...})`. Messages are short lowercase event descriptions; field names are stable snake_case and reuse existing ones (`run_id`, `endpoint`, `page`, `duration_ms`, ...).
+- Levels: DEBUG per-file or per-attempt detail; INFO milestones and per-request results; WARNING handled-but-notable (retries, refetches, unknown API fields, skipped runs); ERROR a failed command.
+- Log an error once, where it's handled (the CLI), not where it's raised; expected errors without a traceback, unexpected ones with it.
+- Never log response bodies or payloads (they're in the landing zone) or anything secret.
+- New behavior that an operator would need to see (a retry, a skip, a refusal) gets a log event and a test asserting it.
+
 **Commits** (Conventional Commits; the hook enforces the format)
 - Scopes: `ingestion`, `storage`, `transformation`, `serving`, `config`, `docs`, `repo`.
 - Reference requirement and decision IDs in the body, for example `Implements FR-ING-3; see ADR-0001.`
