@@ -18,7 +18,9 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 
 | Command | Fallback without `just` | Purpose |
 |---|---|---|
-| n/a | `uv run worldbank extract` | fetch the configured scope and commit a landing run (calls the live API) |
+| `just run` | `uv run worldbank extract`, then the `just build` steps | fetch the configured scope, commit a landing run (calls the live API), then build |
+| `just build` | `uv run worldbank load`, `uv run dbt build --project-dir pipelines/worldbank/dbt --profiles-dir pipelines/worldbank/dbt`, `uv run worldbank publish` | rebuild the warehouse from landed runs (offline); publishes only if every dbt test passes (ADR-0022) |
+| n/a | `uv run worldbank load --as-of <run_id>` | rebuild as of an earlier run, into a file of its own (never published) |
 | `just test` | `uv run pytest` | tests (offline) |
 | `just record-fixtures` | `uv run python pipelines/worldbank/scripts/record_fixtures.py` | re-record live API responses as test fixtures (commit separately) |
 | `just check` | see the `justfile` | lint + format check + type check + tests with a 95% line-and-branch coverage gate: **the definition of done** (ADR-0013) |
@@ -32,6 +34,7 @@ One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has
 - Every output value is traceable to the API response it came from (NFR-1).
 - Scope changes (countries, indicators, years) go in configuration, never in code (NFR-4).
 - Only `extract` calls the API; every other step reads from the landing zone `data/raw/<source>/` (ADR-0003, ADR-0014).
+- Only `publish` writes the live warehouse; `load` and dbt work on the next file (ADR-0007, ADR-0022).
 - The landing zone is the system of record; the warehouse is a rebuildable cache (ADR-0003).
 - API responses are validated before a run commits; validation never alters the landed bytes (ADR-0005).
 

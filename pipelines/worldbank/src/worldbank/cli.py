@@ -21,6 +21,8 @@ from worldbank.source.extract import ScopeViolation
 from worldbank.source.extract import extract as run_extract
 from worldbank.storage.runs import IntegrityError
 from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
+from worldbank.warehouse.publish import NothingToPublish, UnsafeToPublish
+from worldbank.warehouse.publish import publish as publish_build
 
 DEFAULT_CONFIG = Path("pipelines/worldbank/config.yml")
 DEFAULT_DATA_DIR = Path("data")
@@ -38,6 +40,7 @@ EXTRACT_FAILURES = (
 )
 
 LOAD_FAILURES = (IntegrityError, UnknownRun, ValidationError)  # ValidationError: corrupt manifest
+PUBLISH_FAILURES = (NothingToPublish, UnsafeToPublish, OSError)
 
 app = typer.Typer(
     help="World Bank country indicators pipeline.",
@@ -91,6 +94,17 @@ def load(
         typer.echo(f"load failed, nothing written: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(f"loaded {summary.runs} runs ({summary.responses} responses) into {target}")
+
+
+@app.command()
+def publish(data_dir: Path = DataDirOption) -> None:
+    """Make the audited build live: atomically replace the live warehouse with the next file."""
+    try:
+        live = publish_build(_live_warehouse(data_dir))
+    except PUBLISH_FAILURES as exc:
+        typer.echo(f"publish failed, live warehouse unchanged: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"published {live}")
 
 
 def _landing_root(data_dir: Path) -> Path:

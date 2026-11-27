@@ -2,6 +2,17 @@
 default:
     @just --list
 
+# Fetch from the API, then rebuild and publish the warehouse (calls the live API).
+run:
+    uv run worldbank extract
+    just build
+
+# Rebuild the warehouse from landed runs (offline); publish only if every dbt test passes (ADR-0022).
+build:
+    uv run worldbank load
+    uv run dbt build --project-dir pipelines/worldbank/dbt --profiles-dir pipelines/worldbank/dbt
+    uv run worldbank publish
+
 # Run the test suite (offline).
 test:
     uv run pytest
