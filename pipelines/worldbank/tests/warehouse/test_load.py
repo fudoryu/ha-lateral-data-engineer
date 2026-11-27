@@ -154,6 +154,27 @@ def test_as_of_loads_the_runs_up_to_that_run(tmp_path: Path) -> None:
     )
 
 
+def test_as_of_cuts_runs_by_commit_time_not_start_time(tmp_path: Path) -> None:
+    root = tmp_path / "raw"
+    for started, committed in ((5, 30), (10, 15)):  # the earlier start commits later
+        RunWriter.start(root, datetime(2026, 11, 24, 0, started, tzinfo=UTC)).commit(
+            committed_at=datetime(2026, 11, 24, 0, committed, tzinfo=UTC),
+            pipeline_version="0.1.0",
+            git_sha=None,
+            config={},
+            warnings=[],
+        )
+
+    # As of the run that started at 00:10 and committed at 00:15, the run that started first but
+    # committed at 00:30 hadn't happened yet.
+    summary = load_raw(root, tmp_path / "wh.duckdb", as_of="2026-11-24T00-10-00Z")
+
+    assert summary.runs == 1
+    assert scalar(tmp_path / "wh.duckdb", "select max(run_id) from raw.landing_runs") == (
+        "2026-11-24T00-10-00Z"
+    )
+
+
 def test_as_of_an_unknown_run_fails_before_writing(tmp_path: Path) -> None:
     two_runs(tmp_path / "raw")
 

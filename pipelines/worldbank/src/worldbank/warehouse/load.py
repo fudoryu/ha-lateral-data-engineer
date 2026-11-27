@@ -70,8 +70,9 @@ def as_of_path(live: Path, run_id: str) -> Path:
 def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -> LoadSummary:
     """Build a fresh warehouse file at `warehouse` from the committed runs under `landing_root`.
 
-    With `as_of`, only the runs up to and including that run are loaded, so the latest run (and
-    with it every mart) is as of that run (ADR-0006).
+    With `as_of`, only the runs committed up to and including that run are loaded, so the latest
+    run (and with it every mart) is as of that run (ADR-0006). Runs are cut by commit time, the
+    order dbt uses to pick the latest run, since a run that started earlier can commit later.
 
     The file appears only once it's complete: any previous build at `warehouse` is removed first,
     the load writes `<warehouse>.loading`, and a rename gives it its final name. A failed load
@@ -81,10 +82,10 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
         stale.unlink(missing_ok=True)
     runs = committed_runs(landing_root)
     if as_of is not None:
-        run_ids = [run.manifest.run_id for run in runs]
-        if as_of not in run_ids:
+        target = next((run for run in runs if run.manifest.run_id == as_of), None)
+        if target is None:
             raise UnknownRun(f"no committed run {as_of} under {landing_root}")
-        runs = runs[: run_ids.index(as_of) + 1]
+        runs = [run for run in runs if run.manifest.committed_at <= target.manifest.committed_at]
     started = time.monotonic()
     log.info("load started", extra={"runs": len(runs), "as_of": as_of, "target": str(warehouse)})
     manifests = [str(run.manifest_path.resolve()) for run in runs]
