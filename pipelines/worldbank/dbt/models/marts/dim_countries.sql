@@ -1,10 +1,9 @@
 -- One row per configured country, from the latest run, with its region (→ dim_regions) and its
--- income group: the current classification, which the analysis applies to every year (ADR-0011,
--- ADR-0030, ADR-0039).
+-- income group (→ dim_income_groups) (ADR-0039, ADR-0040).
 WITH
 
 countries AS (
-    SELECT * FROM {{ ref('int_countries_joined_to_income_groups') }}
+    SELECT * FROM {{ ref('int_countries_filtered_to_latest_run') }}
 ),
 
 final AS (
@@ -13,8 +12,6 @@ final AS (
         country_name,
         region_id,
         income_group_id,
-        income_group_name,
-        income_group_sort_order,
         source_response_id
     FROM countries
 )

@@ -23,8 +23,8 @@ REPORTS = (
     " ('IND', 'POP', 2024, 3.5), ('BRA', 'POP', 2024, 1.5), ('BRA', 'POP', 2023, NULL))"
     " AS t (country_id, indicator_id, observation_year, indicator_value)",
     "CREATE TABLE reporting.rpt_by_group AS SELECT * FROM (VALUES"
-    " ('HIC', 4, 'POP'), ('LMC', 2, 'POP'))"
-    " AS t (income_group_id, income_group_sort_order, indicator_id)",
+    " ('LMC', 'POP'), ('HIC', 'POP'))"
+    " AS t (income_group_id, indicator_id)",
 )
 
 
@@ -45,7 +45,7 @@ def test_every_report_is_written_sorted_with_a_header(tmp_path: Path) -> None:
         ["BRA", "POP", "2024", "1.5"],
         ["IND", "POP", "2024", "3.5"],
     ]
-    assert [row[0] for row in rows(tmp_path / "outputs" / "rpt_by_group.csv")[1:]] == ["LMC", "HIC"]
+    assert [row[0] for row in rows(tmp_path / "outputs" / "rpt_by_group.csv")[1:]] == ["HIC", "LMC"]
     assert not list((tmp_path / "outputs").glob("*.tmp"))
 
 

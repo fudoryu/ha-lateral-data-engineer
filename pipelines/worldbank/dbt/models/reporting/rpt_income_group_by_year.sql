@@ -3,7 +3,7 @@
 -- describes the typical country in the group, not the group's total. `avg` and `count` skip the
 -- nulls, which are exactly the values that aren't present, so a group without data has a null
 -- average, never 0, and the counts show how many countries contributed. Groups are the current
--- classification, applied to every year (ADR-0011, ADR-0030; see the README's assumptions).
+-- classification, applied to every year (ADR-0011, ADR-0040; see the README's assumptions).
 WITH
 
 facts AS (
@@ -14,15 +14,18 @@ countries AS (
     SELECT * FROM {{ ref('dim_countries') }}
 ),
 
+income_groups AS (
+    SELECT * FROM {{ ref('dim_income_groups') }}
+),
+
 indicators AS (
     SELECT * FROM {{ ref('dim_indicators') }}
 ),
 
 final AS (
     SELECT
-        countries.income_group_id,
-        countries.income_group_name,
-        countries.income_group_sort_order,
+        income_groups.income_group_id,
+        income_groups.income_group_name,
         facts.indicator_id,
         indicators.indicator_name,
         facts.observation_year,
@@ -31,11 +34,11 @@ final AS (
         count(facts.indicator_value) AS n_countries_with_data
     FROM facts
     INNER JOIN countries ON facts.country_id = countries.country_id
+    INNER JOIN income_groups ON countries.income_group_id = income_groups.income_group_id
     INNER JOIN indicators ON facts.indicator_id = indicators.indicator_id
     GROUP BY
-        countries.income_group_id,
-        countries.income_group_name,
-        countries.income_group_sort_order,
+        income_groups.income_group_id,
+        income_groups.income_group_name,
         facts.indicator_id,
         indicators.indicator_name,
         facts.observation_year

@@ -28,6 +28,15 @@ REASONS = {
 STATUS_COLORS = {"complete": "#d8efe0", "incomplete": "#fbe7c6", "missing": "#f6d0cc"}
 LINE_COLORS = ("#c2410c", "#0f766e", "#1d4ed8", "#7e22ce")
 
+# Income groups from low to high income, for display only (ADR-0040); any other group follows.
+INCOME_GROUP_ORDER = ("LIC", "LMC", "UMC", "HIC")
+
+
+def _group_order(row: Row) -> tuple[int, str]:
+    code = row["income_group_id"]
+    known = code in INCOME_GROUP_ORDER
+    return (INCOME_GROUP_ORDER.index(code) if known else len(INCOME_GROUP_ORDER), code)
+
 
 class NothingToReport(WarehouseError):
     """There's no published warehouse, or it lacks the reporting tables."""
@@ -56,7 +65,7 @@ _TABLES = {
     "rpt_year_over_year": "indicator_name, country_name, observation_year",
     "rpt_latest_year_by_country": "indicator_name, rank_in_indicator NULLS LAST, country_name",
     "rpt_latest_common_year": "indicator_name, rank_in_indicator NULLS LAST, country_name",
-    "rpt_income_group_by_year": "indicator_name, income_group_sort_order, observation_year",
+    "rpt_income_group_by_year": "indicator_name, income_group_id, observation_year",
 }
 
 
@@ -222,7 +231,7 @@ def _chart(rows: list[Row]) -> str:
         return float(10 + (high - value) / (high - low) * (height - bottom - 10))
 
     lines, legend = "", ""
-    groups = _grouped(sorted(rows, key=lambda r: r["income_group_sort_order"]), "income_group_name")
+    groups = _grouped(sorted(rows, key=_group_order), "income_group_name")
     for index, (group, by_group) in enumerate(groups.items()):
         color = LINE_COLORS[index % len(LINE_COLORS)]
         coords = " ".join(
@@ -252,9 +261,7 @@ def _income_groups(groups: list[Row]) -> str:
     for indicator, rows in _grouped(groups, "indicator_name").items():
         years = sorted({r["observation_year"] for r in rows})
         body = ""
-        ordered = _grouped(
-            sorted(rows, key=lambda r: r["income_group_sort_order"]), "income_group_name"
-        )
+        ordered = _grouped(sorted(rows, key=_group_order), "income_group_name")
         for group, by_group in ordered.items():
             by_year = {r["observation_year"]: r for r in by_group}
             body += (

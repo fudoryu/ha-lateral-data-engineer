@@ -243,18 +243,16 @@ unit_tests:
         - {region_id: ECS, region_name: Europe & Central Asia}
         - {region_id: SAS, region_name: South Asia}
 
-  - name: countries_get_their_income_group_sort_order
-    model: int_countries_joined_to_income_groups
+  - name: income_groups_are_collected_once_from_their_countries
+    description: Two high-income countries and one lower-middle-income country make two groups.
+    model: int_income_groups_derived_from_countries
     given:
       - input: ref('int_countries_filtered_to_latest_run')
         rows:
-          - {country_id: USA, income_group_id: HIC}
-          - {country_id: IND, income_group_id: LMC}
-      - input: ref('income_groups')
-        rows:
-          - {income_group_id: LMC, sort_order: 2}
-          - {income_group_id: HIC, sort_order: 4}
+          - {country_id: USA, income_group_id: HIC, income_group_name: High income}
+          - {country_id: DEU, income_group_id: HIC, income_group_name: High income}
+          - {country_id: IND, income_group_id: LMC, income_group_name: Lower middle income}
     expect:
       rows:
-        - {country_id: USA, income_group_id: HIC, income_group_sort_order: 4}
-        - {country_id: IND, income_group_id: LMC, income_group_sort_order: 2}
+        - {income_group_id: HIC, income_group_name: High income}
+        - {income_group_id: LMC, income_group_name: Lower middle income}

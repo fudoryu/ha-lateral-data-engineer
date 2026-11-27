@@ -20,9 +20,9 @@ log = logging.getLogger(__name__)
 REPORTING_SCHEMA = "reporting"
 REPORT_PREFIX = "rpt_"
 
-# Sort keys, in priority order, used when a report has them: income groups low to high, then
-# country, indicator and year. Every report's grain is made of these columns.
-SORT_KEYS = ("income_group_sort_order", "country_id", "indicator_id", "observation_year")
+# Sort keys, in priority order, used when a report has them: income group, country, indicator
+# and year. Every report's grain is made of these columns.
+SORT_KEYS = ("income_group_id", "country_id", "indicator_id", "observation_year")
 
 
 class NothingToExport(WarehouseError):

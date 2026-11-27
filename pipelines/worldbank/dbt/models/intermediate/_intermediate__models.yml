@@ -101,13 +101,10 @@ models:
       - name: region_id
         data_tests: [unique, not_null]
 
-  - name: int_countries_joined_to_income_groups
+  - name: int_income_groups_derived_from_countries
     description: >
-      The latest run's countries with their income group's low-to-high sort order (seed
-      income_groups; ADR-0030).
+      The distinct income groups of the latest run's countries (ADR-0040). A group id with two
+      names fails `unique`, rather than producing two groups.
     columns:
-      - name: country_id
+      - name: income_group_id
         data_tests: [unique, not_null]
-      - name: income_group_sort_order
-        description: A group missing from the seed fails the build, so a new group isn't unsorted.
-        data_tests: [not_null]

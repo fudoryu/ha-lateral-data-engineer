@@ -1,85 +1,85 @@
-income_group_id,income_group_name,income_group_sort_order,indicator_id,indicator_name,observation_year,average_value,n_countries,n_countries_with_data
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2018,2702929641648.74,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2019,2835606256558.19,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2020,2674851578587.27,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2021,3167270623260.47,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2022,3249938492013.47,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2023,3500906030644.76,1,1
-LMC,Lower middle income,2,NY.GDP.MKTP.CD,GDP (current US$),2024,3760813470500.86,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,1966.25455171679,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,2041.42863698585,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,1907.04251637669,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,2239.61384367482,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,2279.98145719369,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,2434.44826340989,1,1
-LMC,Lower middle income,2,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,2591.9916607122,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,70.415,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,70.746,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,70.156,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,67.282,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,71.698,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,72.003,1,1
-LMC,Lower middle income,2,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,72.235,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2018,1374659064.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2019,1389030312.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2020,1402617695.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2021,1414203896.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2022,1425423212.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2023,1438069596.0,1,1
-LMC,Lower middle income,2,SP.POP.TOTL,"Population, total",2024,1450935791.0,1,1
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2018,1192831601629.0522,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2019,1188908147096.743,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2020,978382217962.4484,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2021,1135734383371.4026,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2022,1275484903131.5283,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2023,1455660945964.7039,3,3
-UMC,Upper middle income,3,NY.GDP.MKTP.CD,GDP (current US$),2024,1472485306717.2617,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,8766.54447935873,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,8644.366612163998,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,7165.3561211419465,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,8371.781189711857,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,9073.792023078637,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,10080.901739255476,3,3
-UMC,Upper middle income,3,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,10188.592628662134,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,71.88666666666667,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,72.13666666666667,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,70.035,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,68.266,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,71.43299999999999,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,72.35199999999999,3,3
-UMC,Upper middle income,3,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,72.533,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2018,129764657.66666667,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2019,130935442.0,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2020,132007425.66666667,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2021,132900348.33333333,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2022,133765980.66666667,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2023,134697624.0,3,3
-UMC,Upper middle income,3,SP.POP.TOTL,"Population, total",2024,135622255.66666666,3,3
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2018,6897720336617.052,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2019,7073014165338.078,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2020,6977113189181.18,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2021,7704753522797.318,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2022,8017083809861.025,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2023,8475193858517.742,5,5
-HIC,High income,4,NY.GDP.MKTP.CD,GDP (current US$),2024,8827845893876.176,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,48536.16938119874,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,48764.53516181554,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,47462.43362976816,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,53190.70139089362,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,53519.03583269983,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,55469.15636062566,5,5
-HIC,High income,4,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,56885.50354128686,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,81.36048780487806,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,81.59289756097562,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,80.88874146341466,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,80.73278048780489,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,80.82892682926828,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,81.26649756097561,5,5
-HIC,High income,4,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,81.44283414634147,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2018,128321195.8,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2019,128839736.8,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2020,129153722.6,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2021,129239140.2,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2022,129777047.6,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2023,130626812.6,5,5
-HIC,High income,4,SP.POP.TOTL,"Population, total",2024,131607818.0,5,5
+income_group_id,income_group_name,indicator_id,indicator_name,observation_year,average_value,n_countries,n_countries_with_data
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2018,6897720336617.052,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2019,7073014165338.078,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2020,6977113189181.18,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2021,7704753522797.318,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2022,8017083809861.025,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2023,8475193858517.742,5,5
+HIC,High income,NY.GDP.MKTP.CD,GDP (current US$),2024,8827845893876.176,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,48536.16938119874,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,48764.53516181554,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,47462.43362976816,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,53190.70139089362,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,53519.03583269983,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,55469.15636062566,5,5
+HIC,High income,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,56885.50354128686,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,81.36048780487806,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,81.59289756097562,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,80.88874146341466,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,80.73278048780489,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,80.82892682926828,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,81.26649756097561,5,5
+HIC,High income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,81.44283414634147,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2018,128321195.8,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2019,128839736.8,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2020,129153722.6,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2021,129239140.2,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2022,129777047.6,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2023,130626812.6,5,5
+HIC,High income,SP.POP.TOTL,"Population, total",2024,131607818.0,5,5
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2018,2702929641648.74,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2019,2835606256558.19,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2020,2674851578587.27,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2021,3167270623260.47,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2022,3249938492013.47,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2023,3500906030644.76,1,1
+LMC,Lower middle income,NY.GDP.MKTP.CD,GDP (current US$),2024,3760813470500.86,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,1966.25455171679,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,2041.42863698585,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,1907.04251637669,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,2239.61384367482,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,2279.98145719369,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,2434.44826340989,1,1
+LMC,Lower middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,2591.9916607122,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,70.415,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,70.746,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,70.156,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,67.282,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,71.698,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,72.003,1,1
+LMC,Lower middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,72.235,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2018,1374659064.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2019,1389030312.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2020,1402617695.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2021,1414203896.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2022,1425423212.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2023,1438069596.0,1,1
+LMC,Lower middle income,SP.POP.TOTL,"Population, total",2024,1450935791.0,1,1
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2018,1192831601629.0522,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2019,1188908147096.743,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2020,978382217962.4484,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2021,1135734383371.4026,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2022,1275484903131.5283,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2023,1455660945964.7039,3,3
+UMC,Upper middle income,NY.GDP.MKTP.CD,GDP (current US$),2024,1472485306717.2617,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2018,8766.54447935873,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2019,8644.366612163998,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2020,7165.3561211419465,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2021,8371.781189711857,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2022,9073.792023078637,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2023,10080.901739255476,3,3
+UMC,Upper middle income,NY.GDP.PCAP.CD,GDP per capita (current US$),2024,10188.592628662134,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2018,71.88666666666667,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2019,72.13666666666667,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2020,70.035,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2021,68.266,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2022,71.43299999999999,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2023,72.35199999999999,3,3
+UMC,Upper middle income,SP.DYN.LE00.IN,"Life expectancy at birth, total (years)",2024,72.533,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2018,129764657.66666667,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2019,130935442.0,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2020,132007425.66666667,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2021,132900348.33333333,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2022,133765980.66666667,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2023,134697624.0,3,3
+UMC,Upper middle income,SP.POP.TOTL,"Population, total",2024,135622255.66666666,3,3

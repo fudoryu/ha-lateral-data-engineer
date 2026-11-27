@@ -80,24 +80,26 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 
 ## Data model
 
-The marts are a current-state star schema: one fact and three dimensions, at natural keys, holding the latest run only (ADR-0017, ADR-0028 to ADR-0032, ADR-0039).
+The marts are a current-state dimensional model: one fact and four dimensions at natural keys, holding the latest run only; a country reaches its region and income group through `dim_countries` (ADR-0017, ADR-0028 to ADR-0032, ADR-0039, ADR-0040).
 
 ```
-  dim_regions ─── dim_countries ─────────── fct_country_indicator_values ── dim_indicators
-  region_id (PK)  country_id (PK)           country_id (FK)                 indicator_id (PK)
-  region_name     country_name              indicator_id (FK)               indicator_name
-                  region_id (FK)            observation_year                definition
-                  income_group_id           indicator_value                 source_organization
-                  income_group_name         value_status                    source_lastupdated
-                  income_group_sort_order   source_response_id              source_response_id
-                  source_response_id
+  dim_regions             dim_countries           fct_country_indicator_values    dim_indicators
+    region_id (PK)          country_id (PK)         country_id (FK)                 indicator_id (PK)
+    region_name             country_name            indicator_id (FK)               indicator_name
+                            region_id (FK)          observation_year                definition
+  dim_income_groups         income_group_id (FK)    indicator_value                 source_organization
+    income_group_id (PK)    source_response_id      value_status                    source_lastupdated
+    income_group_name                               source_response_id              source_response_id
+
+  fct → dim_countries → dim_regions, dim_income_groups;  fct → dim_indicators
 ```
 
 | Table | Grain | Key | Relationships |
 |---|---|---|---|
 | `fct_country_indicator_values` | one expected country × indicator × year | (`country_id`, `indicator_id`, `observation_year`) | → `dim_countries`, `dim_indicators` |
-| `dim_countries` | one configured country | `country_id` (ISO 3166-1 alpha-3) | → `dim_regions` |
+| `dim_countries` | one configured country | `country_id` (ISO 3166-1 alpha-3) | → `dim_regions`, `dim_income_groups` |
 | `dim_regions` | one region of the configured countries | `region_id` (World Bank region code) | n/a |
+| `dim_income_groups` | one income group of the configured countries | `income_group_id` (World Bank income group code) | n/a |
 | `dim_indicators` | one configured indicator | `indicator_id` | n/a |
 
 - **Every expected cell is a row,** including those the API didn't return. `value_status` records `present`, `null_value` or `missing_row`, and `indicator_value` is null unless the value is present. Missing is never zero (NFR-3, ADR-0008).
@@ -134,7 +136,7 @@ The decisions I consider most important, each recorded with its alternatives:
 3. **Contracts at the boundary, integrity on load** (ADR-0005, ADR-0020). I validate responses before a run commits; afterwards, a matching sha256 proves the bytes are the ones that were validated.
 4. **Each tool does one job** (ADR-0022, ADR-0034). Python extracts, loads, publishes and exports; dbt transforms and tests; `just` orders the steps, as an orchestrator's DAG would.
 5. **Hand-written extraction rather than dlt** (ADR-0019). My lineage rests on exact response pages and their metadata, which a framework that yields records doesn't preserve.
-6. **Logic in intermediate, a small star schema for analysts** (ADR-0026 to ADR-0032). Every rule lives in one place and is unit-tested; analysts work with one fact and three dimensions.
+6. **Logic in intermediate, a small star schema for analysts** (ADR-0026 to ADR-0032). Every rule lives in one place and is unit-tested; analysts work with one fact and four dimensions.
 7. **Missing is a status, not a gap** (ADR-0008). The fact table is built on the expected set, so every question about gaps becomes a filter.
 
 ## Trade-offs

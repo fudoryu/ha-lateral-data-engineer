@@ -160,9 +160,12 @@ unit_tests:
           - {country_id: GBR, indicator_id: LIFE, observation_year: 2024, indicator_value: 70, value_status: present}
       - input: ref('dim_countries')
         rows:
-          - {country_id: USA, income_group_id: HIC, income_group_name: High income, income_group_sort_order: 4}
-          - {country_id: DEU, income_group_id: HIC, income_group_name: High income, income_group_sort_order: 4}
-          - {country_id: GBR, income_group_id: HIC, income_group_name: High income, income_group_sort_order: 4}
+          - {country_id: USA, income_group_id: HIC}
+          - {country_id: DEU, income_group_id: HIC}
+          - {country_id: GBR, income_group_id: HIC}
+      - input: ref('dim_income_groups')
+        rows:
+          - {income_group_id: HIC, income_group_name: High income}
       - input: ref('dim_indicators')
         rows:
           - {indicator_id: POP, indicator_name: Population}
@@ -180,7 +183,10 @@ unit_tests:
           - {country_id: IND, indicator_id: POP, observation_year: 2024, indicator_value: null, value_status: null_value}
       - input: ref('dim_countries')
         rows:
-          - {country_id: IND, income_group_id: LMC, income_group_name: Lower middle income, income_group_sort_order: 2}
+          - {country_id: IND, income_group_id: LMC}
+      - input: ref('dim_income_groups')
+        rows:
+          - {income_group_id: LMC, income_group_name: Lower middle income}
       - input: ref('dim_indicators')
         rows:
           - {indicator_id: POP, indicator_name: Population}
