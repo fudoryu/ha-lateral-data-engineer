@@ -33,7 +33,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
 | [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted (amended by ADR-0027) |
 | [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
-| [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted |
+| [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
+| [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Accepted |
 
 ---
 
@@ -922,7 +923,7 @@ ADR-0026 let every layer read its own layer as well as the one below. Same-layer
 
 ## ADR-0028: Marts are a current-state star schema for analysts
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (income-group tables amended by [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year))
 - **Serves:** FR-MOD-2, FR-MOD-3, NFR-1 · **Amends:** ADR-0017 (table list, lineage keys), ADR-0006 §7 (who sees revisions)
 
 ### Context
@@ -951,3 +952,28 @@ ADR-0017 put run-level detail in the marts: `dim_run`, `dim_source_response` (ev
 - Analysts get four tables that answer every question; the reports build on them.
 - Engineers trace through intermediate, staging, the landed files and the logs, documented in `analyses/trace_value.sql` and the production note.
 - ADR-0017's invariant "a fact's run matches its response's run" becomes "every fact row's response belongs to the latest run".
+
+---
+
+## ADR-0029: The fact carries the income group that applied each year
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-4, FR-MOD-2 · **Amends:** ADR-0028 (income-group tables) · **Builds on:** ADR-0011
+
+### Context
+ADR-0028's marts held the income group in two places: `dim_country.income_group_id` (the current classification) and `dim_country_income_group_by_year` (the group per country and year). An analyst comparing groups by year (FR-ANA-4) could join the wrong one, the mistake ADR-0011 guards against, and a dimension keyed by country × year is awkward in a star schema.
+
+### Decision
+- **The fact carries `income_group_id`:** the group that applied to that country in that year, assigned in intermediate from `int_income_groups_spread_over_years` (today the current classification for every year, per ADR-0011). The fact's grain already includes the year, so the group is a property of each row.
+- **`dim_income_group` replaces `dim_country_income_group_by_year`:** one row per income group, with its name, a `sort_order` from low to high income (from the `income_group_order` seed, so reports don't sort alphabetically), and how today's classification was made: `classification_basis` and `classified_as_of` (ADR-0011).
+- **`dim_country` keeps the current group, named as such:** `current_income_group_id` and `current_income_group_name`, a different concept from the yearly group on the fact, so it gets a different name.
+- The marts become: `fct_indicator_value` → `dim_country`, `dim_indicator`, `dim_income_group`.
+
+### Alternatives considered
+- **Keep the country-by-year dimension (ADR-0028):** correct, but two places for the group and a join on two columns that analysts can get wrong.
+- **Only the current group, on `dim_country`:** simplest, but it hard-codes ADR-0011's assumption into the model; a historical classification couldn't be added without changing every report.
+
+### Consequences
+- FR-ANA-4 is a join on `income_group_id`; there's no way to pick the wrong group.
+- A historical classification, if ever allowed, changes only `int_income_groups_spread_over_years`.
+- Reports list income groups in their natural order.
