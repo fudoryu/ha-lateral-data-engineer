@@ -27,7 +27,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
 | [ADR-0021](#adr-0021-code-layout-source-storage-and-warehouse) | Code layout: source, storage and warehouse | Decision | Accepted |
-| [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted (amended by ADR-0023) |
+| [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted (amended by ADR-0023 and ADR-0034) |
 | [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
 | [ADR-0024](#adr-0024-structured-logging-with-the-standard-library) | Structured logging with the standard library | Decision | Accepted |
 | [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
@@ -39,6 +39,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0031](#adr-0031-the-fact-is-named-fct_country_indicator_value) | The fact is named fct_country_indicator_value | Decision | Accepted (pluralized by ADR-0032) |
 | [ADR-0032](#adr-0032-every-table-name-is-plural) | Every table name is plural | Decision | Accepted |
 | [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
+| [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export) | Report tables are exported to CSV by `worldbank export` | Decision | Accepted |
 
 ---
 
@@ -738,7 +739,7 @@ Only `cli.py` and `config.py` stay top-level. Everything else lives in three pac
 
 ## ADR-0022: Python stops at load; the task runner orchestrates
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (amended by [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order))
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (amended by [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) and [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export))
 - **Serves:** NFR-2, NFR-6, FR-DQ-1 · **Supersedes:** ADR-0018 · **Builds on:** ADR-0003, ADR-0007, ADR-0020, ADR-0021
 
 ### Context
@@ -1062,3 +1063,28 @@ ADR-0016 says staging does "renaming, casting and flattening only", yet staging 
 ### Consequences
 - Every layer above staging sees clean text; the raw layer keeps the exact bytes.
 - The README maps the layers to the medallion vocabulary for readers who think in bronze, silver and gold.
+
+---
+
+## ADR-0034: Report tables are exported to CSV by `worldbank export`
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-1 to FR-ANA-4, NFR-6 · **Amends:** ADR-0022 (who exports, and when)
+
+### Context
+The brief asks for sample output of the reporting queries, committed (for example CSV), so a reviewer can read the answers without running anything. ADR-0022 left exports to dbt, published together with the warehouse, mechanism to be decided. Exporting on every build would rewrite tracked files on each run.
+
+### Decision
+- **`worldbank export` (just `export`) writes every table of the published warehouse's `reporting` schema to its own CSV,** `data/outputs/<table>.csv`, with a header and rows sorted for reading (income groups low to high, then country, indicator and year). Tables are discovered from the schema, so a new report is exported without code changes. `--output` overrides the folder.
+- **It reads only the published warehouse,** so it exports audited data only, and refuses if nothing is published. Each file is written to a temporary name and renamed; report CSVs no longer in the schema are removed from the folder, other files are left alone.
+- **It isn't part of `just build`:** a normal build never touches tracked files. Exporting and committing the sample are deliberate steps.
+- **`data/outputs/` is committed** through an explicit `.gitignore` exception, so the sample in the repository is exactly what the command writes. Python does extract, load, publish and export; dbt does transform and test.
+
+### Alternatives considered
+- **A dbt operation after publish (ADR-0022's intent):** keeps exports in dbt, but less direct to test and to run on its own than a command next to `publish`.
+- **Export on every build:** outputs always match the last build, but every run changes tracked files.
+- **`data/samples/outputs/`:** `data/samples/` holds hand-saved API responses from exploration, kept local (ADR-0012); generated deliverables don't belong with them.
+
+### Consequences
+- One command regenerates the committed sample from an audited build.
+- The sample can be older than the code if it isn't re-exported; the README's setup says when to run it.
