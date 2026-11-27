@@ -19,6 +19,8 @@ from worldbank.source.client import (
 from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
 from worldbank.source.extract import ScopeViolation
 from worldbank.source.extract import extract as run_extract
+from worldbank.storage.runs import IntegrityError
+from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
 
 DEFAULT_CONFIG = Path("pipelines/worldbank/config.yml")
 DEFAULT_DATA_DIR = Path("data")
@@ -34,6 +36,8 @@ EXTRACT_FAILURES = (
     requests.RequestException,
     FileExistsError,  # a run with the same timestamp already exists
 )
+
+LOAD_FAILURES = (IntegrityError, UnknownRun, ValidationError)  # ValidationError: corrupt manifest
 
 app = typer.Typer(
     help="World Bank country indicators pipeline.",
@@ -60,7 +64,7 @@ def version() -> None:
 def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None:
     """Fetch the configured scope from the API and commit it as a landing run."""
     settings = _load_config_or_exit(config)
-    landing_root = data_dir / "raw" / SOURCE
+    landing_root = _landing_root(data_dir)
     try:
         manifest = run_extract(settings, Client(settings.api), landing_root, git_sha=_git_sha())
     except EXTRACT_FAILURES as exc:
@@ -69,6 +73,32 @@ def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None
     for warning in manifest.warnings:
         typer.echo(f"warning: {warning}", err=True)
     typer.echo(f"committed run {manifest.run_id}: {len(manifest.files)} files in {landing_root}")
+
+
+@app.command()
+def load(
+    data_dir: Path = DataDirOption,
+    as_of: str | None = typer.Option(
+        None, "--as-of", help="Load only the runs up to this run ID, into a file of its own."
+    ),
+) -> None:
+    """Load committed landing runs into a new warehouse file; the live one is never touched."""
+    live = _live_warehouse(data_dir)
+    target = next_path(live) if as_of is None else as_of_path(live, as_of)
+    try:
+        summary = load_raw(_landing_root(data_dir), target, as_of=as_of)
+    except LOAD_FAILURES as exc:
+        typer.echo(f"load failed, nothing written: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"loaded {summary.runs} runs ({summary.responses} responses) into {target}")
+
+
+def _landing_root(data_dir: Path) -> Path:
+    return data_dir / "raw" / SOURCE
+
+
+def _live_warehouse(data_dir: Path) -> Path:
+    return data_dir / "warehouse" / f"{SOURCE}.duckdb"
 
 
 def _load_config_or_exit(path: Path) -> Config:

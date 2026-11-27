@@ -4,13 +4,15 @@ from pathlib import Path
 import duckdb
 import pytest
 import responses
+from typer.testing import CliRunner
 
+from worldbank.cli import app
 from worldbank.config import Config
 from worldbank.source.client import Client
 from worldbank.source.extract import extract
 from worldbank.storage.manifest import Manifest
 from worldbank.storage.runs import IntegrityError, RunWriter
-from worldbank.warehouse.load import load_raw
+from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
 
 
 def extract_recorded(config: Config, root: Path, at: datetime) -> Manifest:
@@ -127,3 +129,76 @@ def test_a_run_without_requests_or_files_loads(tmp_path: Path) -> None:
     summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
 
     assert (summary.runs, summary.responses) == (1, 0)
+
+
+def two_runs(root: Path) -> None:
+    for day in (24, 25):
+        RunWriter.start(root, datetime(2026, 11, day, tzinfo=UTC)).commit(
+            committed_at=datetime(2026, 11, day, 0, 1, tzinfo=UTC),
+            pipeline_version="0.1.0",
+            git_sha=None,
+            config={},
+            warnings=[],
+        )
+
+
+def test_as_of_loads_the_runs_up_to_that_run(tmp_path: Path) -> None:
+    two_runs(tmp_path / "raw")
+
+    summary = load_raw(tmp_path / "raw", tmp_path / "wh.duckdb", as_of="2026-11-24T00-00-00Z")
+
+    assert summary.runs == 1
+    assert scalar(tmp_path / "wh.duckdb", "select max(run_id) from raw.landing_runs") == (
+        "2026-11-24T00-00-00Z"
+    )
+
+
+def test_as_of_an_unknown_run_fails_before_writing(tmp_path: Path) -> None:
+    two_runs(tmp_path / "raw")
+
+    with pytest.raises(UnknownRun, match="2026-01-01T00-00-00Z"):
+        load_raw(tmp_path / "raw", tmp_path / "wh.duckdb", as_of="2026-01-01T00-00-00Z")
+    assert not (tmp_path / "wh.duckdb").exists()
+
+
+def test_build_files_sit_next_to_the_live_warehouse() -> None:
+    live = Path("data/warehouse/worldbank.duckdb")
+
+    assert next_path(live) == Path("data/warehouse/worldbank.next.duckdb")
+    assert as_of_path(live, "2026-11-24T00-00-00Z") == Path(
+        "data/warehouse/worldbank.as-of-2026-11-24T00-00-00Z.duckdb"
+    )
+
+
+def test_cli_load_writes_the_next_file_never_the_live_one(tmp_path: Path) -> None:
+    two_runs(tmp_path / "raw" / "worldbank")
+
+    result = CliRunner().invoke(app, ["load", "--data-dir", str(tmp_path)])
+
+    assert result.exit_code == 0, result.output
+    assert "loaded 2 runs" in result.stdout
+    assert (tmp_path / "warehouse" / "worldbank.next.duckdb").is_file()
+    assert not (tmp_path / "warehouse" / "worldbank.duckdb").exists()
+
+
+def test_cli_load_as_of_writes_a_file_of_its_own(tmp_path: Path) -> None:
+    two_runs(tmp_path / "raw" / "worldbank")
+
+    result = CliRunner().invoke(
+        app, ["load", "--data-dir", str(tmp_path), "--as-of", "2026-11-24T00-00-00Z"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "warehouse" / "worldbank.as-of-2026-11-24T00-00-00Z.duckdb").is_file()
+    assert not (tmp_path / "warehouse" / "worldbank.next.duckdb").exists()
+
+
+def test_cli_load_reports_failures_with_exit_code_1(tmp_path: Path) -> None:
+    two_runs(tmp_path / "raw" / "worldbank")
+
+    result = CliRunner().invoke(
+        app, ["load", "--data-dir", str(tmp_path), "--as-of", "2026-01-01T00-00-00Z"]
+    )
+
+    assert result.exit_code == 1
+    assert "load failed, nothing written: no committed run 2026-01-01T00-00-00Z" in result.stderr
