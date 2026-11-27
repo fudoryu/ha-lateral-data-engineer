@@ -41,7 +41,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
 | [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export) | Report tables are exported to CSV by `worldbank export` | Decision | Accepted |
 | [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
-| [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
+| [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted (a filterable dashboard, ADR-0045) |
 | [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
 | [ADR-0038](#adr-0038-income-groups-average-their-countries) | Income groups average their countries | Decision | Superseded by ADR-0043 (the aggregation; the removed metadata stays removed) |
 | [ADR-0039](#adr-0039-regions-get-their-own-dimension) | Regions get their own dimension | Decision | Accepted (income groups get a dimension too, ADR-0040; `country_iso2` restored by ADR-0041) |
@@ -50,6 +50,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0042](#adr-0042-lineage-only-on-the-fact) | Lineage only on the fact | Decision | Accepted |
 | [ADR-0043](#adr-0043-income-group-aggregates-written-out-in-the-report) | Income-group aggregates written out in the report | Decision | Accepted |
 | [ADR-0044](#adr-0044-one-reporting-table-per-question) | One reporting table per question | Decision | Accepted |
+| [ADR-0045](#adr-0045-the-report-is-a-filterable-dashboard) | The report is a filterable dashboard | Decision | Accepted |
 
 ---
 
@@ -1323,3 +1324,28 @@ The reporting layer had six tables for the brief's four questions, in two redund
 ### Consequences
 - Each question maps to one table and one CSV.
 - Per-series counts are a `GROUP BY` on `rpt_completeness` rather than a table of their own.
+
+---
+
+## ADR-0045: The report is a filterable dashboard
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-5 (optional), FR-ANA-1 to FR-ANA-4 · **Amends:** ADR-0036
+
+### Context
+The first report stacked every indicator and country on one long page. A reader asking about one indicator or a few countries had to scroll past the rest.
+
+### Decision
+- **One board per indicator, chosen with tabs, and a country filter that applies to every country view:** the ranking, a small chart per country, the year-over-year table and the completeness grid. Income groups always combine every country, and say so.
+- **Filters without scripts.** The tabs and country toggles are native radio buttons and checkboxes; CSS (`:has()`) shows the selected indicator and hides unselected countries, so filtering works with scripts disabled, and a browser without `:has()` shows everything. One small static script adds "All" and "None" buttons; no warehouse value reaches it.
+- **Gaps are visible by shape, not only colour:** each series carries a strip of squares, one per year (filled when present, slashed amber when returned as null, a red outline when not returned), and charts break their lines at gaps.
+- **Readouts change in place:** pointing at a year shows its values in the chart's header or legend, which show the latest year by default, so hovering adds detail and is never required; every chart also has a table.
+- Still one self-contained, deterministic file: inline CSS and SVG, system fonts, light and dark themes, no external requests, every value HTML-escaped.
+
+### Alternatives considered
+- **A JavaScript charting library with data embedded as JSON:** richer interaction, but a dependency, a larger page, and nothing rendered without scripts.
+- **A BI tool:** an account or a server, against NFR-5.
+
+### Consequences
+- A reviewer opens one file and slices the answers by indicator and country.
+- The renderer is server-side Python, so the page is tested like the rest of the code.
