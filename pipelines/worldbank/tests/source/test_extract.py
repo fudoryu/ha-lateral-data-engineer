@@ -12,7 +12,8 @@ from worldbank.cli import app
 from worldbank.config import Config
 from worldbank.source.client import Client
 from worldbank.source.contracts import ApiErrorResponse
-from worldbank.source.extract import ScopeViolation, extract
+from worldbank.source.endpoints import ScopeViolation
+from worldbank.source.extract import extract
 from worldbank.storage.read import committed_runs
 
 BASE = "https://api.worldbank.org/v2"

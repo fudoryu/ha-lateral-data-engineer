@@ -7,13 +7,14 @@ Order (ADR-0002, ADR-0005):
 3. Observations, one request per indicator covering all configured countries and years,
    checked against the request: indicator, countries, years, no duplicate (country, year).
 
-Every page is landed as it arrives. The manifest is written only if everything succeeds, so a
-failed extract never produces a committed run (ADR-0007).
+What each request looks like and how its response is checked lives in `endpoints.py`; this
+module is only the plan and the landing. Every page is landed as it arrives. The manifest is
+written only if everything succeeds, so a failed extract never produces a committed run
+(ADR-0007).
 """
 
 import logging
 import time
-from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,17 +23,13 @@ from pydantic import BaseModel
 
 from worldbank import __version__
 from worldbank.config import Config
+from worldbank.source import endpoints
 from worldbank.source.client import Client, FetchResult
-from worldbank.source.contracts import Country, Indicator, Observation
 from worldbank.source.errors import ExtractError
 from worldbank.storage.manifest import Manifest, RequestRecord
 from worldbank.storage.write import RunWriter
 
 log = logging.getLogger(__name__)
-
-
-class ScopeViolation(ExtractError):
-    """The API response doesn't match what was requested."""
 
 
 class RunAlreadyExists(ExtractError):
@@ -63,33 +60,18 @@ def extract(
         },
     )
     warnings: list[str] = []
-    countries = ";".join(scope.countries)
 
-    fetched_countries = client.fetch(f"country/{countries}", Country)
-    _land(run, "countries", None, fetched_countries, warnings)
-    returned = {c.id for c in fetched_countries.items}
-    missing = sorted(set(scope.countries) - returned)
-    if missing:
-        raise ScopeViolation(f"unknown country codes in config: {', '.join(missing)}")
-    unrequested = sorted(returned - set(scope.countries))
-    if unrequested:
-        raise ScopeViolation(f"country metadata outside the request: {', '.join(unrequested)}")
+    fetched_countries = _fetch_and_land(client, run, endpoints.countries(scope), warnings)
+    endpoints.check_countries(fetched_countries.items, scope)
 
     for code in scope.indicators:
-        fetched_indicator = client.fetch(f"indicator/{code}", Indicator)
-        _land(run, "indicators", code, fetched_indicator, warnings)
-        if [i.id for i in fetched_indicator.items] != [code]:
-            raise ScopeViolation(f"unknown indicator code in config: {code}")
+        fetched_indicator = _fetch_and_land(client, run, endpoints.indicator(code), warnings)
+        endpoints.check_indicator(fetched_indicator.items, code)
 
-    years = scope.years
     for code in scope.indicators:
-        fetched = client.fetch(
-            f"country/{countries}/indicator/{code}",
-            Observation,
-            {"date": f"{years.start}:{years.end}", "source": config.api.source},
-        )
-        _land(run, "observations", code, fetched, warnings)
-        _check_observations(code, fetched.items, set(scope.countries), set(years.as_range()))
+        request = endpoints.observations(code, scope, config.api.source)
+        fetched = _fetch_and_land(client, run, request, warnings)
+        endpoints.check_observations(fetched.items, code, scope)
 
     manifest = run.commit(
         committed_at=now(),
@@ -113,13 +95,15 @@ def extract(
     return manifest
 
 
-def _land[T: BaseModel](
-    run: RunWriter, endpoint: str, key: str | None, result: FetchResult[T], warnings: list[str]
-) -> None:
+def _fetch_and_land[T: BaseModel](
+    client: Client, run: RunWriter, request: endpoints.Request[T], warnings: list[str]
+) -> FetchResult[T]:
+    """Fetch every page of `request` and land it, byte for byte, before anything checks it."""
+    result = client.fetch(request.path, request.contract, request.params)
     for page in result.pages:
         run.write_page(
-            endpoint=endpoint,
-            key=key,
+            endpoint=request.endpoint,
+            key=request.key,
             page=page.page_number,
             body=page.body,
             url=page.url,
@@ -128,31 +112,12 @@ def _land[T: BaseModel](
     meta = result.pages[0].parsed.meta
     run.record_request(
         RequestRecord(
-            endpoint=endpoint,
-            key=key,
+            endpoint=request.endpoint,
+            key=request.key,
             pages=len(result.pages),
             total=meta.total,
             lastupdated=meta.lastupdated,
         )
     )
     warnings.extend(result.warnings)
-
-
-def _check_observations(
-    code: str, rows: list[Observation], countries: set[str], years: set[int]
-) -> None:
-    wrong_indicator = sorted({r.indicator.id for r in rows} - {code})
-    if wrong_indicator:
-        raise ScopeViolation(f"{code}: response contains other indicators: {wrong_indicator}")
-
-    extra_countries = sorted({r.countryiso3code for r in rows} - countries)
-    if extra_countries:
-        raise ScopeViolation(f"{code}: countries outside the request: {extra_countries}")
-
-    extra_years = sorted({int(r.date) for r in rows} - years)
-    if extra_years:  # the API ignores date filters it can't satisfy (source-system §4)
-        raise ScopeViolation(f"{code}: years outside the request: {extra_years}")
-
-    duplicates = [k for k, n in Counter((r.countryiso3code, r.date) for r in rows).items() if n > 1]
-    if duplicates:
-        raise ScopeViolation(f"{code}: duplicate country-years: {sorted(duplicates)}")
+    return result

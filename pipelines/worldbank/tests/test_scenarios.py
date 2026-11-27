@@ -21,7 +21,8 @@ from worldbank.source.client import (
     TransientHTTPError,
 )
 from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
-from worldbank.source.extract import ScopeViolation, extract
+from worldbank.source.endpoints import ScopeViolation
+from worldbank.source.extract import extract
 from worldbank.storage.manifest import Manifest
 from worldbank.storage.read import committed_runs
 
