@@ -16,7 +16,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
 | [ADR-0009](#adr-0009-analytics-interpretations-latest-year-income-group-aggregation-year-over-year) | Analytics interpretations: latest year, income-group aggregation, year-over-year | Decision | Accepted |
 | [ADR-0010](#adr-0010-gdp-consistency-check-with-a-01-tolerance) | GDP consistency check with a 0.1% tolerance | Decision | Accepted |
-| [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted |
+| [ADR-0011](#adr-0011-current-income-classification-applies-to-every-year) | Current income classification applies to every year | **Assumption** | Accepted (modelling amended by ADR-0030) |
 | [ADR-0012](#adr-0012-test-fixtures-recorded-responses-plus-crafted-scenarios) | Test fixtures: recorded responses plus crafted scenarios | Decision | Accepted |
 | [ADR-0013](#adr-0013-developer-tooling-and-documentation-layout) | Developer tooling and documentation layout | Decision | Accepted (recipe names amended by ADR-0018) |
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
@@ -34,7 +34,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0026](#adr-0026-each-dbt-layer-reads-only-its-own-layer-and-the-one-below) | Each dbt layer reads only its own layer and the one below | Decision | Accepted (amended by ADR-0027) |
 | [ADR-0027](#adr-0027-only-intermediate-models-read-their-own-layer) | Only intermediate models read their own layer | Decision | Accepted |
 | [ADR-0028](#adr-0028-marts-are-a-current-state-star-schema-for-analysts) | Marts are a current-state star schema for analysts | Decision | Accepted (income-group tables amended by ADR-0029) |
-| [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Accepted |
+| [ADR-0029](#adr-0029-the-fact-carries-the-income-group-that-applied-each-year) | The fact carries the income group that applied each year | Decision | Superseded by ADR-0030 |
+| [ADR-0030](#adr-0030-income-group-is-a-country-attribute) | Income group is a country attribute | Decision | Accepted |
 
 ---
 
@@ -378,7 +379,7 @@ Measured on the live data for the full scope (9 countries × 8 years, 72 combina
 
 ## ADR-0011: Current income classification applies to every year
 
-- **Date:** 2026-11-24 · **Kind:** Assumption · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Assumption · **Status:** Accepted (modelling amended by [ADR-0030](#adr-0030-income-group-is-a-country-attribute))
 - **Serves:** FR-ANA-4 · **Resolves:** Q3
 
 ### Context
@@ -957,7 +958,7 @@ ADR-0017 put run-level detail in the marts: `dim_run`, `dim_source_response` (ev
 
 ## ADR-0029: The fact carries the income group that applied each year
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Superseded by [ADR-0030](#adr-0030-income-group-is-a-country-attribute)
 - **Serves:** FR-ANA-4, FR-MOD-2 · **Amends:** ADR-0028 (income-group tables) · **Builds on:** ADR-0011
 
 ### Context
@@ -977,3 +978,26 @@ ADR-0028's marts held the income group in two places: `dim_country.income_group_
 - FR-ANA-4 is a join on `income_group_id`; there's no way to pick the wrong group.
 - A historical classification, if ever allowed, changes only `int_income_groups_spread_over_years`.
 - Reports list income groups in their natural order.
+
+---
+
+## ADR-0030: Income group is a country attribute
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-4, FR-MOD-2 · **Supersedes:** ADR-0029 · **Amends:** ADR-0011 (its modelling and labelling bullets)
+
+### Context
+ADR-0011 assumes the current income classification for every year, because the API has no history and the brief allows no other source. It also modelled the group at country × year grain "anyway", so a historical source could replace it later, and labelled every result with `classification_basis` and `classified_as_of`; ADR-0029 then put the yearly group on the fact. None of that changes a single number: every year gets the current group. It exists only for a historical source the brief rules out, and it costs two intermediate models, a country attribute on the fact, and a "current" versus "yearly" distinction analysts have to learn. The brief weighs a clear data model most.
+
+### Decision
+- **The income group is an ordinary attribute of `dim_country`:** `income_group_id`, `income_group_name` and `income_group_sort_order` (low to high income, from the `income_group_order` seed). There is no separate income-group dimension and no group on the fact.
+- **The assumption is stated, not modelled:** the README's assumptions say income groups are the current classification applied to every year, with the hindsight bias that implies (ADR-0011's consequences stand). The income-group report repeats it in its description.
+- The marts are `fct_indicator_value` → `dim_country`, `dim_indicator`.
+
+### Alternatives considered
+- **The yearly group on the fact (ADR-0029) or at country × year grain (ADR-0011):** future-proof for a historical source, but that source is out of scope and the outputs are identical.
+- **A separate `dim_income_group` for the name and sort order:** a cleaner normal form, but one more join for four rows; a denormalized dimension is standard star-schema practice.
+
+### Consequences
+- The analyst model is three tables, and FR-ANA-4 groups the fact by `dim_country.income_group_*` and year.
+- If a historical classification is ever allowed, the group moves to the fact at country × year, a change to the model and the income-group report.
