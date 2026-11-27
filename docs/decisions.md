@@ -22,7 +22,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0014](#adr-0014-one-project-per-pipeline-in-a-uv-workspace) | One project per pipeline in a uv workspace | Decision | Accepted |
 | [ADR-0015](#adr-0015-configuration-is-loaded-with-plain-pydantic-and-pyyaml) | Configuration is loaded with plain Pydantic and PyYAML | Decision | Accepted |
 | [ADR-0016](#adr-0016-dbt-project-layout-layers-and-naming) | dbt project layout, layers and naming | Decision | Accepted (mart names pluralized by ADR-0032; staging's job clarified by ADR-0033) |
-| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028) |
+| [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted (table list and lineage keys amended by ADR-0028; indicator columns trimmed by ADR-0037) |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Superseded by ADR-0022 |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
@@ -42,6 +42,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export) | Report tables are exported to CSV by `worldbank export` | Decision | Accepted |
 | [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
 | [ADR-0036](#adr-0036-an-html-report-rendered-from-the-reporting-tables) | An HTML report rendered from the reporting tables | Decision | Accepted |
+| [ADR-0037](#adr-0037-dim_indicators-keeps-only-columns-with-meaning) | dim_indicators keeps only columns with meaning | Decision | Accepted |
 
 ---
 
@@ -1136,3 +1137,25 @@ The CSV exports answer the brief's questions but are tables to open one by one. 
 ### Consequences
 - A reviewer opens one file in a browser and sees every answer.
 - The page shows what the reporting tables hold; changing a report means changing its dbt model, then re-rendering.
+
+---
+
+## ADR-0037: dim_indicators keeps only columns with meaning
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-MOD-2, NFR-1 · **Amends:** ADR-0017
+
+### Context
+A review of the marts found four indicator columns that misled more than they informed. `unit` is empty for every configured indicator; the unit is part of the name, for example "GDP (current US$)". `display_decimals`, taken from the observations' `decimal` field, is 0 for GDP and life expectancy although their values have decimals, and nothing reads it. `source_id` and `source_name` are constant, because the pipeline pins source 2, World Development Indicators (ADR-0002). With them, "source" meant four different things in one table.
+
+### Decision
+- **Drop `unit`, `display_decimals`, `source_id` and `source_name` from intermediate upward,** along with the singular test that guarded `display_decimals`. Staging keeps them, since it mirrors the landed responses (ADR-0033), so each is one model change away if a use appears.
+- **The remaining `source_*` columns all describe where the data comes from:** `source_organization` (the producers the World Bank cites), `source_lastupdated` (the World Bank release of the current values, from the observation pages) and `source_response_id` (the landed metadata page the row comes from; values trace through the fact's own `source_response_id`).
+
+### Alternatives considered
+- **Keep the columns and document them:** honest, but an empty, constant or wrong column costs every reader a question.
+- **Rename `source_id` and `source_name` to `database_*`:** clearer, but still constant.
+
+### Consequences
+- `dim_indicators` holds an indicator's identity, description, release and aggregation method, and nothing else.
+- The API's other indicator fields stay in staging and the landing zone (NFR-1).
