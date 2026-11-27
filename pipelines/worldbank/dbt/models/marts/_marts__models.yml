@@ -10,7 +10,8 @@ models:
   - name: dim_country
     description: >
       Grain: one configured country, latest run. Key: `country_id`. `income_group_id` is the
-      current classification; yearly groups are in dim_country_income_group_by_year (ADR-0011).
+      current classification, so it's named `current_income_group_*`; the group that applied in
+      a given year is on fct_indicator_value (ADR-0011, ADR-0029).
     data_tests:
       - expression_is_true:
           arguments:
@@ -19,8 +20,13 @@ models:
       - name: country_id
         description: The country's ISO 3166-1 alpha-3 code, e.g. `BRA`.
         data_tests: [unique, not_null]
-      - name: income_group_id
-        data_tests: [not_null]
+      - name: current_income_group_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_income_group')
+                field: income_group_id
 
   - name: dim_indicator
     description: >
@@ -37,28 +43,24 @@ models:
       - name: aggregation_method
         data_tests: [not_null]
 
-  - name: dim_country_income_group_by_year
+  - name: dim_income_group
     description: >
-      Grain: one country and reporting year. Key: (`country_id`, `observation_year`).
-      Relationships: `country_id` → dim_country. Facts join it on country and year, never on a
-      country attribute, so the yearly basis can change without changing reports (ADR-0011).
-    data_tests:
-      - unique_combination:
-          arguments:
-            columns: [country_id, observation_year]
+      Grain: one income group. Key: `income_group_id`. `sort_order` lists groups from low to
+      high income; `classification_basis` and `classified_as_of` say how today's classification
+      was made: the current one, applied to every year (ADR-0011, ADR-0029).
     columns:
-      - name: country_id
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_country')
-                field: country_id
+      - name: income_group_id
+        data_tests: [unique, not_null]
+      - name: sort_order
+        description: Low to high income (1 = low income). Never null, so reports always sort.
+        data_tests: [unique, not_null]
 
   - name: fct_indicator_value
     description: >
       Grain: one expected country × indicator × year of the latest run (current state). Key:
       (`country_id`, `indicator_id`, `observation_year`). Relationships: → dim_country,
-      dim_indicator, dim_country_income_group_by_year (on country and year). `value_status` is
+      dim_indicator, dim_income_group (`income_group_id`: the group that applied that year,
+      ADR-0029). `value_status` is
       present, null_value or missing_row; the value is null unless present, and missing rows
       have no source response (ADR-0008, NFR-3).
     data_tests:
@@ -78,6 +80,13 @@ models:
               arguments:
                 to: ref('dim_indicator')
                 field: indicator_id
+      - name: income_group_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_income_group')
+                field: income_group_id
       - name: value_status
         data_tests:
           - accepted_values:

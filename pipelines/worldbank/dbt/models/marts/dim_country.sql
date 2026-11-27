@@ -1,5 +1,5 @@
--- One row per configured country, from the latest run. `income_group_id` is the current
--- classification; the yearly view is dim_country_income_group_by_year (ADR-0011).
+-- One row per configured country, from the latest run. Its current income group is named as such;
+-- the group that applied in a given year is on fct_indicator_value (ADR-0011, ADR-0029).
 WITH
 
 countries AS (
@@ -13,8 +13,8 @@ final AS (
         country_name,
         region_id,
         region_name,
-        income_group_id,
-        income_group_name,
+        income_group_id AS current_income_group_id,
+        income_group_name AS current_income_group_name,
         source_response_id
     FROM countries
 )

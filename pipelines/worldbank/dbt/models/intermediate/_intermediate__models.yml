@@ -120,3 +120,24 @@ models:
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]
+
+  - name: int_income_groups_joined_to_order
+    description: >
+      Each income group of the latest run's countries, with its low-to-high sort order (seed
+      income_group_order) and how today's classification was made (ADR-0011, ADR-0029).
+    columns:
+      - name: income_group_id
+        data_tests: [unique, not_null]
+      - name: sort_order
+        description: A group missing from the seed fails the build, so a new group isn't unsorted.
+        data_tests: [not_null]
+
+  - name: int_indicator_values_joined_to_income_groups
+    description: The latest run's cells with the income group that applied that year (ADR-0029).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_id, indicator_id, observation_year]
+    columns:
+      - name: income_group_id
+        data_tests: [not_null]
