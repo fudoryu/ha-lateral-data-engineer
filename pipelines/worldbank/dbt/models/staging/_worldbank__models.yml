@@ -17,11 +17,11 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [run_id, country_iso3, indicator_id, observation_year]
+            columns: [run_id, country_id, indicator_id, observation_year]
     columns:
       - name: run_id
         data_tests: [not_null]
-      - name: country_iso3
+      - name: country_id
         data_tests: [not_null]
       - name: indicator_id
         data_tests: [not_null]
@@ -33,11 +33,11 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [run_id, country_iso3, indicator_id, observation_year]
+            columns: [run_id, country_id, indicator_id, observation_year]
     columns:
       - name: run_id
         data_tests: [not_null]
-      - name: country_iso3
+      - name: country_id
         data_tests: [not_null]
       - name: indicator_id
         data_tests: [not_null]
@@ -58,11 +58,11 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [run_id, country_iso3]
+            columns: [run_id, country_id]
     columns:
-      - name: country_iso3
+      - name: country_id
         data_tests: [not_null]
-      - name: income_level_id
+      - name: income_group_id
         description: The current income classification at fetch time (source-system §8).
         data_tests: [not_null]
 

@@ -2,7 +2,7 @@
 -- value, and only missing rows lack a source response.
 SELECT
     run_id,
-    country_iso3,
+    country_id,
     indicator_id,
     observation_year,
     value_status,

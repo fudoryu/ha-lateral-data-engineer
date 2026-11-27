@@ -14,7 +14,7 @@ observations AS (
 final AS (
     SELECT
         expected.run_id,
-        expected.country_iso3,
+        expected.country_id,
         expected.indicator_id,
         expected.observation_year,
         observations.indicator_value,
@@ -32,7 +32,7 @@ final AS (
     LEFT JOIN observations
         ON
             expected.run_id = observations.run_id
-            AND expected.country_iso3 = observations.country_iso3
+            AND expected.country_id = observations.country_id
             AND expected.indicator_id = observations.indicator_id
             AND expected.observation_year = observations.observation_year
 )

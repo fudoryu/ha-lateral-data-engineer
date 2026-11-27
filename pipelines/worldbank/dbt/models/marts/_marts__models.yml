@@ -9,12 +9,17 @@ version: 2
 models:
   - name: dim_country
     description: >
-      Grain: one configured country, latest run. Key: `country_iso3`. `income_level_id` is the
+      Grain: one configured country, latest run. Key: `country_id`. `income_group_id` is the
       current classification; yearly groups are in dim_country_income_group_by_year (ADR-0011).
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "length(country_id) = 3 AND country_id = upper(country_id)"
     columns:
-      - name: country_iso3
+      - name: country_id
+        description: The country's ISO 3166-1 alpha-3 code, e.g. `BRA`.
         data_tests: [unique, not_null]
-      - name: income_level_id
+      - name: income_group_id
         data_tests: [not_null]
 
   - name: dim_indicator
@@ -34,39 +39,39 @@ models:
 
   - name: dim_country_income_group_by_year
     description: >
-      Grain: one country and reporting year. Key: (`country_iso3`, `observation_year`).
-      Relationships: `country_iso3` → dim_country. Facts join it on country and year, never on a
+      Grain: one country and reporting year. Key: (`country_id`, `observation_year`).
+      Relationships: `country_id` → dim_country. Facts join it on country and year, never on a
       country attribute, so the yearly basis can change without changing reports (ADR-0011).
     data_tests:
       - unique_combination:
           arguments:
-            columns: [country_iso3, observation_year]
+            columns: [country_id, observation_year]
     columns:
-      - name: country_iso3
+      - name: country_id
         data_tests:
           - relationships:
               arguments:
                 to: ref('dim_country')
-                field: country_iso3
+                field: country_id
 
   - name: fct_indicator_value
     description: >
       Grain: one expected country × indicator × year of the latest run (current state). Key:
-      (`country_iso3`, `indicator_id`, `observation_year`). Relationships: → dim_country,
+      (`country_id`, `indicator_id`, `observation_year`). Relationships: → dim_country,
       dim_indicator, dim_country_income_group_by_year (on country and year). `value_status` is
       present, null_value or missing_row; the value is null unless present, and missing rows
       have no source response (ADR-0008, NFR-3).
     data_tests:
       - unique_combination:
           arguments:
-            columns: [country_iso3, indicator_id, observation_year]
+            columns: [country_id, indicator_id, observation_year]
     columns:
-      - name: country_iso3
+      - name: country_id
         data_tests:
           - relationships:
               arguments:
                 to: ref('dim_country')
-                field: country_iso3
+                field: country_id
       - name: indicator_id
         data_tests:
           - relationships:

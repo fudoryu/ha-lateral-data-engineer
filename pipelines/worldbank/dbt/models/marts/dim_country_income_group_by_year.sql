@@ -8,10 +8,10 @@ income_groups AS (
 
 final AS (
     SELECT
-        country_iso3,
+        country_id,
         observation_year,
-        income_level_id,
-        income_level_name,
+        income_group_id,
+        income_group_name,
         classification_basis,
         classified_as_of,
         source_response_id

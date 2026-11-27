@@ -13,13 +13,13 @@ latest_run AS (
 
 final AS (
     SELECT
-        countries.country_iso3,
+        countries.country_id,
         countries.country_iso2,
         countries.country_name,
         countries.region_id,
         countries.region_name,
-        countries.income_level_id,
-        countries.income_level_name,
+        countries.income_group_id,
+        countries.income_group_name,
         countries.run_id,
         countries.source_response_id
     FROM countries

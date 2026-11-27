@@ -12,18 +12,18 @@ current_cells AS (
 )
 
 SELECT
-    coalesce(current_cells.country_iso3, current_versions.country_iso3) AS country_iso3,
+    coalesce(current_cells.country_id, current_versions.country_id) AS country_id,
     coalesce(current_cells.indicator_id, current_versions.indicator_id) AS indicator_id,
     coalesce(current_cells.observation_year, current_versions.observation_year)
         AS observation_year
 FROM current_cells
 FULL OUTER JOIN current_versions
     ON
-        current_cells.country_iso3 = current_versions.country_iso3
+        current_cells.country_id = current_versions.country_id
         AND current_cells.indicator_id = current_versions.indicator_id
         AND current_cells.observation_year = current_versions.observation_year
 WHERE
-    current_cells.country_iso3 IS NULL
-    OR current_versions.country_iso3 IS NULL
+    current_cells.country_id IS NULL
+    OR current_versions.country_id IS NULL
     OR current_cells.indicator_value IS DISTINCT FROM current_versions.indicator_value
     OR current_cells.value_status IS DISTINCT FROM current_versions.value_status

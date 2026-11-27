@@ -9,7 +9,7 @@ cells AS (
 
 final AS (
     SELECT
-        country_iso3,
+        country_id,
         indicator_id,
         observation_year,
         indicator_value,

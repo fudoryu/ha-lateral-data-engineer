@@ -18,10 +18,10 @@ latest_run AS (
 
 final AS (
     SELECT
-        countries.country_iso3,
+        countries.country_id,
         years.observation_year,
-        countries.income_level_id,
-        countries.income_level_name,
+        countries.income_group_id,
+        countries.income_group_name,
         'current_applied_to_all_years' AS classification_basis,
         cast(latest_run.committed_at AS DATE) AS classified_as_of,
         countries.run_id,

@@ -16,10 +16,10 @@ unit_tests:
               "years": {"start": 2018, "end": 2019}}}
     expect:
       rows:
-        - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2018}
-        - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2019}
-        - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2018}
-        - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019}
+        - {run_id: run-1, country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2018}
+        - {run_id: run-1, country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2019}
+        - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2018}
+        - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019}
 
   - name: observations_keep_null_values_null_and_blank_units_null
     description: >
@@ -48,7 +48,7 @@ unit_tests:
             payload: '[{"page": 1, "pages": 1, "per_page": 50, "total": 0}, []]'
     expect:
       rows:
-        - country_iso3: BRA
+        - country_id: BRA
           indicator_id: SP.POP.TOTL
           observation_year: 2024
           indicator_value: null
@@ -56,7 +56,7 @@ unit_tests:
           obs_status: null
           source_response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
           source_lastupdated: 2026-11-11
-        - country_iso3: BRA
+        - country_id: BRA
           indicator_id: SP.POP.TOTL
           observation_year: 2023
           indicator_value: 211.5
@@ -81,12 +81,12 @@ unit_tests:
                 "incomeLevel": {"id": "UMC", "iso2code": "XT", "value": "Upper middle income "}}]]
     expect:
       rows:
-        - country_iso3: BRA
+        - country_id: BRA
           country_name: Brazil
           region_id: LCN
           region_name: Latin America & Caribbean
-          income_level_id: UMC
-          income_level_name: Upper middle income
+          income_group_id: UMC
+          income_group_name: Upper middle income
 
   - name: responses_take_lastupdated_from_the_page_metadata
     description: Observation pages carry the source's release date; metadata pages don't.

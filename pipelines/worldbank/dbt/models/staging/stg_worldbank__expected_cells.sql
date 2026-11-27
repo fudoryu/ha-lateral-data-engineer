@@ -9,7 +9,7 @@ landing_runs AS (
 countries AS (
     SELECT
         run_id,
-        unnest(from_json(config -> '$.scope.countries', '["varchar"]')) AS country_iso3
+        unnest(from_json(config -> '$.scope.countries', '["varchar"]')) AS country_id
     FROM landing_runs
 ),
 
@@ -35,7 +35,7 @@ years AS (
 final AS (
     SELECT
         countries.run_id,
-        countries.country_iso3,
+        countries.country_id,
         indicators.indicator_id,
         years.observation_year
     FROM countries

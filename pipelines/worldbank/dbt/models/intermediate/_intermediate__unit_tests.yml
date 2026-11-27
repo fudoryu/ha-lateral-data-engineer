@@ -51,15 +51,15 @@ unit_tests:
     given:
       - input: ref('stg_worldbank__countries')
         rows:
-          - {run_id: run-old, country_iso3: IND, country_name: India, income_level_id: LIC}
-          - {run_id: run-new, country_iso3: IND, country_name: India, income_level_id: LMC}
+          - {run_id: run-old, country_id: IND, country_name: India, income_group_id: LIC}
+          - {run_id: run-new, country_id: IND, country_name: India, income_group_id: LMC}
       - input: ref('int_runs_ranked')
         rows:
           - {run_id: run-old, is_latest: false}
           - {run_id: run-new, is_latest: true}
     expect:
       rows:
-        - {country_iso3: IND, income_level_id: LMC, run_id: run-new}
+        - {country_id: IND, income_group_id: LMC, run_id: run-new}
 
   - name: indicators_come_from_the_latest_run_only
     model: int_indicators_filtered_to_latest_run
@@ -84,19 +84,19 @@ unit_tests:
     given:
       - input: ref('stg_worldbank__expected_cells')
         rows:
-          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2022}
-          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2023}
-          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2024}
+          - {run_id: run-1, country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2022}
+          - {run_id: run-1, country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2023}
+          - {run_id: run-1, country_id: BRA, indicator_id: SP.POP.TOTL, observation_year: 2024}
       - input: ref('stg_worldbank__observations')
         rows:
           - run_id: run-1
-            country_iso3: BRA
+            country_id: BRA
             indicator_id: SP.POP.TOTL
             observation_year: 2022
             indicator_value: 211.5
             source_response_id: page-1
           - run_id: run-1
-            country_iso3: BRA
+            country_id: BRA
             indicator_id: SP.POP.TOTL
             observation_year: 2023
             indicator_value: null
@@ -122,9 +122,9 @@ unit_tests:
     given:
       - input: ref('int_indicator_values_joined_to_expected')
         rows:
-          - {run_id: run-old, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
+          - {run_id: run-old, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
              indicator_value: 1383.1, value_status: present}
-          - {run_id: run-new, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
+          - {run_id: run-new, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
              indicator_value: 1405.7, value_status: present}
       - input: ref('int_runs_ranked')
         rows:
@@ -132,16 +132,16 @@ unit_tests:
           - {run_id: run-new, is_latest: true}
     expect:
       rows:
-        - {country_iso3: IND, observation_year: 2019, indicator_value: 1405.7, run_id: run-new}
+        - {country_id: IND, observation_year: 2019, indicator_value: 1405.7, run_id: run-new}
 
   - name: an_unchanged_value_is_one_current_version
     model: int_indicator_values_versioned
     given:
       - input: ref('int_indicator_values_joined_to_expected')
         rows:
-          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
-          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
-          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-2, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
       - input: ref('int_runs_ranked')
         rows:
           - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
@@ -157,9 +157,9 @@ unit_tests:
     given:
       - input: ref('int_indicator_values_joined_to_expected')
         rows:
-          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1383.1, value_status: present}
-          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
-          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1383.1, value_status: present}
+          - {run_id: run-2, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
       - input: ref('int_runs_ranked')
         rows:
           - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
@@ -176,9 +176,9 @@ unit_tests:
     given:
       - input: ref('int_indicator_values_joined_to_expected')
         rows:
-          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: null_value}
-          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
-          - {run_id: run-3, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: missing_row}
+          - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: null_value}
+          - {run_id: run-2, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-3, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: null, value_status: missing_row}
       - input: ref('int_runs_ranked')
         rows:
           - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
@@ -195,8 +195,8 @@ unit_tests:
     given:
       - input: ref('int_indicator_values_joined_to_expected')
         rows:
-          - {run_id: run-1, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
-          - {run_id: run-2, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-1, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
+          - {run_id: run-2, country_id: IND, indicator_id: SP.POP.TOTL, observation_year: 2019, indicator_value: 1405.7, value_status: present}
       - input: ref('int_runs_ranked')
         rows:
           - {run_id: run-1, committed_at: 2026-11-01 00:00:00, is_latest: false}
@@ -235,7 +235,7 @@ unit_tests:
     given:
       - input: ref('int_countries_filtered_to_latest_run')
         rows:
-          - {country_iso3: IND, income_level_id: LMC}
+          - {country_id: IND, income_group_id: LMC}
       - input: ref('int_indicator_values_filtered_to_latest_run')
         rows:
           - {observation_year: 2018}
@@ -247,9 +247,9 @@ unit_tests:
           - {committed_at: 2026-11-24 10:00:00, is_latest: false}
     expect:
       rows:
-        - {country_iso3: IND, observation_year: 2018, income_level_id: LMC,
+        - {country_id: IND, observation_year: 2018, income_group_id: LMC,
            classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
-        - {country_iso3: IND, observation_year: 2019, income_level_id: LMC,
+        - {country_id: IND, observation_year: 2019, income_group_id: LMC,
            classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
 
   - name: indicators_get_the_release_of_their_latest_observations

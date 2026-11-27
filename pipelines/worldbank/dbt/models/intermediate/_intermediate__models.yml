@@ -31,9 +31,9 @@ models:
   - name: int_countries_filtered_to_latest_run
     description: The latest run's countries, with each one's current income group (ADR-0011).
     columns:
-      - name: country_iso3
+      - name: country_id
         data_tests: [unique, not_null]
-      - name: income_level_id
+      - name: income_group_id
         data_tests: [not_null]
       - name: source_response_id
         data_tests: [not_null]
@@ -53,7 +53,7 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [run_id, country_iso3, indicator_id, observation_year]
+            columns: [run_id, country_id, indicator_id, observation_year]
     columns:
       - name: value_status
         data_tests:
@@ -67,7 +67,7 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [country_iso3, indicator_id, observation_year]
+            columns: [country_id, indicator_id, observation_year]
     columns:
       - name: run_id
         data_tests: [not_null]
@@ -80,7 +80,7 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [country_iso3, indicator_id, observation_year, valid_from_run_id]
+            columns: [country_id, indicator_id, observation_year, valid_from_run_id]
     columns:
       - name: is_current
         data_tests: [not_null]
@@ -103,9 +103,9 @@ models:
     data_tests:
       - unique_combination:
           arguments:
-            columns: [country_iso3, observation_year]
+            columns: [country_id, observation_year]
     columns:
-      - name: income_level_id
+      - name: income_group_id
         data_tests: [not_null]
       - name: classification_basis
         data_tests:

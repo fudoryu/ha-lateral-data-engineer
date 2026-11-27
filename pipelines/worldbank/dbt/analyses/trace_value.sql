@@ -13,7 +13,7 @@ WITH
 history AS (
     SELECT * FROM {{ ref('int_indicator_values_versioned') }}
     WHERE
-        country_iso3 = '{{ var("country", "BRA") }}'
+        country_id = '{{ var("country", "BRA") }}'
         AND indicator_id = '{{ var("indicator", "NY.GDP.MKTP.CD") }}'
         AND observation_year = {{ var("year", 2023) }}
 ),
@@ -27,7 +27,7 @@ runs AS (
 )
 
 SELECT
-    history.country_iso3,
+    history.country_id,
     history.indicator_id,
     history.observation_year,
     history.is_current,

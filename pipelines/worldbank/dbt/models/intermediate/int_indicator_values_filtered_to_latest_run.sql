@@ -13,7 +13,7 @@ latest_run AS (
 
 final AS (
     SELECT
-        cells.country_iso3,
+        cells.country_id,
         cells.indicator_id,
         cells.observation_year,
         cells.indicator_value,

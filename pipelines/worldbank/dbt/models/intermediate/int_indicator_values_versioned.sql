@@ -15,7 +15,7 @@ runs AS (
 
 in_run_order AS (
     SELECT
-        cells.country_iso3,
+        cells.country_id,
         cells.indicator_id,
         cells.observation_year,
         cells.run_id,
@@ -24,15 +24,15 @@ in_run_order AS (
         cells.source_response_id,
         runs.committed_at,
         lag(cells.indicator_value) OVER (
-            PARTITION BY cells.country_iso3, cells.indicator_id, cells.observation_year
+            PARTITION BY cells.country_id, cells.indicator_id, cells.observation_year
             ORDER BY runs.committed_at, cells.run_id
         ) AS previous_value,
         lag(cells.value_status) OVER (
-            PARTITION BY cells.country_iso3, cells.indicator_id, cells.observation_year
+            PARTITION BY cells.country_id, cells.indicator_id, cells.observation_year
             ORDER BY runs.committed_at, cells.run_id
         ) AS previous_status,
         max(CASE WHEN runs.is_latest THEN 1 ELSE 0 END) OVER (
-            PARTITION BY cells.country_iso3, cells.indicator_id, cells.observation_year
+            PARTITION BY cells.country_id, cells.indicator_id, cells.observation_year
         ) = 1 AS is_in_latest_run
     FROM cells
     INNER JOIN runs ON cells.run_id = runs.run_id
@@ -49,14 +49,14 @@ version_starts AS (
 
 versions AS (
     SELECT
-        country_iso3,
+        country_id,
         indicator_id,
         observation_year,
         run_id AS valid_from_run_id,
         indicator_value,
         value_status,
         lead(run_id) OVER (
-            PARTITION BY country_iso3, indicator_id, observation_year
+            PARTITION BY country_id, indicator_id, observation_year
             ORDER BY committed_at, run_id
         ) AS valid_to_run_id,
         is_in_latest_run,
@@ -66,7 +66,7 @@ versions AS (
 
 final AS (
     SELECT
-        country_iso3,
+        country_id,
         indicator_id,
         observation_year,
         valid_from_run_id,

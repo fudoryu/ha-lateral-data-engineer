@@ -20,13 +20,13 @@ flattened AS (
 final AS (
     SELECT
         run_id,
-        item ->> 'id' AS country_iso3,
+        item ->> 'id' AS country_id,
         item ->> 'iso2Code' AS country_iso2,
         trim(item ->> 'name') AS country_name,
         item -> 'region' ->> 'id' AS region_id,
         trim(item -> 'region' ->> 'value') AS region_name,
-        item -> 'incomeLevel' ->> 'id' AS income_level_id,
-        trim(item -> 'incomeLevel' ->> 'value') AS income_level_name,
+        item -> 'incomeLevel' ->> 'id' AS income_group_id,
+        trim(item -> 'incomeLevel' ->> 'value') AS income_group_name,
         response_id AS source_response_id,
         url AS source_url,
         fetched_at

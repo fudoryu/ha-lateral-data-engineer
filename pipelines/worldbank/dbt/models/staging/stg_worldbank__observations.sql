@@ -21,7 +21,7 @@ flattened AS (
 final AS (
     SELECT
         run_id,
-        item ->> 'countryiso3code' AS country_iso3,
+        item ->> 'countryiso3code' AS country_id,
         item -> 'indicator' ->> 'id' AS indicator_id,
         (item ->> 'date')::INTEGER AS observation_year,
         (item ->> 'value')::DOUBLE AS indicator_value,
