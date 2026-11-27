@@ -6,7 +6,7 @@ api:
   per_page: 1000
   timeout:
     connect_seconds: 10
-    read_seconds: 30
+    read_seconds: 60             # wide scopes: some responses take 25–32 s (measured 2026-11-27)
   retry:
     attempts: 5                # total attempts per request, including the first (ADR-0007)
     initial_backoff_seconds: 1
