@@ -30,6 +30,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted (amended by ADR-0023) |
 | [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
 | [ADR-0024](#adr-0024-structured-logging-with-the-standard-library) | Structured logging with the standard library | Decision | Accepted |
+| [ADR-0025](#adr-0025-sql-style-and-linting-with-sqlfluff) | SQL style and linting with SQLFluff | Decision | Accepted |
 
 ---
 
@@ -823,3 +824,30 @@ The pipeline retries requests, refetches torn pages, skips incomplete runs, warn
 - A run's log tells its story: what was requested, how long each request took, what was retried and why, what was committed, loaded and published.
 - In production the JSON format goes straight to a log platform (CloudWatch, Datadog) with fields ready to filter on; the README's production note says so.
 - Tests assert on important log events (retries, skipped runs, failures), so they're part of the behavior, not decoration.
+
+---
+
+## ADR-0025: SQL style and linting with SQLFluff
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-6, FR-MOD-3 · **Amends:** ADR-0013 (the definition of done) · **Builds on:** ADR-0016
+
+### Context
+SQL is now half the code: dbt models, macros and tests, and the warehouse's `schema.sql` and `load.sql`. Python has ruff in the definition of done (ADR-0013); SQL had no linter, so style drifted (mixed conventions, keywords used as names) and nothing would catch it in review.
+
+### Decision
+- **SQLFluff lints every `.sql` file in the repository,** as part of `just check` and as a pre-commit hook. Configuration lives in the root `pyproject.toml`, next to ruff and mypy; `.sqlfluffignore` excludes dbt's generated folders.
+- **Dialect `duckdb`; Jinja templater with dbt's built-ins mocked** (`ref`, `source`, `config`, …) and our macros loaded, so dbt models lint offline in milliseconds, without compiling against a database.
+- **Style:** keywords, types and keyword literals (`NULL`, `TRUE`) in **upper case**; identifiers and function names in lower case; explicit `AS` for aliases; trailing commas; lines up to 100 characters; no keywords as names.
+- **One rule is off:** ST06 (simple columns before computed ones), because models order columns as grain, then attributes, then lineage, on purpose.
+- **SQL embedded in Python strings** follows the same style by hand; SQLFluff only sees `.sql` files, so SQL belongs in `.sql` files wherever it can.
+
+### Alternatives considered
+- **The dbt templater (`sqlfluff-templater-dbt`):** renders models exactly as dbt would, but compiles the project against a database on every lint, which is slower and needs a warehouse file.
+- **sqlfmt:** an opinionated formatter with no configuration, but formats only (no lint rules), and its lower-case keywords conflict with the chosen style.
+- **No SQL linting:** style by review only, which is what drifted.
+
+### Consequences
+- `just check` and the commit hook fail on SQL style violations, as they do for Python.
+- `sqlfluff fix` applies most fixes automatically.
+- Macro bodies render to nothing when linted, so their SQL is kept in style by hand.
