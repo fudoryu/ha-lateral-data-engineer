@@ -206,30 +206,6 @@ unit_tests:
       rows:
         - {valid_from_run_id: run-1, valid_to_run_id: null, indicator_value: 1405.7, is_current: false}
 
-  - name: indicators_get_their_aggregation_method
-    model: int_indicators_joined_to_aggregations
-    given:
-      - input: ref('int_indicators_joined_to_latest_observations')
-        rows:
-          - {indicator_id: NY.GDP.PCAP.CD}
-          - {indicator_id: NEW.INDICATOR}
-      - input: ref('indicator_aggregations')
-        rows:
-          - indicator_id: NY.GDP.PCAP.CD
-            aggregation_method: ratio
-            numerator_indicator_id: NY.GDP.MKTP.CD
-            denominator_indicator_id: SP.POP.TOTL
-    expect:
-      rows:
-        - indicator_id: NY.GDP.PCAP.CD
-          aggregation_method: ratio
-          numerator_indicator_id: NY.GDP.MKTP.CD
-          denominator_indicator_id: SP.POP.TOTL
-        - indicator_id: NEW.INDICATOR
-          aggregation_method: null
-          numerator_indicator_id: null
-          denominator_indicator_id: null
-
   - name: indicators_get_the_release_of_their_latest_observations
     description: >
       The release date comes from the latest run's observation pages only, not from metadata

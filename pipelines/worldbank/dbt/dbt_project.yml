@@ -30,9 +30,9 @@ models:
       +materialized: table
 
 vars:
-  # Largest relative difference allowed between a ratio indicator and the ratio of its parts
-  # (GDP per capita vs GDP / population): 0.1% (ADR-0010).
-  ratio_consistency_tolerance: 0.001
+  # Largest relative difference allowed between GDP per capita and GDP / population: 0.1%
+  # (ADR-0010).
+  gdp_consistency_tolerance: 0.001
 
 seeds:
   worldbank:

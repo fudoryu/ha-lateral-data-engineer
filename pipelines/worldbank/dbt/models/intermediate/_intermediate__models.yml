@@ -85,17 +85,6 @@ models:
       - name: is_current
         data_tests: [not_null]
 
-  - name: int_indicators_joined_to_aggregations
-    description: >
-      The latest run's indicators with their income-group aggregation method and the indicators
-      it combines (ADR-0009). A configured indicator without a method fails the build (NFR-4).
-    columns:
-      - name: indicator_id
-        data_tests: [unique, not_null]
-      - name: aggregation_method
-        description: sum, ratio or weighted_mean; never null, so no indicator is left unaggregated.
-        data_tests: [not_null]
-
   - name: int_indicators_joined_to_latest_observations
     description: >
       The latest run's indicators with the World Bank release their current values come from

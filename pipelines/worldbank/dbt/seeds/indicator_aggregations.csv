@@ -1,5 +1,0 @@
-indicator_id,aggregation_method,numerator_indicator_id,denominator_indicator_id,weight_indicator_id
-SP.POP.TOTL,sum,,,
-NY.GDP.MKTP.CD,sum,,,
-NY.GDP.PCAP.CD,ratio,NY.GDP.MKTP.CD,SP.POP.TOTL,
-SP.DYN.LE00.IN,weighted_mean,,,SP.POP.TOTL

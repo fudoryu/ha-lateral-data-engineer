@@ -29,8 +29,7 @@ models:
   - name: dim_indicators
     description: >
       Grain: one configured indicator, latest run. Key: `indicator_id`. Includes the World Bank
-      release its current values come from (`source_lastupdated`) and how it aggregates across an
-      income group: `aggregation_method` and the indicators it combines (ADR-0009).
+      release its current values come from (`source_lastupdated`).
     columns:
       - name: indicator_id
         data_tests: [unique, not_null]
@@ -45,29 +44,6 @@ models:
           Technical lineage (ADR-0028): the landed metadata page this row comes from. Values, and
           the pages their release date is read from, trace through the fact's own
           `source_response_id`.
-      - name: numerator_indicator_id
-        description: For `ratio`, the indicator summed on top; must be a configured indicator.
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_indicators')
-                field: indicator_id
-      - name: denominator_indicator_id
-        description: For `ratio`, the indicator summed below; must be a configured indicator.
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_indicators')
-                field: indicator_id
-      - name: weight_indicator_id
-        description: For `weighted_mean`, the indicator that weights each country; must be a configured indicator.
-        data_tests:
-          - relationships:
-              arguments:
-                to: ref('dim_indicators')
-                field: indicator_id
-      - name: aggregation_method
-        data_tests: [not_null]
 
   - name: fct_country_indicator_values
     description: >

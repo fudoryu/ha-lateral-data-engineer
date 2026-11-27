@@ -46,7 +46,7 @@ The warehouse is `data/warehouse/worldbank.duckdb` and opens in any DuckDB clien
 | What is the year-over-year change, handling missing or zero prior values? | `rpt_year_over_year`: absolute and percent change, or null with a `null_change_reason` | country × indicator × year |
 | How do the countries compare for the latest available year? | `rpt_latest_year_by_country`: each country at its own latest year, shown and ranked | country × indicator |
 | | `rpt_latest_common_year`: every country at the latest year they all share | country × indicator |
-| How do the indicators compare across income groups, by year? | `rpt_income_group_by_year`: aggregated by each indicator's method, with coverage counts | income group × indicator × year |
+| How do the indicators compare across income groups, by year? | `rpt_income_group_by_year`: the average of each group's countries, with coverage counts | income group × indicator × year |
 
 With today's data every series in scope is complete, so `null_value`, `missing_row` and most null-change reasons appear only in the tests that prove them. To see how the pipeline behaves with real gaps, I also ran it on a wider, random scope (see [Beyond the brief](#beyond-the-brief)).
 
@@ -74,7 +74,7 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 |---|---|---|
 | landing zone and `raw` | API responses exactly as received, every run | bronze |
 | `staging` | per source entity: flattened, renamed, typed and cleaned | silver |
-| `intermediate` | the logic: latest run, cell status, value history, aggregation methods | silver |
+| `intermediate` | the logic: latest run, cell status, value history | silver |
 | `marts` | the star schema analysts query | gold |
 | `reporting` | the answers | gold |
 
@@ -83,32 +83,34 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 The marts are a current-state star schema: one fact and two dimensions, at natural keys, holding the latest run only (ADR-0017, ADR-0028 to ADR-0032).
 
 ```
-dim_countries ──────────── fct_country_indicator_values ──────────── dim_indicators
-  country_id (PK)            country_id (FK)                          indicator_id (PK)
-  country_iso2, name         indicator_id (FK)                        name, definition
-  region_id, region_name     observation_year                         source_organization
-  income_group_id, _name     indicator_value                          source_lastupdated ("data as of")
-  income_group_sort_order    value_status                             aggregation_method and its
-                             obs_status                               numerator, denominator and
-                             source_response_id (lineage)             weight indicators (FK → itself)
+dim_countries ───────────── fct_country_indicator_values ───────────── dim_indicators
+  country_id (PK)             country_id (FK)                            indicator_id (PK)
+  country_iso2                indicator_id (FK)                          indicator_name
+  country_name                observation_year                           definition
+  region_id                   indicator_value                            source_organization
+  region_name                 value_status                               source_lastupdated
+  income_group_id             obs_status                                 source_response_id
+  income_group_name           source_response_id
+  income_group_sort_order
+  source_response_id
 ```
 
 | Table | Grain | Key | Relationships |
 |---|---|---|---|
 | `fct_country_indicator_values` | one expected country × indicator × year | (`country_id`, `indicator_id`, `observation_year`) | → `dim_countries`, `dim_indicators` |
 | `dim_countries` | one configured country | `country_id` (ISO 3166-1 alpha-3) | n/a |
-| `dim_indicators` | one configured indicator | `indicator_id` | aggregation inputs → `dim_indicators` |
+| `dim_indicators` | one configured indicator | `indicator_id` | n/a |
 
 - **Every expected cell is a row,** including those the API didn't return. `value_status` records `present`, `null_value` or `missing_row`, and `indicator_value` is null unless the value is present. Missing is never zero (NFR-3, ADR-0008).
-- **I chose one long fact table,** so a new indicator adds rows, not columns. The value is additive for population and GDP but not for GDP per capita or life expectancy, so `dim_indicators.aggregation_method` states how each one combines.
-- **Lineage is a platform concern, not an analyst one.** Each row carries a single technical column, `source_response_id`, which names the landed page the value came from and is also its file path. Runs, pages and the history of revised values stay in intermediate for engineers, and [`trace_value.sql`](pipelines/worldbank/dbt/analyses/trace_value.sql) traces any value back to its source (NFR-1).
+- **I chose one long fact table,** so a new indicator adds rows, not columns, and every report works on any indicator without per-indicator setup.
+- **Lineage is a platform concern, not an analyst one.** Each row carries a single technical column, `source_response_id`, which names the landed page the row came from and is also its file path. Runs, pages and the history of revised values stay in intermediate for engineers, and [`trace_value.sql`](pipelines/worldbank/dbt/analyses/trace_value.sql) traces any value back to its source (NFR-1).
 - Every model's grain, key and relationships are also documented in its dbt YAML and enforced by tests.
 
 ## Data quality and testing
 
 - **At extract:** response contracts (a value is a number or null, never coerced), row totals across pages, page consistency (a request is refetched once if the source changed mid-request), and scope checks (only the requested countries, years and indicator, with no duplicates). Unknown API fields are recorded as warnings in the manifest.
-- **On every build, before publish:** keys and relationships; agreement between status, value and lineage; the fact covering exactly the expected set; current values coming from the latest run; **GDP per capita within 0.1% of GDP ÷ population** (FR-DQ-2, ADR-0010, applied to every ratio indicator); and an aggregation method for every indicator.
-- **dbt unit tests** for every model with logic, including the cases live data doesn't show: null values, missing rows, revisions, every year-over-year reason and all aggregation methods.
+- **On every build, before publish:** keys and relationships; agreement between status, value and lineage; the fact covering exactly the expected set; current values coming from the latest run; and **GDP per capita within 0.1% of GDP ÷ population** (FR-DQ-2, ADR-0010).
+- **dbt unit tests** for every model with logic, including the cases live data doesn't show: null values, missing rows, revisions, every year-over-year reason and income groups with partial or no data.
 - **`just check`** runs ruff, SQLFluff, mypy and pytest with a 95% line-and-branch coverage gate, all offline. The tests replay recorded API responses and crafted scenarios (errors returned with HTTP 200, torn pages, retries, revisions), and end-to-end tests run the whole chain, `dbt build` included, to prove idempotency and configuration-only scope changes.
 - **CI** (GitHub Actions) runs every pre-commit hook on every file, including a secret scan, checks each pushed commit's message against Conventional Commits, and runs `just check`.
 
@@ -119,7 +121,7 @@ The brief leaves several questions open. I resolved them as follows ([requiremen
 - **Missing and incomplete** (Q1, ADR-0008): I measure against the configured scope. A cell is `null_value` (a row with a null) or `missing_row` (no row); a series is `incomplete` when some years are present and `missing` when none are.
 - **Latest available year** (Q2, ADR-0009): each country at its own latest year with a value, with the year shown, plus a separate like-for-like table at the latest year all countries share.
 - **Income groups are the World Bank's current classification, applied to every year** (Q3, ADR-0011, ADR-0030). The API publishes only today's classification, and the brief allows no other source. If a country changed group during 2018–2024, its earlier years are grouped with hindsight; whether any of the nine did can't be verified through the API. Note that the lower-middle-income group contains India alone.
-- **Income-group aggregation** (Q4, ADR-0009): population and GDP are summed; GDP per capita is Σ GDP ÷ Σ population rather than an average of ratios; life expectancy is weighted by population. Only countries with the data their method needs contribute, and the coverage counts say how many did.
+- **Income-group aggregation** (Q4, ADR-0038): each group's value is the average of its countries that have a value, the same rule for every indicator. It describes the typical country in the group, not the group's total, so it's an average population rather than a total, and an average of GDP per capita rather than Σ GDP ÷ Σ population. The coverage counts say how many countries contributed.
 - **The 2018 year-over-year change** (Q5, ADR-0009) is null with the reason `prior_out_of_scope`, because 2017 isn't fetched.
 - **Consistency tolerance** (Q6, ADR-0010): 0.1%. The largest difference I measured on live data was below 0.000001%.
 - **Revised values** (Q7, ADR-0006): the World Bank revises past values silently, so every run fetches the full scope and the latest committed run wins. Earlier values remain in the landing zone and the value history.
@@ -149,8 +151,7 @@ The decisions I consider most important, each recorded with its alternatives:
 This takes configuration only (NFR-4):
 
 1. Add the code to `scope.countries` or `scope.indicators` in [`pipelines/worldbank/config.yml`](pipelines/worldbank/config.yml). Codes are validated against the API before anything is fetched.
-2. **For an indicator,** add a row to [`seeds/indicator_aggregations.csv`](pipelines/worldbank/dbt/seeds/indicator_aggregations.csv) stating how it aggregates by income group: `sum`, `ratio` with its numerator and denominator, or `weighted_mean` with its weight. The build fails if the row is missing, and a `ratio` indicator is automatically checked against its parts.
-3. Run `just run`. The expected set, every model and every report extend on their own, and an end-to-end test proves it.
+2. Run `just run`. The expected set, every model and every report extend on their own, and an end-to-end test proves it.
 
 To try a different scope once without editing the file, pass it on the command line: `just run --countries BRA,IND,ZAF --years 2020:2024`.
 
@@ -204,7 +205,6 @@ To see how the pipeline handles real gaps, I ran it on a random scope of 50 econ
 
 The wider run also showed where my design is strict at scale:
 
-- **A new indicator without an aggregation method blocks publishing.** That's deliberate (NFR-4), but with many indicators a `not_aggregated` method would let the income-group report say so instead of failing the build.
 - **A latest common year is rare across many countries** (3 of 50 indicators had one). A rule such as "the latest year with at least 90% coverage" would serve wide scopes better.
 - **All-or-nothing extraction is costly at scale.** Stopping an all-indicator run discarded 712 fetched indicators, and a single stale code fails a run. In production I would checkpoint per indicator or resume interrupted runs, keeping the manifest as the commit.
 - **An interactive dashboard** would be the next step beyond the HTML report (the brief's optional extra).

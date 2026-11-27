@@ -143,28 +143,21 @@ unit_tests:
         - {country_id: IND, common_year: null, indicator_value: null, rank_in_indicator: null}
         - {country_id: ZAF, common_year: null, indicator_value: null, rank_in_indicator: null}
 
-  - name: income_groups_aggregate_by_each_indicators_method
+  - name: income_groups_average_the_countries_with_a_value
     description: >
-      Two high-income countries: population and GDP are summed; GDP per capita is total GDP over
-      total population (6000 / 300 = 20, not the average of 10 and 40 = 25); life expectancy is
-      weighted by population ((80 * 200 + 70 * 100) / 300). A country missing its weight drops
-      out of the weighted mean and the coverage shows it.
+      Two of three high-income countries have a value: the average is theirs, (200 + 100) / 2,
+      not a sum and not divided by three, and the coverage says 2 of 3. A null value and a
+      missing row both count as no value.
     model: rpt_income_group_by_year
     given:
       - input: ref('fct_country_indicator_values')
         rows:
           - {country_id: USA, indicator_id: POP, observation_year: 2024, indicator_value: 200, value_status: present}
           - {country_id: DEU, indicator_id: POP, observation_year: 2024, indicator_value: 100, value_status: present}
-          - {country_id: USA, indicator_id: GDP, observation_year: 2024, indicator_value: 2000, value_status: present}
-          - {country_id: DEU, indicator_id: GDP, observation_year: 2024, indicator_value: 4000, value_status: present}
-          - {country_id: USA, indicator_id: GDPPC, observation_year: 2024, indicator_value: 10, value_status: present}
-          - {country_id: DEU, indicator_id: GDPPC, observation_year: 2024, indicator_value: 40, value_status: present}
-          - {country_id: USA, indicator_id: LIFE, observation_year: 2024, indicator_value: 80, value_status: present}
-          - {country_id: DEU, indicator_id: LIFE, observation_year: 2024, indicator_value: 70, value_status: present}
           - {country_id: GBR, indicator_id: POP, observation_year: 2024, indicator_value: null, value_status: missing_row}
-          - {country_id: GBR, indicator_id: GDP, observation_year: 2024, indicator_value: null, value_status: missing_row}
-          - {country_id: GBR, indicator_id: GDPPC, observation_year: 2024, indicator_value: null, value_status: missing_row}
-          - {country_id: GBR, indicator_id: LIFE, observation_year: 2024, indicator_value: 90, value_status: present}
+          - {country_id: USA, indicator_id: LIFE, observation_year: 2024, indicator_value: 80, value_status: present}
+          - {country_id: DEU, indicator_id: LIFE, observation_year: 2024, indicator_value: null, value_status: null_value}
+          - {country_id: GBR, indicator_id: LIFE, observation_year: 2024, indicator_value: 70, value_status: present}
       - input: ref('dim_countries')
         rows:
           - {country_id: USA, income_group_id: HIC, income_group_name: High income, income_group_sort_order: 4}
@@ -172,21 +165,12 @@ unit_tests:
           - {country_id: GBR, income_group_id: HIC, income_group_name: High income, income_group_sort_order: 4}
       - input: ref('dim_indicators')
         rows:
-          - {indicator_id: POP, aggregation_method: sum, numerator_indicator_id: null,
-             denominator_indicator_id: null, weight_indicator_id: null}
-          - {indicator_id: GDP, aggregation_method: sum, numerator_indicator_id: null,
-             denominator_indicator_id: null, weight_indicator_id: null}
-          - {indicator_id: GDPPC, aggregation_method: ratio, numerator_indicator_id: GDP,
-             denominator_indicator_id: POP, weight_indicator_id: null}
-          - {indicator_id: LIFE, aggregation_method: weighted_mean, numerator_indicator_id: null,
-             denominator_indicator_id: null, weight_indicator_id: POP}
+          - {indicator_id: POP, indicator_name: Population}
+          - {indicator_id: LIFE, indicator_name: Life expectancy}
     expect:
       rows:
-        - {indicator_id: POP, group_value: 300, n_countries: 3, n_countries_with_data: 2}
-        - {indicator_id: GDP, group_value: 6000, n_countries: 3, n_countries_with_data: 2}
-        - {indicator_id: GDPPC, group_value: 20, n_countries: 3, n_countries_with_data: 2}
-        - {indicator_id: LIFE, group_value: 76.66666666666667, n_countries: 3,
-           n_countries_with_data: 2}
+        - {indicator_id: POP, average_value: 150, n_countries: 3, n_countries_with_data: 2}
+        - {indicator_id: LIFE, average_value: 75, n_countries: 3, n_countries_with_data: 2}
 
   - name: an_income_group_without_data_has_a_null_value_not_zero
     model: rpt_income_group_by_year
@@ -199,9 +183,8 @@ unit_tests:
           - {country_id: IND, income_group_id: LMC, income_group_name: Lower middle income, income_group_sort_order: 2}
       - input: ref('dim_indicators')
         rows:
-          - {indicator_id: POP, aggregation_method: sum, numerator_indicator_id: null,
-             denominator_indicator_id: null, weight_indicator_id: null}
+          - {indicator_id: POP, indicator_name: Population}
     expect:
       rows:
-        - {income_group_id: LMC, indicator_id: POP, group_value: null, n_countries: 1,
+        - {income_group_id: LMC, indicator_id: POP, average_value: null, n_countries: 1,
            n_countries_with_data: 0}

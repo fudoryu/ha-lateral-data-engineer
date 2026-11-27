@@ -25,11 +25,6 @@ REASONS = {
     "prior_missing": "no prior value",
     "prior_zero": "prior was 0",
 }
-METHODS = {
-    "sum": "sum",
-    "ratio": "ratio of sums",
-    "weighted_mean": "population-weighted mean",
-}
 STATUS_COLORS = {"complete": "#d8efe0", "incomplete": "#fbe7c6", "missing": "#f6d0cc"}
 LINE_COLORS = ("#c2410c", "#0f766e", "#1d4ed8", "#7e22ce")
 
@@ -211,11 +206,11 @@ everyone at the latest year all countries share.</p>{out}</section>"""
 
 
 def _chart(rows: list[Row]) -> str:
-    points = [r for r in rows if r["group_value"] is not None]
+    points = [r for r in rows if r["average_value"] is not None]
     if not points:
         return '<p class="muted">No group has data for this indicator.</p>'
     years = sorted({r["observation_year"] for r in rows})
-    low, high = min(p["group_value"] for p in points), max(p["group_value"] for p in points)
+    low, high = min(p["average_value"] for p in points), max(p["average_value"] for p in points)
     span = (high - low) or abs(high) or 1
     low, high = low - span * 0.08, high + span * 0.08
     width, height, left, bottom = 640, 220, 70, 30
@@ -231,9 +226,9 @@ def _chart(rows: list[Row]) -> str:
     for index, (group, by_group) in enumerate(groups.items()):
         color = LINE_COLORS[index % len(LINE_COLORS)]
         coords = " ".join(
-            f"{x(r['observation_year']):.1f},{y(r['group_value']):.1f}"
+            f"{x(r['observation_year']):.1f},{y(r['average_value']):.1f}"
             for r in by_group
-            if r["group_value"] is not None
+            if r["average_value"] is not None
         )
         lines += f'<polyline fill="none" stroke="{color}" stroke-width="2.5" points="{coords}"/>'
         legend += f'<span><i style="background:{color}"></i>{_e(group)}</span>'
@@ -255,7 +250,6 @@ def _chart(rows: list[Row]) -> str:
 def _income_groups(groups: list[Row]) -> str:
     out = ""
     for indicator, rows in _grouped(groups, "indicator_name").items():
-        method = METHODS.get(rows[0]["aggregation_method"], "no aggregation method")
         years = sorted({r["observation_year"] for r in rows})
         body = ""
         ordered = _grouped(
@@ -266,7 +260,7 @@ def _income_groups(groups: list[Row]) -> str:
             body += (
                 f"<tr><th>{_e(group)}</th>"
                 + "".join(
-                    f'<td class="num">{_number(by_year[yr]["group_value"])}'
+                    f'<td class="num">{_number(by_year[yr]["average_value"])}'
                     f"<small>{by_year[yr]['n_countries_with_data']}/{by_year[yr]['n_countries']}</small></td>"
                     for yr in years
                 )
@@ -274,15 +268,15 @@ def _income_groups(groups: list[Row]) -> str:
             )
         head = "".join(f"<th>{year}</th>" for year in years)
         out += (
-            f'<h3>{_e(indicator)} <span class="muted">({_e(method)})</span></h3>{_chart(rows)}'
+            f"<h3>{_e(indicator)}</h3>{_chart(rows)}"
             f'<div class="scroll"><table><tr><th></th>{head}</tr>{body}</table></div>'
         )
     return f"""
 <section id="income-groups"><h2>4. Indicators across income groups, by year</h2>
-<p class="lead">Each indicator combined the way it requires: sums for totals, total GDP over
-total population for GDP per capita, population-weighted means for life expectancy. Small
-numbers show countries with data out of countries in the group. Income groups are the World
-Bank's current classification, applied to every year.</p>{out}</section>"""
+<p class="lead">The average of each group's countries that have a value: the typical country
+in the group, not its total. Small numbers show countries with data out of countries in the
+group. Income groups are the World Bank's current classification, applied to every
+year.</p>{out}</section>"""
 
 
 def _page(tables: dict[str, list[Row]]) -> str:
