@@ -1,0 +1,46 @@
+version: 2
+
+unit_tests:
+  - name: the_most_recently_committed_run_is_the_latest
+    description: Ranking follows commit time, not the order of run IDs.
+    model: int_runs_ranked
+    given:
+      - input: ref('stg_worldbank__runs')
+        rows:
+          - {run_id: run-a, committed_at: 2026-11-25 10:00:00}
+          - {run_id: run-b, committed_at: 2026-11-24 10:00:00}
+          - {run_id: run-c, committed_at: 2026-11-23 10:00:00}
+    expect:
+      rows:
+        - {run_id: run-a, recency_rank: 1, is_latest: true}
+        - {run_id: run-b, recency_rank: 2, is_latest: false}
+        - {run_id: run-c, recency_rank: 3, is_latest: false}
+
+  - name: runs_committed_at_the_same_moment_are_ranked_by_run_id
+    description: A tie on commit time still gives exactly one latest run.
+    model: int_runs_ranked
+    given:
+      - input: ref('stg_worldbank__runs')
+        rows:
+          - {run_id: run-a, committed_at: 2026-11-25 10:00:00}
+          - {run_id: run-b, committed_at: 2026-11-25 10:00:00}
+    expect:
+      rows:
+        - {run_id: run-b, recency_rank: 1, is_latest: true}
+        - {run_id: run-a, recency_rank: 2, is_latest: false}
+
+  - name: responses_are_flagged_when_they_belong_to_the_latest_run
+    model: int_responses_joined_to_runs
+    given:
+      - input: ref('stg_worldbank__responses')
+        rows:
+          - {source_response_id: run-a/endpoint=countries/page=1.json, run_id: run-a}
+          - {source_response_id: run-b/endpoint=countries/page=1.json, run_id: run-b}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-a, is_latest: true}
+          - {run_id: run-b, is_latest: false}
+    expect:
+      rows:
+        - {source_response_id: run-a/endpoint=countries/page=1.json, is_latest_run: true}
+        - {source_response_id: run-b/endpoint=countries/page=1.json, is_latest_run: false}

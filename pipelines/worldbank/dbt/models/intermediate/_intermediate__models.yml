@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: int_runs_ranked
+    description: >
+      Every committed run, ranked from the most recent commit; `is_latest` marks the run whose
+      rows are current state (ADR-0006). The only model that decides which run is the latest.
+    columns:
+      - name: run_id
+        data_tests: [unique, not_null]
+      - name: recency_rank
+        data_tests: [unique, not_null]
+      - name: is_latest
+        data_tests: [not_null]
+
+  - name: int_responses_joined_to_runs
+    description: Every landed page, with `is_latest_run` for the pages behind current state.
+    columns:
+      - name: source_response_id
+        data_tests: [unique, not_null]
+      - name: run_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('int_runs_ranked')
+                field: run_id
+      - name: is_latest_run
+        data_tests: [not_null]
