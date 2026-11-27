@@ -2,7 +2,7 @@
 
 A local, configuration-driven pipeline that fetches country indicators from the World Bank API, keeps every API response exactly as received, and builds a tested warehouse that answers four analytics questions. It covers 9 countries × 4 indicators × 2018–2024, all set in configuration.
 
-- **Answers:** [`data/outputs/`](data/outputs/), one CSV per question (see [What you get](#what-you-get)).
+- **Answers:** [`reports/report.html`](reports/report.html), one page with all four answers and charts, and [`data/outputs/`](data/outputs/), one CSV per table (see [What you get](#what-you-get)).
 - **Requirements, decisions, source behavior:** [`docs/requirements.md`](docs/requirements.md), [`docs/decisions.md`](docs/decisions.md) (ADR-0001 to ADR-0034), [`docs/source-system.md`](docs/source-system.md).
 
 ## Quick start
@@ -14,21 +14,24 @@ git clone <this repository> && cd ha-lateral-data-engineer
 uvx --from rust-just just run
 ```
 
-`just run` is the whole pipeline: it fetches the configured scope from the API, rebuilds and tests the warehouse, publishes it only if every test passed, and exports the reports to `data/outputs/`. `uvx` comes with uv; it runs `just` without installing it, and is short for `uv tool run --from rust-just just run`, which works with the `uv` command alone. With `just` installed (`uv tool install rust-just`), `just run` is enough.
+`just run` is the whole pipeline: it fetches the configured scope from the API, rebuilds and tests the warehouse, publishes it only if every test passed, exports the reports to `data/outputs/` and renders `reports/report.html`. `uvx` comes with uv; it runs `just` without installing it, and is short for `uv tool run --from rust-just just run`, which works with the `uv` command alone. With `just` installed (`uv tool install rust-just`), `just run` is enough.
 
 Verified on a fresh clone with empty uv caches: uv downloads Python and every dependency, the run completes, and the exported reports match the committed sample.
 
 | Command | Without `just` | Does |
 |---|---|---|
-| `just run` | the four commands below, in order | the whole pipeline (calls the live API) |
+| `just run` | the commands below, in order | the whole pipeline (calls the live API) |
 | n/a | `uv run worldbank extract` | fetch from the API and commit a landing run |
 | `just build` | `uv run worldbank load`, `uv run dbt build --project-dir pipelines/worldbank/dbt --profiles-dir pipelines/worldbank/dbt`, `uv run worldbank publish` | rebuild the warehouse from landed runs, offline; publish only if every dbt test passes |
 | `just export` | `uv run worldbank export` | write every report table to `data/outputs/*.csv` |
+| `just report` | `uv run worldbank report` | render all four answers as one HTML page, `reports/report.html` (ADR-0036) |
 | `just check` | see the `justfile` | lint (Python and SQL), types, and all tests, offline: the definition of done |
 
 The warehouse is `data/warehouse/worldbank.duckdb`; open it with any DuckDB client. `uv run worldbank --help` lists every command and option, including `--log-format json`, `load --as-of <run_id>` (rebuild as of an earlier run), and scope overrides for one run: `just run --countries BRA,IND --indicators SP.POP.TOTL --years 2020:2024` (ADR-0035).
 
 ## What you get
+
+Open [`reports/report.html`](reports/report.html) in a browser for all four answers on one page, with charts. The tables behind it:
 
 | Question (brief §3) | Table, and CSV in `data/outputs/` | Grain |
 |---|---|---|
@@ -189,7 +192,7 @@ An exploration beyond the brief's scope (50 random economies × 50 random indica
 - **A new indicator without an aggregation method blocks publishing.** That's deliberate (NFR-4), but with many indicators a `not_aggregated` method would let the income-group report say so instead of failing the build.
 - **The latest common year is rare across many countries** (3 of 50 indicators had one). A rule such as "the latest year with at least 90% coverage" would serve wide scopes better.
 - **All-or-nothing extraction is costly at scale.** Stopping an all-indicator run discarded 712 fetched indicators, and one stale code fails a run. Production would checkpoint per indicator or resume interrupted runs, keeping the manifest as the commit.
-- **Optional extras** (brief, FR-ANA-5): a dashboard or extra view.
+- **Optional extras** (brief, FR-ANA-5): the HTML report covers the extra view; an interactive dashboard would be the next step.
 
 ## AI usage
 

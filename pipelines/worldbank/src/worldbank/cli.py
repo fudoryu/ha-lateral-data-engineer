@@ -26,9 +26,11 @@ from worldbank.warehouse.errors import WarehouseError
 from worldbank.warehouse.export import export_reports
 from worldbank.warehouse.load import as_of_path, load_raw, next_path
 from worldbank.warehouse.publish import publish as publish_build
+from worldbank.warehouse.report import render_report
 
 DEFAULT_CONFIG = Path("pipelines/worldbank/config.yml")
 DEFAULT_DATA_DIR = Path("data")
+DEFAULT_REPORT = Path("reports/report.html")
 SOURCE = "worldbank"
 
 
@@ -68,6 +70,7 @@ IndicatorsOption = typer.Option(
 YearsOption = typer.Option(
     None, "--years", help="Override the configured years, as START:END, e.g. 2018:2024."
 )
+ReportOption = typer.Option(DEFAULT_REPORT, "--output", help="HTML file to write.")
 OutputOption = typer.Option(
     None, "--output", help="Folder for the CSVs (default: <data-dir>/outputs)."
 )
@@ -163,6 +166,17 @@ def export(
         log.error("export failed: %s", exc)
         raise typer.Exit(code=1) from exc
     typer.echo(f"exported {len(reports)} reports to {target}")
+
+
+@app.command()
+def report(data_dir: Path = DataDirOption, output: Path = ReportOption) -> None:
+    """Render the published warehouse's reporting tables as one self-contained HTML page."""
+    try:
+        render_report(_live_warehouse(data_dir), output)
+    except WarehouseError as exc:
+        log.error("report failed: %s", exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"report written to {output}")
 
 
 def _landing_root(data_dir: Path) -> Path:

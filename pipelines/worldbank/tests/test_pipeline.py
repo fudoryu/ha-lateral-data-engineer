@@ -1,5 +1,5 @@
-"""End to end, offline: extract → load → dbt build → publish → export, as `just build` and
-`just export` chain them.
+"""End to end, offline: extract → load → dbt build → publish → export → report, as `just run`
+chains them after its extract.
 
 The chain is ADR-0022's. Extract runs against the recorded API responses (ADR-0012), crafted
 variants of them, or a fake API that answers any scope; dbt runs as its own process, the way the
@@ -76,6 +76,12 @@ def build_publish_export(data_dir: Path) -> dict[str, Report]:
     for command in ("publish", "export"):
         result = CliRunner().invoke(app, [command, "--data-dir", str(data_dir)])
         assert result.exit_code == 0, result.output
+    report = data_dir / "reports" / "report.html"
+    rendered = CliRunner().invoke(
+        app, ["report", "--data-dir", str(data_dir), "--output", str(report)]
+    )
+    assert rendered.exit_code == 0, rendered.output
+    assert "Indicators across income groups, by year" in report.read_text(encoding="utf-8")
 
     reports = {}
     for path in (data_dir / "outputs").glob("rpt_*.csv"):

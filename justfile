@@ -2,15 +2,20 @@
 default:
     @just --list
 
+# Render the reporting tables as one HTML page, reports/report.html (ADR-0036).
+report:
+    uv run worldbank report
+
 # Write every report table of the published warehouse to data/outputs/ as CSV (ADR-0034).
 export:
     uv run worldbank export
 
-# The whole pipeline (fetch, build, publish, export); args override the scope: --years 2020:2024.
+# The whole pipeline (fetch, build, publish, export, report); args override the scope.
 run *args:
     uv run worldbank extract {{args}}
     just build
     just export
+    just report
 
 # Fetch from the API and commit a landing run; arguments override the scope, as for `run`.
 extract *args:

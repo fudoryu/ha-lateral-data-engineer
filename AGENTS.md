@@ -18,9 +18,10 @@ Prerequisite: [uv](https://docs.astral.sh/uv/) (it installs Python 3.14). Option
 
 | Command | Fallback without `just` | Purpose |
 |---|---|---|
-| `just run` | `uv run worldbank extract`, then the `just build` steps, then `uv run worldbank export` | the whole pipeline: fetch (calls the live API), build and publish, export the reports |
+| `just run` | `uv run worldbank extract`, then the `just build` steps, then `uv run worldbank export` and `uv run worldbank report` | the whole pipeline: fetch (calls the live API), build and publish, export the reports and render the HTML report |
 | `just extract` | `uv run worldbank extract` | fetch only; `--countries`, `--indicators` and `--years START:END` override the configured scope for one run (also on `just run`) |
 | `just build` | `uv run worldbank load`, `uv run dbt build --project-dir pipelines/worldbank/dbt --profiles-dir pipelines/worldbank/dbt`, `uv run worldbank publish` | rebuild the warehouse from landed runs (offline); publishes only if every dbt test passes (ADR-0022) |
+| `just report` | `uv run worldbank report` | render the reporting tables as one self-contained HTML page, `reports/report.html` (ADR-0036) |
 | `just export` | `uv run worldbank export` | write every report table of the published warehouse to `data/outputs/*.csv`, the committed sample output (ADR-0034) |
 | n/a | `uv run worldbank load --as-of <run_id>` | rebuild as of an earlier run, into a file of its own (never published) |
 | `just test` | `uv run pytest` | tests (offline) |
