@@ -41,6 +41,7 @@ One-time setup of git hooks: `uv run pre-commit install`. CLI: each pipeline has
 **Stack** (ADR-0001)
 - Python 3.14 managed by uv; run everything through `uv run`.
 - Dialect-specific SQL only in the staging layer and the raw loader; everything above staging stays portable.
+- dbt layers (ADR-0026): a model reads only its own layer or the one directly below (staging: `source()` only; intermediate: staging, intermediate; marts: intermediate, marts, seeds; reporting: marts, reporting). Logic lives in intermediate, marts present it, and no intermediate model is a pure pass-through. `tests/test_dbt_layers.py` enforces it.
 - SQL style (ADR-0025): keywords, types and `NULL`/`TRUE` in upper case, identifiers and functions in lower case, explicit `AS`, no keywords as names. SQLFluff enforces it on `.sql` files (`uv run sqlfluff fix <file>`); keep SQL in `.sql` files, and match the style by hand in the rare SQL string in Python.
 
 **Logging** (ADR-0024)
