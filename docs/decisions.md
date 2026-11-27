@@ -27,7 +27,8 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
 | [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
 | [ADR-0021](#adr-0021-code-layout-source-storage-and-warehouse) | Code layout: source, storage and warehouse | Decision | Accepted |
-| [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted |
+| [ADR-0022](#adr-0022-python-stops-at-load-the-task-runner-orchestrates) | Python stops at load; the task runner orchestrates | Decision | Accepted (amended by ADR-0023) |
+| [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order) | Publish trusts the orchestrator's order | Decision | Accepted |
 
 ---
 
@@ -727,7 +728,7 @@ Only `cli.py` and `config.py` stay top-level. Everything else lives in three pac
 
 ## ADR-0022: Python stops at load; the task runner orchestrates
 
-- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted (amended by [ADR-0023](#adr-0023-publish-trusts-the-orchestrators-order))
 - **Serves:** NFR-2, NFR-6, FR-DQ-1 · **Supersedes:** ADR-0018 · **Builds on:** ADR-0003, ADR-0007, ADR-0020, ADR-0021
 
 ### Context
@@ -761,3 +762,25 @@ ADR-0018 gave the pipeline a `build` command that loads `raw`, calls dbt, and pu
 - The local commands and the production DAG match one to one.
 - The ordering lives in three lines of the `justfile`, not in tested Python. The steps themselves (`load`, `publish`) are tested Python, and `&&` carries the only rule that matters: no publish after a failure.
 - `just` becomes the convenient way to run a full build; the `uv run` fallback is three commands.
+
+---
+
+## ADR-0023: Publish trusts the orchestrator's order
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-DQ-1, NFR-2 · **Amends:** ADR-0022 · **Builds on:** ADR-0007
+
+### Context
+Under ADR-0022, `just build` runs load, `dbt build` and publish, and stops at the first failure. `worldbank publish` is also a command of its own, so someone could run `worldbank load` and then `worldbank publish` by hand, skipping dbt, and publish a build nothing tested. Separately, a load that failed halfway left a partial file under the very name publish looks for.
+
+### Decision
+- **The orchestrator owns the order.** `publish` runs only after a successful full `dbt build` on the next file; `just build` guarantees it locally, and the DAG dependency does in production (an orchestrator runs the swap only if the dbt task succeeded). `publish` doesn't re-check the audit. Its help text and the README say it's meant to run inside the chain, not on its own.
+- **Builds appear only when complete.** `load` first removes any previous next file, loads into `<file>.loading`, and renames it to the next file only after the load succeeded. A failed load leaves no build behind, so there's nothing a stray `publish` could ship; the `.loading` file stays for debugging.
+
+### Alternatives considered
+- **Publish re-checks the audit from evidence inside the file:** `schema.sql` creates an `audit.dbt_invocations` table, an `on-run-end` macro records each dbt invocation (command, full or selected, passed or failed), and `publish` refuses unless the latest is a successful full `dbt build`. It closes the manual-publish gap and keeps an audit trail inside every published warehouse, but adds a schema, a macro, a three-way contract and its tests for a risk that is low in a single-user local warehouse. Worth doing once several people or tools can publish.
+- **Gate on dbt's `target/run_results.json`:** a standard dbt artifact, but it can't prove it describes the file being published.
+
+### Consequences
+- Running `worldbank publish` by hand after skipping dbt is possible and documented as unsupported; the residual risk is accepted.
+- A half-built warehouse file can never be published, by the chain or by hand.
