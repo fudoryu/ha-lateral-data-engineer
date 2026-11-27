@@ -69,7 +69,8 @@ models:
       GDP summed; GDP per capita as total GDP / total population; life expectancy as a
       population-weighted mean. Only countries with everything the formula needs contribute:
       `n_countries_with_data` of `n_countries`; with none, the value is null, never 0. An
-      indicator outside the four has no row. Income groups are the current classification
+      indicator outside the four needs its formula added here, and until it is, a test fails the
+      build (ADR-0046). Income groups are the current classification
       applied to every year (ADR-0011, ADR-0040; see the README's assumptions). Grain: one income
       group × indicator × year.
     data_tests:

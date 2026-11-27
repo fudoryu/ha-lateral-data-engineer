@@ -2,8 +2,9 @@
 -- nature requires (ADR-0043): population and GDP summed; GDP per capita as total GDP over total
 -- population, never an average of the countries' ratios; life expectancy weighted by population.
 -- Only countries with everything a formula needs contribute, and the coverage counts say how many
--- did; a group without data has a null value, never 0. An indicator outside the four gets no row
--- (README). Groups are the current classification, applied to every year (ADR-0011, ADR-0040).
+-- did; a group without data has a null value, never 0. An indicator outside the four needs its
+-- formula added here; until it is, a test fails the build (ADR-0046). Groups are the current
+-- classification, applied to every year (ADR-0011, ADR-0040).
 WITH
 
 facts AS (

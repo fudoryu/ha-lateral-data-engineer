@@ -1291,7 +1291,7 @@ ADR-0038 replaced per-indicator aggregation with the average of a group's countr
 ### Decision
 - **`rpt_income_group_by_year` writes the aggregate of each of the brief's four indicators out in SQL:** population and GDP summed; GDP per capita as Σ GDP ÷ Σ population; life expectancy weighted by population. Each row says how its value was computed (`aggregation`) and how many countries contributed (`n_countries_with_data` of `n_countries`): only countries with everything their formula needs. A group without data has a null value, never 0.
 - **The marts stay as they are:** no aggregation metadata, no seed (ADR-0038's removals stand).
-- An indicator outside the four, or one whose inputs are out of scope, gets no row or a null value with zero coverage.
+- An indicator outside the four, or one whose inputs are out of scope, gets no row or a null value with zero coverage. (Amended by ADR-0046: an indicator without a formula fails the build.)
 
 ### Alternatives considered
 - **The average of countries (ADR-0038):** one rule for any indicator, but wrong or weak for all four of the brief's.
@@ -1349,3 +1349,26 @@ The first report stacked every indicator and country on one long page. A reader 
 ### Consequences
 - A reviewer opens one file and slices the answers by indicator and country.
 - The renderer is server-side Python, so the page is tested like the rest of the code.
+
+---
+
+## ADR-0046: An indicator without an income-group formula fails the build
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** FR-ANA-4, NFR-4 · **Amends:** ADR-0043
+
+### Context
+ADR-0043 writes the income-group aggregate of each of the brief's four indicators out in SQL. An indicator added to configuration reached every other report, but this one silently had no rows for it: the build passed and nothing said a formula was missing. How an indicator combines across countries is a business rule the API doesn't provide, so someone has to write it; the question is what happens when they forget.
+
+### Decision
+- **A singular dbt test, `assert_every_indicator_has_an_income_group_formula`, fails when an indicator in `dim_indicators` has no row in `rpt_income_group_by_year`,** and names each such indicator. Like every dbt test, a failure blocks publishing (ADR-0007, ADR-0022), so the last good warehouse stays live.
+- **Scope stays as the brief words it:** a country or a year range is configuration only; an indicator is configuration plus, for this one report, its rule. That is a documented step, not copied pipeline code. The README says so where it makes the claim.
+
+### Alternatives considered
+- **The aggregation method in configuration, next to each indicator:** two methods cover the brief's four, a sum and a weighted mean with a weight indicator, since GDP per capita weighted by population equals total GDP ÷ total population. Configuration only again, without numerator or denominator references, but it changes the configuration schema, the run manifest and `dim_indicators`. Deferred as the next step (README).
+- **A generic fallback (for example the median) for indicators without a rule:** configuration only, but it publishes a figure nobody chose.
+- **Leave it silent:** the gap would show only to a reader who noticed a missing indicator.
+
+### Consequences
+- A missing rule can't reach a published report unnoticed; the dbt output names the indicator.
+- The one manual step for a new indicator is explicit and enforced.
