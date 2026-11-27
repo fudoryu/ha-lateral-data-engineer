@@ -77,3 +77,23 @@ models:
         data_tests: [not_null]
       - name: indicator_name
         data_tests: [not_null]
+
+  - name: stg_worldbank__responses
+    description: >
+      One row per landed response page, for lineage: run, endpoint, request key, page, URL,
+      fetch time, sha256 and the source's lastupdated. The payload stays in raw.
+    columns:
+      - name: source_response_id
+        description: The page's landing path (`raw.api_responses.response_id`; NFR-1, ADR-0006).
+        data_tests: [unique, not_null]
+      - name: run_id
+        data_tests: [not_null]
+      - name: endpoint
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [countries, indicators, observations]
+      - name: page
+        data_tests: [not_null]
+      - name: source_lastupdated
+        description: The source's release date from the page metadata; null for metadata endpoints.

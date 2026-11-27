@@ -87,3 +87,29 @@ unit_tests:
           region_name: Latin America & Caribbean
           income_level_id: UMC
           income_level_name: Upper middle income
+
+  - name: responses_take_lastupdated_from_the_page_metadata
+    description: Observation pages carry the source's release date; metadata pages don't.
+    model: stg_worldbank__responses
+    given:
+      - input: source('worldbank', 'api_responses')
+        rows:
+          - response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
+            run_id: run-1
+            endpoint: observations
+            request_key: SP.POP.TOTL
+            page: 1
+            payload: '[{"page": 1, "pages": 1, "total": 0, "lastupdated": "2026-11-11"}, []]'
+          - response_id: run-1/endpoint=countries/page=1.json
+            run_id: run-1
+            endpoint: countries
+            page: 1
+            payload: '[{"page": 1, "pages": 1, "total": 0}, []]'
+    expect:
+      rows:
+        - source_response_id: run-1/endpoint=observations/SP.POP.TOTL/page=1.json
+          request_key: SP.POP.TOTL
+          source_lastupdated: 2026-11-11
+        - source_response_id: run-1/endpoint=countries/page=1.json
+          request_key: null
+          source_lastupdated: null
