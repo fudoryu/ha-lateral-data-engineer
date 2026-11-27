@@ -102,7 +102,7 @@ def test_a_tampered_landing_file_fails_the_load(
 ) -> None:
     extract_recorded(recorded_config, tmp_path / "raw", datetime(2026, 11, 24, tzinfo=UTC))
     page = _first_observation_page(tmp_path / "raw")
-    page.write_bytes(page.read_bytes().replace(b'"value":', b'"value" :', 1))
+    page.write_bytes(page.read_bytes().replace(b'"value":', b'"VALUE":', 1))  # same size
 
     with pytest.raises(IntegrityError, match="sha256"):
         load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")

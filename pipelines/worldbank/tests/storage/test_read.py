@@ -1,4 +1,5 @@
 import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -65,7 +66,8 @@ def test_reading_a_committed_run_returns_its_listed_files(tmp_path: Path) -> Non
 
 def test_a_tampered_file_fails_the_read(tmp_path: Path) -> None:
     run_writer = write_and_commit(tmp_path)
-    next(run_writer.path.glob("endpoint=*/**/page=1.json")).write_bytes(BODY + b" ")
+    page = next(run_writer.path.glob("endpoint=*/**/page=1.json"))
+    page.write_bytes(page.read_bytes().replace(b"page", b"PAGE"))  # same size, other bytes
     (run,) = committed_runs(tmp_path)
 
     with pytest.raises(IntegrityError, match="sha256"):
@@ -78,4 +80,33 @@ def test_a_missing_file_fails_the_read(tmp_path: Path) -> None:
     (run,) = committed_runs(tmp_path)
 
     with pytest.raises(IntegrityError, match="missing"):
+        run.verified_files()
+
+
+def test_a_resized_file_fails_the_read(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    next(run_writer.path.glob("endpoint=*/**/page=1.json")).write_bytes(BODY + b" ")
+    (run,) = committed_runs(tmp_path)
+
+    with pytest.raises(IntegrityError, match="size"):
+        run.verified_files()
+
+
+def test_a_manifest_for_another_run_fails_the_listing(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    run_writer.path.rename(tmp_path / "run_id=2026-01-01T00-00-00Z")  # e.g. a copied folder
+
+    with pytest.raises(IntegrityError, match="manifest is for run 2026-11-24T18-30-00Z"):
+        committed_runs(tmp_path)
+
+
+def test_a_file_listed_outside_its_run_fails_the_read(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    manifest = run_writer.path / "manifest.json"
+    data = json.loads(manifest.read_text())
+    data["files"][0]["response_id"] = "run_id=elsewhere/endpoint=x/page=1.json"
+    manifest.write_text(json.dumps(data))
+    (run,) = committed_runs(tmp_path)
+
+    with pytest.raises(IntegrityError, match="outside its run"):
         run.verified_files()
