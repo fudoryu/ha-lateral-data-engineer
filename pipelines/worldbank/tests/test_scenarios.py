@@ -13,11 +13,17 @@ from typing import Any
 import pytest
 from scenarios import RecordedApi, connection_error
 
-from worldbank.api.client import Client, InconsistentPages, PermanentHTTPError, TransientHTTPError
-from worldbank.api.contracts import ApiErrorResponse, UnexpectedResponse
 from worldbank.config import Config
-from worldbank.steps.extract import ScopeViolation, extract
-from worldbank.storage.landing_zone import Manifest, committed_runs
+from worldbank.source.client import (
+    Client,
+    InconsistentPages,
+    PermanentHTTPError,
+    TransientHTTPError,
+)
+from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
+from worldbank.source.extract import ScopeViolation, extract
+from worldbank.storage.manifest import Manifest
+from worldbank.storage.runs import committed_runs
 
 T0 = datetime(2026, 11, 24, 18, 0, tzinfo=UTC)
 POP, GDP, LE = "SP.POP.TOTL", "NY.GDP.MKTP.CD", "SP.DYN.LE00.IN"

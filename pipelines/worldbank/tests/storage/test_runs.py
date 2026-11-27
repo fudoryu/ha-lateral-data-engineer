@@ -5,9 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from worldbank.storage.landing_zone import (
+from worldbank.storage.manifest import RequestRecord
+from worldbank.storage.runs import (
     AlreadyCommitted,
-    RequestRecord,
+    IntegrityError,
     RunWriter,
     committed_runs,
     config_hash,
@@ -173,3 +174,28 @@ def test_non_ascii_bytes_are_kept_exactly(tmp_path: Path) -> None:
 
     assert (tmp_path / landed.response_id).read_bytes() == body
     assert landed.bytes == len(body)
+
+
+def test_reading_a_committed_run_returns_its_listed_files(tmp_path: Path) -> None:
+    write_and_commit(tmp_path)
+    (run,) = committed_runs(tmp_path)
+
+    assert list(run.read_files().values()) == [BODY]
+
+
+def test_a_tampered_file_fails_the_read(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    next(run_writer.path.glob("endpoint=*/**/page=1.json")).write_bytes(BODY + b" ")
+    (run,) = committed_runs(tmp_path)
+
+    with pytest.raises(IntegrityError, match="sha256"):
+        run.read_files()
+
+
+def test_a_missing_file_fails_the_read(tmp_path: Path) -> None:
+    run_writer = write_and_commit(tmp_path)
+    next(run_writer.path.glob("endpoint=*/**/page=1.json")).unlink()
+    (run,) = committed_runs(tmp_path)
+
+    with pytest.raises(IntegrityError, match="missing"):
+        run.read_files()

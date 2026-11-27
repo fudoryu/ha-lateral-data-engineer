@@ -138,11 +138,11 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 
 | Requirement | Implemented in | Verified by |
 |---|---|---|
-| FR-ING-1 | `src/worldbank/steps/extract.py`: country metadata fetched and landed; every configured code must come back | `tests/steps/test_extract.py` |
-| FR-ING-2 | `src/worldbank/steps/extract.py`: one observations request per indicator (ADR-0002), checked against the request | `tests/steps/test_extract.py` |
-| FR-ING-3 | `src/worldbank/api/client.py`: follows every page; checks page consistency and row totals | `tests/api/test_client.py` |
-| FR-ING-4 | Retries in `src/worldbank/api/client.py`; error bodies and malformed responses in `src/worldbank/api/contracts.py`; all-or-nothing runs in `src/worldbank/steps/extract.py` (no manifest on failure, non-zero exit) | `tests/api/test_client.py`, `tests/api/test_contracts.py`, `tests/steps/test_extract.py` |
-| FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/storage/warehouse.py`, separate from later layers | `tests/storage/test_warehouse.py` |
+| FR-ING-1 | `src/worldbank/source/extract.py`: country metadata fetched and landed; every configured code must come back | `tests/source/test_extract.py` |
+| FR-ING-2 | `src/worldbank/source/extract.py`: one observations request per indicator (ADR-0002), checked against the request | `tests/source/test_extract.py` |
+| FR-ING-3 | `src/worldbank/source/client.py`: follows every page; checks page consistency and row totals | `tests/source/test_client.py` |
+| FR-ING-4 | Retries in `src/worldbank/source/client.py`; error bodies and malformed responses in `src/worldbank/source/contracts.py`; all-or-nothing runs in `src/worldbank/source/extract.py` (no manifest on failure, non-zero exit) | `tests/source/test_client.py`, `tests/source/test_contracts.py`, `tests/source/test_extract.py` |
+| FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/warehouse/raw.py`, separate from later layers | `tests/warehouse/test_raw.py` |
 | FR-MOD-2 | TBD | TBD |
 | FR-MOD-3 | TBD | TBD |
 | FR-ANA-1 | TBD | TBD |
@@ -152,10 +152,10 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-DQ-1 | TBD | TBD |
 | FR-DQ-2 | TBD | TBD |
 | FR-DQ-3 | Partial: HTTP is mocked everywhere; real responses recorded in `tests/fixtures/recorded/` and replayed offline | `tests/test_recorded.py` (whole suite runs offline) |
-| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/landing_zone.py`; the raw layer keeps them per response, verified against the manifest on load | `tests/storage/test_landing_zone.py`, `tests/storage/test_warehouse.py` |
+| NFR-1 | Partial: each landed page gets a stable response ID and a manifest entry (URL, fetch time, sha256) in `src/worldbank/storage/runs.py`; the raw layer keeps them per response; committed runs are read only through sha256-verified reads (`src/worldbank/storage/runs.py`) | `tests/storage/test_runs.py`, `tests/warehouse/test_raw.py` |
 | NFR-2 | TBD | TBD |
-| NFR-3 | Partial: API values never coerced (`src/worldbank/api/contracts.py`) | `tests/api/test_contracts.py` |
-| NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` | `tests/test_config.py` |
+| NFR-3 | Partial: API values never coerced (`src/worldbank/source/contracts.py`) | `tests/source/test_contracts.py` |
+| NFR-4 | Partial: scope defined in `config.yml`, validated by `src/worldbank/config.py` and `src/worldbank/source/settings.py` | `tests/test_config.py` |
 | NFR-5 | TBD | TBD |
 | NFR-6 | TBD | TBD |
 

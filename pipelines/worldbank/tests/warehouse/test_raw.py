@@ -5,11 +5,12 @@ import duckdb
 import pytest
 import responses
 
-from worldbank.api.client import Client
 from worldbank.config import Config
-from worldbank.steps.extract import extract
-from worldbank.storage.landing_zone import Manifest, RunWriter
-from worldbank.storage.warehouse import IntegrityError, load_raw
+from worldbank.source.client import Client
+from worldbank.source.extract import extract
+from worldbank.storage.manifest import Manifest
+from worldbank.storage.runs import IntegrityError, RunWriter
+from worldbank.warehouse.raw import load_raw
 
 
 def extract_recorded(config: Config, root: Path, at: datetime) -> Manifest:

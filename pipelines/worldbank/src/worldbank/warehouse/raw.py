@@ -13,7 +13,6 @@ Raw tables (one row per landing run, request, and response page; never deduplica
 Timestamps are stored in UTC.
 """
 
-import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -21,7 +20,7 @@ from pathlib import Path
 
 import duckdb
 
-from worldbank.storage.landing_zone import CommittedRun, committed_runs
+from worldbank.storage.runs import CommittedRun, committed_runs
 
 DDL = """
 create schema raw;
@@ -60,10 +59,6 @@ create table raw.api_responses (
 """
 
 
-class IntegrityError(Exception):
-    """A landed file is missing or doesn't match the sha256 recorded in its manifest."""
-
-
 @dataclass(frozen=True)
 class LoadSummary:
     runs: int
@@ -73,7 +68,7 @@ class LoadSummary:
 def load_raw(landing_root: Path, warehouse: Path) -> LoadSummary:
     """Build a fresh warehouse file at `warehouse` from all committed runs under `landing_root`."""
     runs = committed_runs(landing_root)
-    bodies = {run.manifest.run_id: _verified_bodies(run) for run in runs}
+    bodies = {run.manifest.run_id: run.read_files() for run in runs}
 
     warehouse.parent.mkdir(parents=True, exist_ok=True)
     warehouse.unlink(missing_ok=True)
@@ -82,20 +77,6 @@ def load_raw(landing_root: Path, warehouse: Path) -> LoadSummary:
         for run in runs:
             _insert_run(con, run, bodies[run.manifest.run_id])
     return LoadSummary(runs=len(runs), responses=sum(len(b) for b in bodies.values()))
-
-
-def _verified_bodies(run: CommittedRun) -> dict[str, bytes]:
-    bodies = {}
-    for landed in run.manifest.files:
-        relative = Path(landed.response_id).relative_to(run.path.name)
-        path = run.path / relative
-        if not path.is_file():
-            raise IntegrityError(f"{landed.response_id}: listed in the manifest but missing")
-        body = path.read_bytes()
-        if hashlib.sha256(body).hexdigest() != landed.sha256:
-            raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
-        bodies[landed.response_id] = body
-    return bodies
 
 
 def _insert_run(

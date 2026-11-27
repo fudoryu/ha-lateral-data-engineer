@@ -13,9 +13,9 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from worldbank.api.client import Client
 from worldbank.config import load_config
-from worldbank.steps.extract import extract
+from worldbank.source.client import Client
+from worldbank.source.extract import extract
 
 HERE = Path(__file__).parent
 CONFIG = HERE.parent / "config.yml"

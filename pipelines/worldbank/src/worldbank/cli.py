@@ -9,11 +9,16 @@ import yaml
 from pydantic import ValidationError
 
 from worldbank import __version__
-from worldbank.api.client import Client, InconsistentPages, PermanentHTTPError, TransientHTTPError
-from worldbank.api.contracts import ApiErrorResponse, UnexpectedResponse
 from worldbank.config import Config, load_config
-from worldbank.steps.extract import ScopeViolation
-from worldbank.steps.extract import extract as run_extract
+from worldbank.source.client import (
+    Client,
+    InconsistentPages,
+    PermanentHTTPError,
+    TransientHTTPError,
+)
+from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
+from worldbank.source.extract import ScopeViolation
+from worldbank.source.extract import extract as run_extract
 
 DEFAULT_CONFIG = Path("pipelines/worldbank/config.yml")
 DEFAULT_DATA_DIR = Path("data")

@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from worldbank.api.contracts import (
+from worldbank.source.contracts import (
     ApiErrorResponse,
     Country,
     Indicator,
