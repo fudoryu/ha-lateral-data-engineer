@@ -33,7 +33,8 @@ models:
   - name: rpt_year_over_year
     description: >
       FR-ANA-2: each country × indicator × year's change from the year before, as
-      `absolute_change` and `percent_change` (in percent). When a change can't be computed it's
+      `absolute_change` and `percent_change` (in percent of the prior's absolute value, so a rise
+      from a negative value is positive). When a change can't be computed it's
       null, never 0, and `null_change_reason` says why: current_missing, prior_out_of_scope
       (always the first reporting year), prior_missing or prior_zero (only the percentage is
       null). Grain: one country × indicator × year (ADR-0009).

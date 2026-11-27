@@ -1,6 +1,7 @@
 -- FR-ANA-2: each country x indicator x year's change from the year before, absolute and in
--- percent (ADR-0009). A change that can't be computed is null with a reason, never 0, checked in
--- this order: current_missing (no value this year), prior_out_of_scope (the year before isn't in
+-- percent of the prior's absolute value, so a rise is positive even from a negative value
+-- (ADR-0009). A change that can't be computed is null with a reason, never 0, checked in this
+-- order: current_missing (no value this year), prior_out_of_scope (the year before isn't in
 -- the reporting range, always the case for the first year), prior_missing (no value the year
 -- before), prior_zero (the absolute change is computed; the percentage can't be).
 WITH
@@ -35,7 +36,7 @@ changes AS (
                 AND prior_year.indicator_value <> 0
                 THEN
                     (this_year.indicator_value - prior_year.indicator_value)
-                    / prior_year.indicator_value * 100
+                    / abs(prior_year.indicator_value) * 100
         END AS percent_change,
         CASE
             WHEN this_year.value_status <> 'present' THEN 'current_missing'

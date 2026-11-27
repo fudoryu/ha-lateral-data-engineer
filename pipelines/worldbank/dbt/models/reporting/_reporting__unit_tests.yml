@@ -65,6 +65,27 @@ unit_tests:
         - {observation_year: 2022, absolute_change: 5, percent_change: null,
            null_change_reason: prior_zero}
 
+  - name: a_rise_from_a_negative_value_is_a_positive_change
+    description: >
+      From -10 to -5 the value rose by 5, which is +50% of the prior's size, not -50%: the
+      percentage divides by the prior's absolute value, so its sign always matches the change.
+    model: rpt_year_over_year
+    given:
+      - input: ref('fct_country_indicator_values')
+        rows:
+          - {country_id: BRA, indicator_id: X, observation_year: 2023, indicator_value: -10, value_status: present}
+          - {country_id: BRA, indicator_id: X, observation_year: 2024, indicator_value: -5, value_status: present}
+      - input: ref('dim_countries')
+        rows:
+          - {country_id: BRA, country_name: Brazil}
+      - input: ref('dim_indicators')
+        rows:
+          - {indicator_id: X, indicator_name: An indicator}
+    expect:
+      rows:
+        - {observation_year: 2023, absolute_change: null, percent_change: null}
+        - {observation_year: 2024, absolute_change: 5, percent_change: 50}
+
   - name: each_country_at_its_latest_year_and_everyone_at_the_common_year
     description: >
       Brazil's latest year is 2024, India's 2023, so they're ranked on different years; 2023 is
