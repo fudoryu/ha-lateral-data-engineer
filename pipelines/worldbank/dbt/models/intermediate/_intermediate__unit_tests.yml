@@ -75,3 +75,61 @@ unit_tests:
     expect:
       rows:
         - {indicator_id: SP.POP.TOTL, indicator_name: "Population, total", run_id: run-new}
+
+  - name: each_expected_cell_is_present_null_or_missing
+    description: >
+      A returned value is present, a returned null is null_value, and no row at all is
+      missing_row, with no source response; none of them becomes 0 (ADR-0008, NFR-3).
+    model: int_indicator_values_joined_to_expected
+    given:
+      - input: ref('stg_worldbank__expected_cells')
+        rows:
+          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2022}
+          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2023}
+          - {run_id: run-1, country_iso3: BRA, indicator_id: SP.POP.TOTL, observation_year: 2024}
+      - input: ref('stg_worldbank__observations')
+        rows:
+          - run_id: run-1
+            country_iso3: BRA
+            indicator_id: SP.POP.TOTL
+            observation_year: 2022
+            indicator_value: 211.5
+            source_response_id: page-1
+          - run_id: run-1
+            country_iso3: BRA
+            indicator_id: SP.POP.TOTL
+            observation_year: 2023
+            indicator_value: null
+            source_response_id: page-1
+    expect:
+      rows:
+        - observation_year: 2022
+          indicator_value: 211.5
+          value_status: present
+          source_response_id: page-1
+        - observation_year: 2023
+          indicator_value: null
+          value_status: null_value
+          source_response_id: page-1
+        - observation_year: 2024
+          indicator_value: null
+          value_status: missing_row
+          source_response_id: null
+
+  - name: current_cells_come_from_the_latest_run_only
+    description: A value revised in a later run shows the later value (ADR-0006).
+    model: int_indicator_values_filtered_to_latest_run
+    given:
+      - input: ref('int_indicator_values_joined_to_expected')
+        rows:
+          - {run_id: run-old, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
+             indicator_value: 1383.1, value_status: present}
+          - {run_id: run-new, country_iso3: IND, indicator_id: SP.POP.TOTL, observation_year: 2019,
+             indicator_value: 1405.7, value_status: present}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-old, is_latest: false}
+          - {run_id: run-new, is_latest: true}
+    expect:
+      rows:
+        - {country_iso3: IND, observation_year: 2019, indicator_value: 1405.7, run_id: run-new}

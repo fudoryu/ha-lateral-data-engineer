@@ -45,3 +45,29 @@ models:
         data_tests: [unique, not_null]
       - name: source_response_id
         data_tests: [not_null]
+
+  - name: int_indicator_values_joined_to_expected
+    description: >
+      Every run's expected cells with what the API returned: `value_status` is `present`,
+      `null_value` (row returned with a null value) or `missing_row` (no row) (ADR-0008).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [run_id, country_iso3, indicator_id, observation_year]
+    columns:
+      - name: value_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [present, null_value, missing_row]
+
+  - name: int_indicator_values_filtered_to_latest_run
+    description: The latest run's cells, one per expected country × indicator × year.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [country_iso3, indicator_id, observation_year]
+    columns:
+      - name: run_id
+        data_tests: [not_null]
