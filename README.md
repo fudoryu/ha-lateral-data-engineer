@@ -2,7 +2,7 @@
 
 This is my submission for the data engineering take-home assessment: a local, configuration-driven pipeline that turns the public World Bank API into a dependable, traceable yearly dataset, and answers the brief's four analytics questions from it.
 
-The scope is the brief's: 9 countries, 4 indicators, 2018 to 2024. All of it lives in configuration, and widening it needs no code.
+The scope is the brief's: 9 countries, 4 indicators, 2018 to 2024. All of it lives in configuration. A new country or year range needs nothing else; a new indicator also needs its income-group rule, the one business decision the API can't make for you.
 
 **In short:**
 
@@ -116,9 +116,9 @@ The marts are a current-state dimensional model at natural keys, holding the lat
 ## Data quality and testing
 
 - **At extract:** response contracts (a value is a number or null, never coerced), row totals across pages, consistency across a request's pages (a request is fetched again once if the source changed mid-request), and scope checks. An unknown country or indicator code stops the run before anything is committed. Unexpected API fields are recorded as warnings in the run's manifest.
-- **On every build, before anything is published:** keys, not-nulls and relationships; agreement between each value's status, value and lineage; the fact covering exactly the expected set; current values coming from the latest run; and **GDP per capita within 0.1% of GDP ÷ population**, the consistency check between related indicators. On live data they agree to within floating-point rounding.
+- **On every build, before anything is published:** keys, not-nulls and relationships; agreement between each value's status, value and lineage; the fact covering exactly the expected set; current values coming from the latest run; every indicator having an income-group rule; and **GDP per capita within 0.1% of GDP ÷ population**, the consistency check between related indicators. On live data they agree to within floating-point rounding.
 - **dbt unit tests** for every model with logic, including the cases live data doesn't show: null values, missing rows, revisions across runs, every year-over-year reason, and income groups with partial or no data.
-- **`just check`** runs ruff, SQLFluff (upper-case keywords), mypy in strict mode, and pytest with a line-and-branch coverage gate, all offline: tests replay recorded API responses and never call the live API. Crafted scenarios cover errors returned with HTTP 200, pages that change mid-request, retries and revisions. End-to-end tests run the whole chain, `dbt build` included, and prove that a re-run with unchanged data produces byte-identical outputs and that adding a country or indicator needs configuration only.
+- **`just check`** runs ruff, SQLFluff (upper-case keywords), mypy in strict mode, and pytest with a line-and-branch coverage gate, all offline: tests replay recorded API responses and never call the live API. Crafted scenarios cover errors returned with HTTP 200, pages that change mid-request, retries and revisions. End-to-end tests run the whole chain, `dbt build` included, and prove that a re-run with unchanged data produces byte-identical outputs, that a new country or indicator reaches every report from configuration, and that an indicator without an income-group rule stops the build instead of going missing.
 - **CI** (GitHub Actions) runs every pre-commit hook on every file, including a secret scan, checks each pushed commit's message against Conventional Commits, and runs `just check`.
 
 ## Assumptions
@@ -128,7 +128,7 @@ The brief leaves some questions open. This is how I resolved them:
 - **Missing and incomplete** are measured against the configured scope. A value is `null_value` when the API returned its row with a null, and `missing_row` when it didn't return the row at all. A series is `incomplete` when some years are present, and `missing` when none are.
 - **Latest available year** means each country's own latest year with a value, shown next to the value, because it can differ by country. The same table also compares every country at the latest year they all have, like for like.
 - **Income groups are the World Bank's current classification, applied to every year.** The API publishes only today's classification and the brief allows no other source, so if a country changed group during 2018–2024, its earlier years are grouped with hindsight. Lower middle income is India alone in this scope.
-- **Income groups are aggregated by each indicator's nature:** population and GDP are summed; GDP per capita is total GDP ÷ total population, never an average of the countries' ratios; life expectancy is weighted by population. Only countries with every input of a formula contribute, and each row says how many did. These four formulas are written out in the report's SQL, so a newly added indicator appears in every other report automatically, but in this one only once its formula is added: the one exception to configuration-only scope.
+- **Income groups are aggregated by each indicator's nature:** population and GDP are summed; GDP per capita is total GDP ÷ total population, never an average of the countries' ratios; life expectancy is weighted by population. Only countries with every input of a formula contribute, and each row says how many did. These rules are written out in the report's SQL, because how an indicator combines across countries is a business decision, not something the API says. A new indicator needs its rule added there; until it is, a data test fails the build and names the indicator, so it can't go missing from the report unnoticed.
 - **2018's year-over-year change** is null with the reason `prior_out_of_scope`, because 2017 isn't fetched.
 - **The consistency tolerance** is 0.1%, loose enough for rounding and tight enough to catch a mismatched release or unit.
 - **Revised values:** the World Bank revises past values without notice, so every run fetches the full window and the latest committed run wins. Earlier values stay in the landing zone and in the value history.
@@ -150,16 +150,17 @@ The decisions I consider most important. Each is recorded, with the alternatives
 - **A full fetch on every run** rather than incremental extraction. It's simple and catches silent revisions, but storage grows with every run; in production I would compact old runs and skip extracts when the source's release date hasn't changed.
 - **DuckDB stands in for Snowflake.** Dialect-specific SQL is confined to staging and the loader, so the models above port by switching the dbt adapter, but some differences can only be caught on Snowflake itself.
 - **The current income classification for every year,** because it's the only classification the brief's source offers.
-- **Income-group formulas name their indicators,** trading configuration-only scope in one report for figures that are economically correct.
+- **Income-group rules live in SQL, not configuration.** A new indicator needs one small, test-enforced change to one report, in exchange for formulas anyone can read and check. Moving them to configuration is the next step (see [Beyond the brief](#beyond-the-brief)).
 - **Publishing trusts the order of steps.** `publish` doesn't re-check the tests itself; `just build`, like an orchestrator, guarantees dbt ran first. Recording the dbt result inside the build would close the gap for a manual publish.
 - **No orchestrator and no container.** `just` orders the steps locally; scheduling belongs to production.
 
 ## Adding a country or indicator
 
 1. Add its code to `scope.countries` or `scope.indicators` in [`pipelines/worldbank/config.yml`](pipelines/worldbank/config.yml).
-2. Run `just run`.
+2. For an indicator, add its income-group rule to [`rpt_income_group_by_year.sql`](pipelines/worldbank/dbt/models/reporting/rpt_income_group_by_year.sql): a sum for totals, or a mean weighted by population for rates and per-capita figures.
+3. Run `just run`.
 
-The expected set, every model and the reports extend on their own, and an end-to-end test proves it. An unknown code stops the run before anything is committed. The income-group report is the one exception, as described in the assumptions.
+The expected set, every model and the other reports extend on their own, and an end-to-end test proves it. An unknown code stops the run before anything is committed, and an indicator without an income-group rule stops the build, naming the indicator, before anything is published.
 
 ## Production design note
 
@@ -215,6 +216,7 @@ It also showed where the design is strict at scale, which is where I would go ne
 
 - **A common year is rare across many countries** (3 of 50 indicators had one). A rule such as "the latest year with at least 90% coverage" would serve wide scopes better.
 - **All-or-nothing extraction is costly at scale.** Stopping an all-indicator run discarded 712 fetched indicators, and one retired code fails a whole run. In production I would checkpoint per indicator or resume interrupted runs, keeping the manifest as the commit.
+- **Income-group rules in configuration.** Two methods cover the brief's four indicators: a sum, and a mean weighted by another indicator, since GDP per capita weighted by population equals total GDP ÷ total population. Declaring `aggregation: sum` or `aggregation: weighted_mean` with `weight: SP.POP.TOTL` next to each indicator would make a new indicator configuration only again, with no numerator or denominator to model. I stopped short because it changes the configuration schema, the run manifest and the indicator dimension, which the brief's four indicators don't need.
 
 ## Repository map
 
