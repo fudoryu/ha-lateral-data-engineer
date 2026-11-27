@@ -24,7 +24,7 @@ seeds:
               arguments:
                 values: [sum, ratio, weighted_mean]
 
-  - name: income_group_order
+  - name: income_groups
     description: >
       The World Bank's income groups from low to high income (LIC, LMC, UMC, HIC), so reports
       list them in their natural order instead of alphabetically (ADR-0030).

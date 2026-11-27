@@ -7,7 +7,7 @@ version: 2
 # analyses/trace_value.sql).
 
 models:
-  - name: dim_country
+  - name: dim_countries
     description: >
       Grain: one configured country, latest run. Key: `country_id`. Its income group is the
       current classification, which the analysis applies to every year (ADR-0011, ADR-0030);
@@ -26,7 +26,7 @@ models:
         description: Low to high income (1 = low income). Never null, so reports always sort.
         data_tests: [not_null]
 
-  - name: dim_indicator
+  - name: dim_indicators
     description: >
       Grain: one configured indicator, latest run. Key: `indicator_id`. Includes the World Bank
       release its current values come from (`source_lastupdated`) and how it aggregates across an
@@ -45,30 +45,30 @@ models:
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_indicator')
+                to: ref('dim_indicators')
                 field: indicator_id
       - name: denominator_indicator_id
         description: For `ratio`, the indicator summed below; must be a configured indicator.
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_indicator')
+                to: ref('dim_indicators')
                 field: indicator_id
       - name: weight_indicator_id
         description: For `weighted_mean`, the indicator that weights each country; must be a configured indicator.
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_indicator')
+                to: ref('dim_indicators')
                 field: indicator_id
       - name: aggregation_method
         data_tests: [not_null]
 
-  - name: fct_country_indicator_value
+  - name: fct_country_indicator_values
     description: >
       Grain: one expected country × indicator × year of the latest run (current state). Key:
-      (`country_id`, `indicator_id`, `observation_year`). Relationships: → dim_country,
-      dim_indicator. `value_status` is
+      (`country_id`, `indicator_id`, `observation_year`). Relationships: → dim_countries,
+      dim_indicators. `value_status` is
       present, null_value or missing_row; the value is null unless present, and missing rows
       have no source response (ADR-0008, NFR-3).
     data_tests:
@@ -80,13 +80,13 @@ models:
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_country')
+                to: ref('dim_countries')
                 field: country_id
       - name: indicator_id
         data_tests:
           - relationships:
               arguments:
-                to: ref('dim_indicator')
+                to: ref('dim_indicators')
                 field: indicator_id
       - name: value_status
         data_tests:

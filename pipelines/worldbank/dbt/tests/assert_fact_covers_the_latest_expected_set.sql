@@ -10,7 +10,7 @@ latest_expected AS (
 ),
 
 facts AS (
-    SELECT count(*) AS cells FROM {{ ref('fct_country_indicator_value') }}
+    SELECT count(*) AS cells FROM {{ ref('fct_country_indicator_values') }}
 )
 
 SELECT

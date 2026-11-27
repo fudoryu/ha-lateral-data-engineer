@@ -3,7 +3,7 @@
 WITH
 
 countries AS (
-    SELECT * FROM {{ ref('int_countries_joined_to_income_group_order') }}
+    SELECT * FROM {{ ref('int_countries_joined_to_income_groups') }}
 ),
 
 final AS (

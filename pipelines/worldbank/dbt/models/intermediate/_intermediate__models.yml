@@ -104,10 +104,10 @@ models:
       - name: indicator_id
         data_tests: [unique, not_null]
 
-  - name: int_countries_joined_to_income_group_order
+  - name: int_countries_joined_to_income_groups
     description: >
       The latest run's countries with their income group's low-to-high sort order (seed
-      income_group_order; ADR-0030).
+      income_groups; ADR-0030).
     columns:
       - name: country_id
         data_tests: [unique, not_null]

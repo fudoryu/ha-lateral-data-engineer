@@ -1,4 +1,4 @@
--- dim_indicator's display_decimals is one number per indicator, so every current value of an
+-- dim_indicators's display_decimals is one number per indicator, so every current value of an
 -- indicator must report the same `decimal` precision. Fails with each indicator that doesn't.
 SELECT
     indicator_id,

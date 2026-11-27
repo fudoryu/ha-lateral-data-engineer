@@ -259,13 +259,13 @@ unit_tests:
         - {indicator_id: NEW.INDICATOR, source_lastupdated: null, display_decimals: null}
 
   - name: countries_get_their_income_group_sort_order
-    model: int_countries_joined_to_income_group_order
+    model: int_countries_joined_to_income_groups
     given:
       - input: ref('int_countries_filtered_to_latest_run')
         rows:
           - {country_id: USA, income_group_id: HIC}
           - {country_id: IND, income_group_id: LMC}
-      - input: ref('income_group_order')
+      - input: ref('income_groups')
         rows:
           - {income_group_id: LMC, sort_order: 2}
           - {income_group_id: HIC, sort_order: 4}
