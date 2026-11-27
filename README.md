@@ -75,12 +75,12 @@ Each dbt layer reads only the layer directly below it, and only intermediate mod
 | landing zone and `raw` | API responses exactly as received, every run | bronze |
 | `staging` | per source entity: flattened, renamed, typed and cleaned | silver |
 | `intermediate` | the logic: latest run, cell status, value history | silver |
-| `marts` | the star schema analysts query | gold |
+| `marts` | the snowflake schema analysts query | gold |
 | `reporting` | the answers | gold |
 
 ## Data model
 
-The marts are a current-state dimensional model: one fact and four dimensions at natural keys, holding the latest run only; a country reaches its region and income group through `dim_countries` (ADR-0017, ADR-0028 to ADR-0032, ADR-0039, ADR-0040).
+The marts are a current-state **snowflake schema**, not a star: one fact and four dimensions at natural keys, holding the latest run only. The fact points to countries and indicators, and a country points to its region and income group, so reaching a group from a value takes two joins (ADR-0017, ADR-0028 to ADR-0032, ADR-0039, ADR-0040).
 
 ```
   dim_regions             dim_countries           fct_country_indicator_values    dim_indicators
@@ -105,6 +105,7 @@ The marts are a current-state dimensional model: one fact and four dimensions at
 - **Every expected cell is a row,** including those the API didn't return. `value_status` records `present`, `null_value` or `missing_row`, and `indicator_value` is null unless the value is present. Missing is never zero (NFR-3, ADR-0008).
 - **I chose one long fact table,** so a new indicator adds rows, not columns, and every report works on any indicator without per-indicator setup.
 - **Lineage is a platform concern, not an analyst one.** Only the fact carries a technical column, `source_response_id`, which names the landed page the value came from and is also its file path. Dimensions hold business attributes only. Runs, pages, the history of revised values and the dimensions' lineage stay in intermediate for engineers (ADR-0042), and [`trace_value.sql`](pipelines/worldbank/dbt/analyses/trace_value.sql) traces any value back to its source (NFR-1).
+- **A snowflake, deliberately.** Regions and income groups are entities with their own keys, so each is its own dimension rather than names copied onto every country. A star would flatten `region_name` and `income_group_name` into `dim_countries` and save a join; with nine countries the join costs nothing, and each name is stored once.
 - Every model's grain, key and relationships are also documented in its dbt YAML and enforced by tests.
 
 ## Data quality and testing
@@ -136,7 +137,7 @@ The decisions I consider most important, each recorded with its alternatives:
 3. **Contracts at the boundary, integrity on load** (ADR-0005, ADR-0020). I validate responses before a run commits; afterwards, a matching sha256 proves the bytes are the ones that were validated.
 4. **Each tool does one job** (ADR-0022, ADR-0034). Python extracts, loads, publishes and exports; dbt transforms and tests; `just` orders the steps, as an orchestrator's DAG would.
 5. **Hand-written extraction rather than dlt** (ADR-0019). My lineage rests on exact response pages and their metadata, which a framework that yields records doesn't preserve.
-6. **Logic in intermediate, a small star schema for analysts** (ADR-0026 to ADR-0032). Every rule lives in one place and is unit-tested; analysts work with one fact and four dimensions.
+6. **Logic in intermediate, a small snowflake schema for analysts** (ADR-0026 to ADR-0032, ADR-0039, ADR-0040). Every rule lives in one place and is unit-tested; analysts work with one fact and four dimensions.
 7. **Missing is a status, not a gap** (ADR-0008). The fact table is built on the expected set, so every question about gaps becomes a filter.
 
 ## Trade-offs
