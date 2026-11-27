@@ -57,7 +57,10 @@ def test_reading_a_committed_run_returns_its_listed_files(tmp_path: Path) -> Non
     write_and_commit(tmp_path)
     (run,) = committed_runs(tmp_path)
 
-    assert list(run.read_files().values()) == [BODY]
+    files = run.verified_files()
+
+    assert [f.read_bytes() for f in files] == [BODY]
+    assert run.manifest_path.is_file()
 
 
 def test_a_tampered_file_fails_the_read(tmp_path: Path) -> None:
@@ -66,7 +69,7 @@ def test_a_tampered_file_fails_the_read(tmp_path: Path) -> None:
     (run,) = committed_runs(tmp_path)
 
     with pytest.raises(IntegrityError, match="sha256"):
-        run.read_files()
+        run.verified_files()
 
 
 def test_a_missing_file_fails_the_read(tmp_path: Path) -> None:
@@ -75,4 +78,4 @@ def test_a_missing_file_fails_the_read(tmp_path: Path) -> None:
     (run,) = committed_runs(tmp_path)
 
     with pytest.raises(IntegrityError, match="missing"):
-        run.read_files()
+        run.verified_files()

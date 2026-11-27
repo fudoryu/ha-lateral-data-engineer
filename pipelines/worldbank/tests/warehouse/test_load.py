@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import duckdb
@@ -203,3 +203,20 @@ def test_cli_load_reports_failures_with_exit_code_1(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert "load failed, nothing written: no committed run 2026-01-01T00-00-00Z" in result.stderr
+
+
+def test_timestamps_with_any_offset_are_stored_as_utc(tmp_path: Path) -> None:
+    plus_two = timezone(timedelta(hours=2))
+    RunWriter.start(tmp_path / "raw", datetime(2026, 11, 24, 12, 0, tzinfo=plus_two)).commit(
+        committed_at=datetime(2026, 11, 24, 12, 1, tzinfo=plus_two),
+        pipeline_version="0.1.0",
+        git_sha=None,
+        config={},
+        warnings=[],
+    )
+
+    load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
+
+    assert scalar(tmp_path / "wh.duckdb", "select started_at from raw.landing_runs") == datetime(
+        2026, 11, 24, 10, 0
+    )

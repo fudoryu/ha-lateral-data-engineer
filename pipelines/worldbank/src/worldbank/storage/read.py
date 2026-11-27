@@ -1,9 +1,9 @@
 """Read committed runs from the landing zone, verified (ADR-0004, ADR-0006, ADR-0020).
 
 Only runs with a valid manifest are committed; incomplete runs are skipped, never read. A run's
-files are read only through `CommittedRun.read_files`, which returns exactly the files the
-manifest lists and checks each one against its sha256, so an edited, missing or corrupted file
-stops every reader.
+files are reached only through `CommittedRun.verified_files`, which returns exactly the files the
+manifest lists after checking each one against its sha256, so an edited, missing or corrupted
+file stops every reader.
 """
 
 import hashlib
@@ -24,17 +24,20 @@ class CommittedRun(BaseModel):
     path: Path
     manifest: Manifest
 
-    def read_files(self) -> dict[str, bytes]:
-        """The bytes of every file the manifest lists, by response ID, each checked by sha256."""
-        files = {}
+    @property
+    def manifest_path(self) -> Path:
+        return self.path / MANIFEST
+
+    def verified_files(self) -> list[Path]:
+        """Every file the manifest lists, each checked against its sha256 first."""
+        files = []
         for landed in self.manifest.files:
             path = self.path / Path(landed.response_id).relative_to(self.path.name)
             if not path.is_file():
                 raise IntegrityError(f"{landed.response_id}: listed in the manifest but missing")
-            body = path.read_bytes()
-            if hashlib.sha256(body).hexdigest() != landed.sha256:
+            if hashlib.sha256(path.read_bytes()).hexdigest() != landed.sha256:
                 raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
-            files[landed.response_id] = body
+            files.append(path)
         return files
 
 
@@ -44,8 +47,8 @@ def committed_runs(landing_root: Path) -> list[CommittedRun]:
         return []
     runs = []
     for path in sorted(landing_root.glob(f"{RUN_PREFIX}*")):
-        manifest_path = path / MANIFEST
-        if path.is_dir() and manifest_path.is_file():
-            manifest = Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+        manifest_file = path / MANIFEST
+        if path.is_dir() and manifest_file.is_file():
+            manifest = Manifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
             runs.append(CommittedRun(path=path, manifest=manifest))
     return runs
