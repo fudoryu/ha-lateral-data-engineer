@@ -16,7 +16,12 @@ from pydantic import (
 )
 
 CountryCode = Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
-IndicatorCode = Annotated[str, StringConstraints(pattern=r"^[A-Z0-9]+(\.[A-Z0-9]+)+$")]
+# World Bank indicator codes mix cases, digits, dots and underscores (`SP.POP.TOTL`,
+# `GD_WBL_OVL_ENF`, `per_allsp.adq_pop_tot`); the rule only keeps out characters that would break
+# a URL or a landing folder name.
+IndicatorCode = Annotated[
+    str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$")
+]
 
 
 def _unique[T](values: list[T]) -> list[T]:

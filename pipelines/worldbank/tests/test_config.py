@@ -55,6 +55,9 @@ def test_load_config_reads_yaml(tmp_path: Path) -> None:
         ("scope", "countries", ["BRA", "BRA"]),
         ("scope", "countries", []),
         ("scope", "indicators", ["not a code"]),
+        ("scope", "indicators", ["SP/POP"]),
+        ("scope", "indicators", [".SP.POP"]),
+        ("scope", "indicators", ["SP..POP"]),
         ("scope", "indicators", ["SP.POP.TOTL", "SP.POP.TOTL"]),
         ("scope", "years", {"start": 2024, "end": 2018}),
         ("api", "per_page", 0),
@@ -139,3 +142,21 @@ def test_empty_file_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError):
         load_config(path)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "SP.POP.TOTL",
+        "NY.GDP.PCAP.CD",
+        "GD_WBL_OVL_ENF",
+        "SH_UHC_FH40_FURTHER",
+        "per_allsp.adq_pop_tot",
+    ],
+)
+def test_every_shape_of_real_indicator_code_is_accepted(code: str) -> None:
+    """Real World Development Indicators codes, including underscores and lower case."""
+    raw = _valid()
+    raw["scope"]["indicators"] = [code]
+
+    assert Config.model_validate(raw).scope.indicators == [code]
