@@ -229,3 +229,25 @@ unit_tests:
           aggregation_method: null
           numerator_indicator_id: null
           denominator_indicator_id: null
+
+  - name: the_current_income_group_applies_to_every_reporting_year
+    model: int_income_groups_spread_over_years
+    given:
+      - input: ref('int_countries_filtered_to_latest_run')
+        rows:
+          - {country_iso3: IND, income_level_id: LMC}
+      - input: ref('int_indicator_values_filtered_to_latest_run')
+        rows:
+          - {observation_year: 2018}
+          - {observation_year: 2019}
+          - {observation_year: 2019}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {committed_at: 2026-11-25 01:51:43, is_latest: true}
+          - {committed_at: 2026-11-24 10:00:00, is_latest: false}
+    expect:
+      rows:
+        - {country_iso3: IND, observation_year: 2018, income_level_id: LMC,
+           classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
+        - {country_iso3: IND, observation_year: 2019, income_level_id: LMC,
+           classification_basis: current_applied_to_all_years, classified_as_of: 2026-11-25}
