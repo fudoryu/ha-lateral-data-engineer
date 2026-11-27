@@ -40,6 +40,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0032](#adr-0032-every-table-name-is-plural) | Every table name is plural | Decision | Accepted |
 | [ADR-0033](#adr-0033-staging-cleans-values-intermediate-interprets-them) | Staging cleans values; intermediate interprets them | Decision | Accepted |
 | [ADR-0034](#adr-0034-report-tables-are-exported-to-csv-by-worldbank-export) | Report tables are exported to CSV by `worldbank export` | Decision | Accepted |
+| [ADR-0035](#adr-0035-the-scope-can-be-overridden-for-one-run-on-the-command-line) | The scope can be overridden for one run on the command line | Decision | Accepted |
 
 ---
 
@@ -1088,3 +1089,26 @@ The brief asks for sample output of the reporting queries, committed (for exampl
 ### Consequences
 - One command regenerates the committed sample from an audited build.
 - The sample can be older than the code if it isn't re-exported; the README's setup says when to run it.
+
+---
+
+## ADR-0035: The scope can be overridden for one run on the command line
+
+- **Date:** 2026-11-27 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-4 · **Builds on:** ADR-0015, ADR-0016
+
+### Context
+Exploring a different scope (all economies and indicators, a shorter year range) meant editing `config.yml` and remembering to revert it. NFR-4 asks that scope changes need no code; it doesn't ask that every run use the committed file.
+
+### Decision
+- `worldbank extract` (and `just extract`, `just run`) take `--countries`, `--indicators` (comma-separated codes) and `--years START:END`. Each replaces only that part of the configured scope, for that run.
+- The effective configuration is validated exactly like the file (same rules, same error, exit code 2) before any request, and recorded in the run's manifest, so the run's expected set and every report follow what was actually fetched (ADR-0016).
+- `config.yml` stays the committed scope; overrides leave no trace except in the runs they produced.
+
+### Alternatives considered
+- **Edit `config.yml` for each exploration:** works, but easy to commit by mistake, and the committed sample would then describe a scope nobody intended.
+- **A second configuration file per scope:** fine for long-lived scopes (`--config` already allows it), heavy for a one-off question.
+
+### Consequences
+- A run's scope is always the one in its manifest, which may differ from `config.yml`; the latest run's scope drives current state.
+- Exploratory runs belong in their own data folder (`--data-dir`), so they don't become the latest run of the main landing zone.
