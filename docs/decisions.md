@@ -10,7 +10,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0002](#adr-0002-one-request-per-indicator-covering-all-countries) | One request per indicator, covering all countries | Decision | Accepted |
 | [ADR-0003](#adr-0003-separate-ingestion-from-transformation-replay-from-landed-files) | Separate ingestion from transformation; replay from landed files | Decision | Accepted (command name amended by ADR-0018) |
 | [ADR-0004](#adr-0004-a-landing-run-is-committed-by-writing-its-manifest-last) | A landing run is committed by writing its manifest last | Decision | Accepted (path amended by ADR-0014) |
-| [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted |
+| [ADR-0005](#adr-0005-validate-configuration-and-api-responses-before-committing-a-run) | Validate configuration and API responses before committing a run | Decision | Accepted (load-time re-validation removed by ADR-0020) |
 | [ADR-0006](#adr-0006-fetch-the-full-scope-every-run-keep-every-run-latest-run-wins) | Fetch the full scope every run, keep every run, latest run wins | Decision | Accepted |
 | [ADR-0007](#adr-0007-all-or-nothing-runs-and-write-audit-publish) | All-or-nothing runs and write-audit-publish | Decision | Accepted |
 | [ADR-0008](#adr-0008-definitions-of-missing-and-incomplete-data) | Definitions of missing and incomplete data | Decision | Accepted |
@@ -25,6 +25,7 @@ Entries are append-only. To change a decision, add a new entry that supersedes t
 | [ADR-0017](#adr-0017-marts-data-model-grain-keys-relationships-and-lineage) | Marts data model: grain, keys, relationships and lineage | Decision | Accepted |
 | [ADR-0018](#adr-0018-pipeline-commands-extract-build-run) | Pipeline commands: extract, build, run | Decision | Accepted |
 | [ADR-0019](#adr-0019-hand-written-extraction-instead-of-an-el-framework) | Hand-written extraction instead of an EL framework | Decision | Accepted |
+| [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts) | Load verifies integrity, not contracts | Decision | Accepted |
 
 ---
 
@@ -152,7 +153,7 @@ Under ADR-0003, extract writes files to the landing zone before anything reads t
 
 ## ADR-0005: Validate configuration and API responses before committing a run
 
-- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted
+- **Date:** 2026-11-24 · **Kind:** Decision · **Status:** Accepted (load-time re-validation removed by [ADR-0020](#adr-0020-load-verifies-integrity-not-contracts))
 - **Serves:** FR-ING-3, FR-ING-4, NFR-3, NFR-4, FR-DQ-1
 
 ### Context
@@ -659,3 +660,27 @@ Keep extraction hand-written (requests + tenacity + Pydantic, ADR-0001), for the
 - We own paging, retries and contract checks, and their tests. Coverage is enforced by `just check` (ADR-0013).
 - The code structure mirrors a connector: `api/client.py` and `api/contracts.py` play the roles of a Singer tap's `client.py` and `streams.py`/`schemas/`, which keeps the code familiar to reviewers who know those tools.
 - **Production note:** with many sources, extraction should move to a framework such as dlt, keeping the landing zone conventions (raw responses as received, manifest commit, run IDs) and write-audit-publish as the platform's own contract. The README says so.
+
+---
+
+## ADR-0020: Load verifies integrity, not contracts
+
+- **Date:** 2026-11-26 · **Kind:** Decision · **Status:** Accepted
+- **Serves:** NFR-1, NFR-2, FR-DQ-1 · **Amends:** ADR-0005 (its last line: "The loader runs the same validation again on replay")
+
+### Context
+ADR-0005 validates every response during extract, before a run can be committed, and also has the loader run the same validation again. The loader also checks every landed file against the sha256 recorded in its run's manifest (ADR-0006). A file whose hash matches holds exactly the bytes that passed validation at extract time, so validating it again can't find anything new. It does make the loader import the World Bank response contracts, which ties the otherwise source-agnostic load step to one source.
+
+### Decision
+- **Contracts are enforced once, at the boundary:** during extract, before the manifest is written (ADR-0004, ADR-0005). These are consumer-side contracts: our explicit expectations of the API, since the World Bank agrees to none.
+- **Load verifies integrity only:** it reads committed runs only, reads only the files their manifests list, and fails if a listed file is missing or its sha256 doesn't match. Loading stays a plain copy into `raw`, with no transformation (ELT).
+- **Everything after load is dbt's job:** staging flattens and types the payloads, tests check the modelled data, and write-audit-publish (ADR-0007) publishes only a warehouse where every test passed.
+
+### Alternatives considered
+- **Keep re-validating on load (ADR-0005 as written):** defense in depth on paper, but redundant once hashes match, and it couples the loader to the source's contracts.
+- **Let dbt read the landing files directly (DuckDB `read_json` / `read_blob` as dbt sources), with integrity as dbt tests:** removes the Python loader and resembles Snowflake external tables, but moves the load step into dbt, puts DuckDB-specific file reading into source definitions, and replaces a finished, tested loader. Production loading belongs in the production note instead: Snowflake `COPY INTO` or Snowpipe from the S3 landing zone.
+
+### Consequences
+- The loader needs nothing from the source package, so it can stay source-agnostic (see the code layout decision that follows).
+- A landing file edited together with its manifest hash is no longer caught at load. Committed runs are immutable by rule (AGENTS.md guardrails, ADR-0006), and staging tests still check the modelled values.
+- A contract change in code doesn't re-check old runs on load. If that's ever needed, it's a deliberate backfill check, not part of every build.
