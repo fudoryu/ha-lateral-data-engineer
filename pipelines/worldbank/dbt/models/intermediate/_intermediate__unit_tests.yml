@@ -44,3 +44,34 @@ unit_tests:
       rows:
         - {source_response_id: run-a/endpoint=countries/page=1.json, is_latest_run: true}
         - {source_response_id: run-b/endpoint=countries/page=1.json, is_latest_run: false}
+
+  - name: countries_come_from_the_latest_run_only
+    description: A country renamed or reclassified between runs shows its latest metadata.
+    model: int_countries_filtered_to_latest_run
+    given:
+      - input: ref('stg_worldbank__countries')
+        rows:
+          - {run_id: run-old, country_iso3: IND, country_name: India, income_level_id: LIC}
+          - {run_id: run-new, country_iso3: IND, country_name: India, income_level_id: LMC}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-old, is_latest: false}
+          - {run_id: run-new, is_latest: true}
+    expect:
+      rows:
+        - {country_iso3: IND, income_level_id: LMC, run_id: run-new}
+
+  - name: indicators_come_from_the_latest_run_only
+    model: int_indicators_filtered_to_latest_run
+    given:
+      - input: ref('stg_worldbank__indicators')
+        rows:
+          - {run_id: run-old, indicator_id: SP.POP.TOTL, indicator_name: Population}
+          - {run_id: run-new, indicator_id: SP.POP.TOTL, indicator_name: "Population, total"}
+      - input: ref('int_runs_ranked')
+        rows:
+          - {run_id: run-old, is_latest: false}
+          - {run_id: run-new, is_latest: true}
+    expect:
+      rows:
+        - {indicator_id: SP.POP.TOTL, indicator_name: "Population, total", run_id: run-new}
