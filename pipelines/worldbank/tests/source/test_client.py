@@ -10,10 +10,12 @@ from responses import matchers
 from worldbank.source.client import (
     Client,
     InconsistentPages,
+    NetworkError,
     PermanentHTTPError,
     TransientHTTPError,
 )
 from worldbank.source.contracts import ApiErrorResponse, Observation
+from worldbank.source.errors import ExtractError
 from worldbank.source.settings import Api
 
 BASE = "https://api.worldbank.org/v2"
@@ -124,6 +126,16 @@ def test_retries_connection_errors() -> None:
     add_page(1, page_body(1, 1, 1, [row("BRA", 2024)]))
 
     assert len(client().fetch(PATH, Observation, {"source": 2}).items) == 1
+
+
+@responses.activate
+def test_a_network_failure_that_outlasts_the_retries_is_an_extract_error() -> None:
+    for _ in range(3):
+        responses.add(responses.GET, URL, body=requests.ConnectionError("reset"))
+
+    with pytest.raises(NetworkError, match="reset") as caught:
+        client().fetch(PATH, Observation, {"source": 2})
+    assert isinstance(caught.value, ExtractError)
 
 
 @responses.activate

@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from worldbank.storage.errors import StorageError
 from worldbank.storage.manifest import (
     MANIFEST,
     RUN_PREFIX,
@@ -28,11 +29,11 @@ from worldbank.storage.manifest import (
 SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
-class AlreadyCommitted(Exception):
+class AlreadyCommitted(StorageError):
     """A committed run is immutable: it can't be written to or committed again."""
 
 
-class InvalidPage(ValueError):
+class InvalidPage(StorageError, ValueError):
     """A page can't be landed: unsafe name, page number below 1, or already written."""
 
 

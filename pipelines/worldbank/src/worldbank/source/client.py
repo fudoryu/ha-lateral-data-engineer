@@ -18,20 +18,25 @@ from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait
 
 from worldbank import __version__
 from worldbank.source.contracts import Page, parse_page
+from worldbank.source.errors import ExtractError
 from worldbank.source.settings import Api
 
 USER_AGENT = f"worldbank-pipeline/{__version__}"
 
 
-class TransientHTTPError(Exception):
+class NetworkError(ExtractError):
+    """A connection failure or timeout that outlasted every retry."""
+
+
+class TransientHTTPError(ExtractError):
     """A failure worth retrying: HTTP 429 or 5xx."""
 
 
-class PermanentHTTPError(Exception):
+class PermanentHTTPError(ExtractError):
     """An HTTP error that retrying won't fix (4xx other than 429)."""
 
 
-class InconsistentPages(Exception):
+class InconsistentPages(ExtractError):
     """Pages of one request disagree, or don't add up to the reported total."""
 
 
@@ -125,7 +130,10 @@ class Client:
             sleep=self._sleep,
             reraise=True,
         )
-        return retrying(self._get, url, params)
+        try:
+            return retrying(self._get, url, params)
+        except requests.RequestException as exc:
+            raise NetworkError(f"{url}: {exc}") from exc
 
     def _get(self, url: str, params: dict[str, Any]) -> requests.Response:
         timeout = (self._api.timeout.connect_seconds, self._api.timeout.read_seconds)

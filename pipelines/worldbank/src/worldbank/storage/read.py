@@ -11,10 +11,13 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from pydantic import ValidationError
+
+from worldbank.storage.errors import StorageError
 from worldbank.storage.manifest import MANIFEST, RUN_PREFIX, Manifest
 
 
-class IntegrityError(Exception):
+class IntegrityError(StorageError):
     """A landed file is missing or doesn't match the sha256 recorded in its manifest."""
 
 
@@ -54,7 +57,10 @@ def committed_runs(landing_root: Path) -> list[CommittedRun]:
     for path in sorted(landing_root.glob(f"{RUN_PREFIX}*")):
         manifest_file = path / MANIFEST
         if path.is_dir() and manifest_file.is_file():
-            manifest = Manifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
+            try:
+                manifest = Manifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
+            except ValidationError as exc:
+                raise IntegrityError(f"{path.name}: unreadable manifest: {exc}") from exc
             if f"{RUN_PREFIX}{manifest.run_id}" != path.name:
                 raise IntegrityError(f"{path.name}: its manifest is for run {manifest.run_id}")
             runs.append(CommittedRun(path=path, manifest=manifest))

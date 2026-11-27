@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 from landed import BODY, STARTED, write_and_commit
-from pydantic import ValidationError
 
 from worldbank.storage.read import IntegrityError, committed_runs
 from worldbank.storage.write import RunWriter
@@ -43,7 +42,7 @@ def test_a_corrupt_manifest_fails_loudly(tmp_path: Path) -> None:
     run = write_and_commit(tmp_path)
     (run.path / "manifest.json").write_text("{ not json")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(IntegrityError, match="unreadable manifest"):
         committed_runs(tmp_path)
 
 
@@ -132,5 +131,5 @@ def test_an_unknown_manifest_version_is_refused(tmp_path: Path) -> None:
     data["manifest_version"] = 2
     manifest.write_text(json.dumps(data))
 
-    with pytest.raises(ValidationError, match="manifest_version"):
+    with pytest.raises(IntegrityError, match="manifest_version"):
         committed_runs(tmp_path)

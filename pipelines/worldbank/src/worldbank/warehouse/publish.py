@@ -12,14 +12,15 @@ against the new file. Either way publishing is refused.
 import os
 from pathlib import Path
 
+from worldbank.warehouse.errors import WarehouseError
 from worldbank.warehouse.load import next_path
 
 
-class NothingToPublish(Exception):
+class NothingToPublish(WarehouseError):
     """There is no next file: load and dbt build haven't produced one."""
 
 
-class UnsafeToPublish(Exception):
+class UnsafeToPublish(WarehouseError):
     """A write-ahead log shows an open connection or an unfinished write."""
 
 

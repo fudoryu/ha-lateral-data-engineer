@@ -28,6 +28,7 @@ from pathlib import Path
 import duckdb
 
 from worldbank.storage.read import committed_runs
+from worldbank.warehouse.errors import WarehouseError
 
 
 def _sql(name: str) -> str:
@@ -38,8 +39,12 @@ SCHEMA = _sql("schema.sql")  # the raw tables
 LOAD = _sql("load.sql")  # committed runs into those tables, set-based
 
 
-class UnknownRun(Exception):
+class UnknownRun(WarehouseError):
     """`as_of` names no committed run."""
+
+
+class LoadFailed(WarehouseError):
+    """The load SQL failed; no build was written."""
 
 
 @dataclass(frozen=True)
@@ -97,7 +102,10 @@ def load_raw(landing_root: Path, warehouse: Path, *, as_of: str | None = None) -
             " from read_text($files)",
             {"files": pages, "root": str(landing_root.resolve())},
         )
-        con.execute(LOAD)
+        try:
+            con.execute(LOAD)
+        except duckdb.Error as exc:
+            raise LoadFailed(f"loading {warehouse.name} failed: {exc}") from exc
     os.replace(loading, warehouse)  # closing the connection checkpointed it: no .wal is left
     return LoadSummary(runs=len(runs), responses=len(pages))
 

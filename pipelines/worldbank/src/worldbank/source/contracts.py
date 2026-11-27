@@ -20,6 +20,8 @@ from pydantic import (
     ValidationError,
 )
 
+from worldbank.source.errors import ExtractError
+
 Iso3 = Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 Year = Annotated[str, StringConstraints(pattern=r"^\d{4}$")]
 
@@ -81,7 +83,7 @@ class Indicator(_Model):
     topics: Any = None  # known, unused
 
 
-class ApiErrorResponse(Exception):
+class ApiErrorResponse(ExtractError):
     """The API returned an error body (often with HTTP 200). Not retryable."""
 
     def __init__(self, messages: list[dict[str, Any]]) -> None:
@@ -90,7 +92,7 @@ class ApiErrorResponse(Exception):
         super().__init__(f"World Bank API error: {details}")
 
 
-class UnexpectedResponse(Exception):
+class UnexpectedResponse(ExtractError):
     """The response is neither a page nor a recognizable error body. Not retryable."""
 
 

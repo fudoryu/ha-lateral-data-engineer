@@ -22,12 +22,17 @@ from worldbank import __version__
 from worldbank.config import Config
 from worldbank.source.client import Client, FetchResult
 from worldbank.source.contracts import Country, Indicator, Observation
+from worldbank.source.errors import ExtractError
 from worldbank.storage.manifest import Manifest, RequestRecord
 from worldbank.storage.write import RunWriter
 
 
-class ScopeViolation(Exception):
+class ScopeViolation(ExtractError):
     """The API response doesn't match what was requested."""
+
+
+class RunAlreadyExists(ExtractError):
+    """Another run started in the same second already uses this run's folder."""
 
 
 def extract(
@@ -39,7 +44,10 @@ def extract(
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> Manifest:
     scope = config.scope
-    run = RunWriter.start(landing_root, now())
+    try:
+        run = RunWriter.start(landing_root, now())
+    except FileExistsError as exc:
+        raise RunAlreadyExists(f"a run with this timestamp already exists: {exc.filename}") from exc
     warnings: list[str] = []
     countries = ";".join(scope.countries)
 

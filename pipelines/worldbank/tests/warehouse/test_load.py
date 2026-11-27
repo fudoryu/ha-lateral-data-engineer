@@ -13,7 +13,7 @@ from worldbank.source.extract import extract
 from worldbank.storage.manifest import Manifest
 from worldbank.storage.read import IntegrityError
 from worldbank.storage.write import RunWriter
-from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
+from worldbank.warehouse.load import LoadFailed, UnknownRun, as_of_path, load_raw, next_path
 
 
 def extract_recorded(config: Config, root: Path, at: datetime) -> Manifest:
@@ -240,7 +240,7 @@ def test_a_load_that_fails_midway_leaves_no_build(
     two_runs(tmp_path / "raw")
     monkeypatch.setattr("worldbank.warehouse.load.LOAD", "select * from no_such_table")
 
-    with pytest.raises(duckdb.Error):
+    with pytest.raises(LoadFailed):
         load_raw(tmp_path / "raw", tmp_path / "wh.duckdb")
     assert not (tmp_path / "wh.duckdb").exists()
     assert (tmp_path / "wh.duckdb.loading").exists()  # kept for debugging

@@ -3,46 +3,24 @@
 import subprocess
 from pathlib import Path
 
-import duckdb
-import requests
 import typer
 import yaml
 from pydantic import ValidationError
 
 from worldbank import __version__
 from worldbank.config import Config, load_config
-from worldbank.source.client import (
-    Client,
-    InconsistentPages,
-    PermanentHTTPError,
-    TransientHTTPError,
-)
-from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
-from worldbank.source.extract import ScopeViolation
+from worldbank.source.client import Client
+from worldbank.source.errors import ExtractError
 from worldbank.source.extract import extract as run_extract
-from worldbank.storage.read import IntegrityError
-from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
-from worldbank.warehouse.publish import NothingToPublish, UnsafeToPublish
+from worldbank.storage.errors import StorageError
+from worldbank.warehouse.errors import WarehouseError
+from worldbank.warehouse.load import as_of_path, load_raw, next_path
 from worldbank.warehouse.publish import publish as publish_build
 
 DEFAULT_CONFIG = Path("pipelines/worldbank/config.yml")
 DEFAULT_DATA_DIR = Path("data")
 SOURCE = "worldbank"
 
-EXTRACT_FAILURES = (
-    ApiErrorResponse,
-    UnexpectedResponse,
-    PermanentHTTPError,
-    TransientHTTPError,
-    InconsistentPages,
-    ScopeViolation,
-    requests.RequestException,
-    FileExistsError,  # a run with the same timestamp already exists
-)
-
-# ValidationError: a corrupt manifest; duckdb.Error: the load SQL failed
-LOAD_FAILURES = (IntegrityError, UnknownRun, ValidationError, duckdb.Error)
-PUBLISH_FAILURES = (NothingToPublish, UnsafeToPublish, OSError)
 
 app = typer.Typer(
     help="World Bank country indicators pipeline.",
@@ -72,7 +50,7 @@ def extract(config: Path = ConfigOption, data_dir: Path = DataDirOption) -> None
     landing_root = _landing_root(data_dir)
     try:
         manifest = run_extract(settings, Client(settings.api), landing_root, git_sha=_git_sha())
-    except EXTRACT_FAILURES as exc:
+    except ExtractError as exc:
         typer.echo(f"extract failed, nothing committed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     for warning in manifest.warnings:
@@ -92,7 +70,7 @@ def load(
     target = next_path(live) if as_of is None else as_of_path(live, as_of)
     try:
         summary = load_raw(_landing_root(data_dir), target, as_of=as_of)
-    except LOAD_FAILURES as exc:
+    except (StorageError, WarehouseError) as exc:
         typer.echo(f"load failed, no build written: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(f"loaded {summary.runs} runs ({summary.responses} responses) into {target}")
@@ -107,7 +85,7 @@ def publish(data_dir: Path = DataDirOption) -> None:
     """
     try:
         live = publish_build(_live_warehouse(data_dir))
-    except PUBLISH_FAILURES as exc:
+    except (WarehouseError, OSError) as exc:
         typer.echo(f"publish failed, live warehouse unchanged: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(f"published {live}")
