@@ -143,7 +143,7 @@ Updated as requirements are implemented. Paths are relative to `pipelines/worldb
 | FR-ING-3 | `src/worldbank/source/client.py`: follows every page; checks page consistency and row totals | `tests/source/test_client.py` |
 | FR-ING-4 | Retries in `src/worldbank/source/client.py`; error bodies and malformed responses in `src/worldbank/source/contracts.py`; all-or-nothing runs in `src/worldbank/source/extract.py` (no manifest on failure, non-zero exit) | `tests/source/test_client.py`, `tests/source/test_contracts.py`, `tests/source/test_extract.py` |
 | FR-MOD-1 | Partial: raw layer (`raw.landing_runs`, `raw.api_requests`, `raw.api_responses` with exact payloads) rebuilt by `src/worldbank/warehouse/load.py`, separate from later layers | `tests/warehouse/test_load.py` |
-| FR-MOD-2 | Partial: star schema in `dbt/models/marts/` (ADR-0017); each mart's grain, key and relationships stated in `_marts__models.yml` (README data-model section to come) | dbt key, relationship and singular tests (`unique_combination`, `relationships`, `assert_fact_*`) |
+| FR-MOD-2 | Partial: star schema in `dbt/models/marts/` (ADR-0017); each mart's grain, key and relationships stated in `_marts__models.yml` and in the README's data-model section | dbt key, relationship and singular tests (`unique_combination`, `relationships`, `assert_fact_*`) |
 | FR-MOD-3 | Staging flattens the JSON into typed, consistently named columns; marts expose only those (ADR-0016) | dbt unit tests on staging; `tests/test_pipeline.py` |
 | FR-ANA-1 | `dbt/models/reporting/rpt_completeness_by_cell.sql` (every expected cell's status) and `rpt_completeness_by_series.sql` (complete, incomplete or missing per series), on the expected set (ADR-0008) | dbt unit tests (cell statuses, series statuses), `assert_fact_covers_the_latest_expected_set` |
 | FR-ANA-2 | `dbt/models/reporting/rpt_year_over_year.sql`: absolute and percent change with a reason whenever either is null (ADR-0009) | dbt unit test for every reason, `assert_year_over_year_nulls_have_a_reason` |
@@ -166,27 +166,27 @@ The evaluation side of the brief (brief §5, §6, and Notes): our definition of 
 ### Repository
 
 - [ ] Git/GitHub repository, with commit history, containing all the deliverables below
-- [ ] One documented command runs the pipeline locally from a clean checkout, following the README (NFR-6)
+- [x] One documented command runs the pipeline locally from a clean checkout, following the README (NFR-6): `uvx --from rust-just just run`
 - [x] Sample output of the reporting queries is committed (for example, CSV): `data/outputs/` (ADR-0034)
 
 ### README sections
 
-- [ ] Setup instructions
-- [ ] Assumptions (resolves the §9 open questions)
-- [ ] Trade-offs
-- [ ] Short walkthrough of key decisions
-- [ ] AI usage
-- [ ] Data model: grain, business keys, relationships (FR-MOD-2)
-- [ ] How to add a country or indicator (NFR-4)
-- [ ] Unfinished work and next steps, if the time box is reached
+- [x] Setup instructions
+- [x] Assumptions (resolves the §9 open questions)
+- [x] Trade-offs
+- [x] Short walkthrough of key decisions
+- [x] AI usage
+- [x] Data model: grain, business keys, relationships (FR-MOD-2)
+- [x] How to add a country or indicator (NFR-4)
+- [x] Unfinished work and next steps, if the time box is reached
 
 ### Production design note (README, about one page, bullets are fine)
 
-- [ ] Scheduling and incremental refreshes
-- [ ] Handling late, corrected, or changed source data
-- [ ] Monitoring, alerting, and data-quality failures
-- [ ] Backfills and replay-ability
-- [ ] Mapping to Snowflake plus AWS Glue or EMR, or to comparable Azure services
+- [x] Scheduling and incremental refreshes
+- [x] Handling late, corrected, or changed source data
+- [x] Monitoring, alerting, and data-quality failures
+- [x] Backfills and replay-ability
+- [x] Mapping to Snowflake plus AWS Glue or EMR, or to comparable Azure services
 
 ### Evaluation focus (from the Notes)
 
