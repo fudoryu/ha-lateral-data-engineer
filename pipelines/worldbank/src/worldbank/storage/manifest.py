@@ -1,7 +1,15 @@
-"""The manifest: the on-disk record that commits a run (ADR-0004).
+"""The landing zone's on-disk format: run folders and the manifest that commits them (ADR-0004).
 
-It lists every request and every landed file with its sha256, plus the configuration and code
-version the run was made with. Its schema is source-agnostic: endpoints, keys and pages are
+Layout under a source's landing root (for example `data/raw/worldbank/`):
+
+    run_id=2026-11-24T18-30-00Z/
+        endpoint=countries/page=1.json
+        endpoint=indicators/SP.POP.TOTL/page=1.json
+        endpoint=observations/SP.POP.TOTL/page=1.json
+        manifest.json          <- written last; its existence is the commit
+
+The manifest lists every request and every landed file with its sha256, plus the configuration
+and code version the run was made with. It's source-agnostic: endpoints, keys and pages are
 plain strings here.
 """
 
@@ -9,6 +17,9 @@ from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
+
+MANIFEST = "manifest.json"
+RUN_PREFIX = "run_id="
 
 
 class _Model(BaseModel):

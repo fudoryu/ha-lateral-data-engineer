@@ -11,7 +11,8 @@ from worldbank.config import Config
 from worldbank.source.client import Client
 from worldbank.source.extract import extract
 from worldbank.storage.manifest import Manifest
-from worldbank.storage.runs import IntegrityError, RunWriter
+from worldbank.storage.read import IntegrityError
+from worldbank.storage.write import RunWriter
 from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
 
 

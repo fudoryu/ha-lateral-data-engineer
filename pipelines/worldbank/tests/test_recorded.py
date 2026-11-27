@@ -11,7 +11,7 @@ import responses
 from worldbank.config import Config
 from worldbank.source.client import Client
 from worldbank.source.extract import extract
-from worldbank.storage.runs import committed_runs
+from worldbank.storage.read import committed_runs
 
 
 def test_recordings_are_unmodified(recorded_dir: Path, recorded_index: dict[str, Any]) -> None:

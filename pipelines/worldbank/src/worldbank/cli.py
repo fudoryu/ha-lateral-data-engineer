@@ -19,7 +19,7 @@ from worldbank.source.client import (
 from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
 from worldbank.source.extract import ScopeViolation
 from worldbank.source.extract import extract as run_extract
-from worldbank.storage.runs import IntegrityError
+from worldbank.storage.read import IntegrityError
 from worldbank.warehouse.load import UnknownRun, as_of_path, load_raw, next_path
 from worldbank.warehouse.publish import NothingToPublish, UnsafeToPublish
 from worldbank.warehouse.publish import publish as publish_build

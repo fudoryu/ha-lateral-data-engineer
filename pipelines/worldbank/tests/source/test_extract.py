@@ -13,7 +13,7 @@ from worldbank.config import Config
 from worldbank.source.client import Client
 from worldbank.source.contracts import ApiErrorResponse
 from worldbank.source.extract import ScopeViolation, extract
-from worldbank.storage.runs import committed_runs
+from worldbank.storage.read import committed_runs
 
 BASE = "https://api.worldbank.org/v2"
 RAW: dict[str, Any] = {

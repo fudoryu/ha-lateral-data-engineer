@@ -23,7 +23,7 @@ from worldbank.source.client import (
 from worldbank.source.contracts import ApiErrorResponse, UnexpectedResponse
 from worldbank.source.extract import ScopeViolation, extract
 from worldbank.storage.manifest import Manifest
-from worldbank.storage.runs import committed_runs
+from worldbank.storage.read import committed_runs
 
 T0 = datetime(2026, 11, 24, 18, 0, tzinfo=UTC)
 POP, GDP, LE = "SP.POP.TOTL", "NY.GDP.MKTP.CD", "SP.DYN.LE00.IN"

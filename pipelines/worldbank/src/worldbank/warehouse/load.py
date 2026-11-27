@@ -23,7 +23,7 @@ from pathlib import Path
 
 import duckdb
 
-from worldbank.storage.runs import CommittedRun, committed_runs
+from worldbank.storage.read import CommittedRun, committed_runs
 
 DDL = """
 create schema raw;

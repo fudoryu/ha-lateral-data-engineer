@@ -1,17 +1,8 @@
-"""Runs in the landing zone: written once, committed by a manifest written last (ADR-0004).
+"""Write a run into the landing zone, committed by a manifest written last (ADR-0004).
 
-Layout under the source's landing root (for example `data/raw/worldbank/`):
-
-    run_id=2026-11-24T18-30-00Z/
-        endpoint=countries/page=1.json
-        endpoint=indicators/SP.POP.TOTL/page=1.json
-        endpoint=observations/SP.POP.TOTL/page=1.json
-        manifest.json          <- written last; its existence is the commit
-
-A response's ID is its path relative to the landing root, so it survives warehouse rebuilds
-(ADR-0006). Runs without a valid manifest are incomplete and are never read. Committed runs are
-read only through `CommittedRun.read_files`, which returns the files the manifest lists and
-checks each one against its sha256.
+Every page is written byte for byte as it arrives. Nothing in the run counts until `commit`
+writes the manifest, atomically; after that the run is immutable. A response's ID is its path
+relative to the landing root, so it survives warehouse rebuilds (ADR-0006).
 """
 
 import hashlib
@@ -21,40 +12,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
-
-from worldbank.storage.manifest import LandedFile, Manifest, RequestRecord
-
-MANIFEST = "manifest.json"
-RUN_PREFIX = "run_id="
+from worldbank.storage.manifest import (
+    MANIFEST,
+    RUN_PREFIX,
+    LandedFile,
+    Manifest,
+    RequestRecord,
+)
 
 
 class AlreadyCommitted(Exception):
     """A committed run is immutable: it can't be written to or committed again."""
-
-
-class IntegrityError(Exception):
-    """A landed file is missing or doesn't match the sha256 recorded in its manifest."""
-
-
-class CommittedRun(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    path: Path
-    manifest: Manifest
-
-    def read_files(self) -> dict[str, bytes]:
-        """The bytes of every file the manifest lists, by response ID, each checked by sha256."""
-        files = {}
-        for landed in self.manifest.files:
-            path = self.path / Path(landed.response_id).relative_to(self.path.name)
-            if not path.is_file():
-                raise IntegrityError(f"{landed.response_id}: listed in the manifest but missing")
-            body = path.read_bytes()
-            if hashlib.sha256(body).hexdigest() != landed.sha256:
-                raise IntegrityError(f"{landed.response_id}: sha256 doesn't match the manifest")
-            files[landed.response_id] = body
-        return files
 
 
 def new_run_id(now: datetime) -> str:
@@ -149,16 +117,3 @@ class RunWriter:
     def _ensure_open(self) -> None:
         if (self.path / MANIFEST).exists():
             raise AlreadyCommitted(f"{self.path.name} is committed and immutable")
-
-
-def committed_runs(landing_root: Path) -> list[CommittedRun]:
-    """Committed runs under `landing_root`, oldest first. Incomplete runs are skipped."""
-    if not landing_root.exists():
-        return []
-    runs = []
-    for path in sorted(landing_root.glob(f"{RUN_PREFIX}*")):
-        manifest_path = path / MANIFEST
-        if path.is_dir() and manifest_path.is_file():
-            manifest = Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
-            runs.append(CommittedRun(path=path, manifest=manifest))
-    return runs

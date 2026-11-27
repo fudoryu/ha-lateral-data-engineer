@@ -23,7 +23,7 @@ from worldbank.config import Config
 from worldbank.source.client import Client, FetchResult
 from worldbank.source.contracts import Country, Indicator, Observation
 from worldbank.storage.manifest import Manifest, RequestRecord
-from worldbank.storage.runs import RunWriter
+from worldbank.storage.write import RunWriter
 
 
 class ScopeViolation(Exception):
